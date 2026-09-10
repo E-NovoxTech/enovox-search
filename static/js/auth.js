@@ -4,7 +4,7 @@
  */
 
 (function() {
-    const API_URL = 'http://localhost:8000';
+    const API_URL = "";
     const TOKEN_KEY = 'enovox_dev_token';
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -56,7 +56,7 @@
             
             // Store JWT and redirect to submit page
             localStorage.setItem(TOKEN_KEY, data.access_token);
-            window.location.href = 'submit.html';
+            window.location.href = '/submit';
 
         } catch (error) {
             showAlert('error', error.message);
@@ -111,14 +111,14 @@
 
             // Store JWT and redirect to submit page
             localStorage.setItem(TOKEN_KEY, data.access_token);
-            window.location.href = 'submit.html';
+            window.location.href = '/submit';
 
         } catch (error) {
             showAlert('error', error.message);
             // If the error suggests logging in, append a link dynamically
             if (error.message.includes('try logging in')) {
                 const alertBox = document.getElementById('auth-alert');
-                alertBox.innerHTML = `This email is already registered. <a href="login.html" style="text-decoration: underline; font-weight: bold;">Log in here</a>.`;
+                alertBox.innerHTML = `This email is already registered. <a href="/login" style="text-decoration: underline; font-weight: bold;">Log in here</a>.`;
             }
         } finally {
             setLoading(btn, false, 'Create Account');

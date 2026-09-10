@@ -5,7 +5,7 @@
 
 (function() {
     // Configuration
-    const API_URL = 'http://localhost:8000';
+    const API_URL = "";
     const TOKEN_KEY = 'enovox_dev_token';
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -233,7 +233,7 @@
     function handleSessionExpired() {
         localStorage.removeItem(TOKEN_KEY);
         alert("Your session has expired. Please log in again.");
-        window.location.href = 'login.html';
+        window.location.href = '/login';
     }
 
     function showAlert(type, message) {

@@ -4,7 +4,7 @@
  */
 
 (function() {
-    const API_URL = 'http://localhost:8000';
+    const API_URL = "";
     let adminKey = localStorage.getItem('enovox_admin_key');
 
     // DOM Elements

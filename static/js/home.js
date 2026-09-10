@@ -1,6 +1,6 @@
 
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = '';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Generate Home Category Pills with Progressive Reveal
@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const pillElements = [];
         ENOVOX_CONFIG.CATEGORIES.forEach(cat => {
             const pill = document.createElement('a');
-            pill.href = `explore.html?category=${encodeURIComponent(cat)}`;
+            pill.href = `/explore?category=${encodeURIComponent(cat)}`;
             const safeClass = cat.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
             pill.className = `category-pill pill-${safeClass}`;
             pill.textContent = cat;

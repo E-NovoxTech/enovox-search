@@ -5,7 +5,7 @@
 
 (function() {
     // Configuration
-    const API_URL = 'http://localhost:8000';
+    const API_URL = "";
     const LIMIT = 20;
     let currentPage = 1;
 

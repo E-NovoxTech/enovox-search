@@ -4,7 +4,7 @@
  */
 
 (function() {
-    const API_URL = 'http://localhost:8000';
+    const API_URL = "";
 
     document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('similar-products-grid');

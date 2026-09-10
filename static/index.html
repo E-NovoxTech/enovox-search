@@ -5,30 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enovox Search - Discover Nigerian Tech</title>
     <!-- Link to the shared stylesheet -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css">
     <!-- FontAwesome for footer icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
-    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
-    <link rel="manifest" href="assets/site.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/static/assets/site.webmanifest">
 </head>
 <body>
-    <!-- Navigation Bar -->
+   <!-- Navigation Bar -->
     <header class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="brand-logo">
-                <img src="assets/logo.svg" alt="E-NovoxTech Logo" class="logo-icon">
+            <a href="/" class="brand-logo">
+                <img src="/static/assets/logo.svg" alt="E-NovoxTech Logo" class="logo-icon">
                 <span class="brand-name">Enovox Search</span>
             </a>
 
             <nav class="nav-links">
-                <a href="index.html">Home</a>
-                <a href="explore.html">Explore</a>
-                <a href="about.html">About Us</a>
-                <a href="submit.html">Submit Tool</a>
-                <a href="contact.html">Contact</a>
+                <a href="/">Home</a>
+                <a href="/explore">Explore</a>
+                <a href="/about">About Us</a>
+                <a href="/submit">Submit Tool</a>
+                <a href="/contact">Contact</a>
             </nav>
 
             <div class="nav-actions">
@@ -39,12 +39,12 @@
                 </button>
                 
                 <!-- Search Icon -->
-                <a href="explore.html" class="icon-btn" aria-label="Search">
+                <a href="/explore" class="icon-btn" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </a>
 
-                <a href="login.html" class="btn-text">Login</a>
-                <a href="signup.html" class="btn-primary">Sign up</a>
+                <a href="/login" class="btn-text">Login</a>
+                <a href="/signup" class="btn-primary">Sign up</a>
 
                 <!-- Hamburger Icon -->
                 <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
@@ -66,7 +66,7 @@
 
             <!-- Search Bar -->
             <div class="search-container">
-                <form id="hero-search-form" action="explore.html" method="GET">
+                <form id="hero-search-form" action="/explore" method="GET">
                     <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     <input type="text" name="query" placeholder="Search or type 'AI' for Chat..." required>
                     <!-- AI Chat Button with Coming Soon popup -->
@@ -97,7 +97,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                             <h2>Newly Launched</h2>
                         </div>
-                        <a href="explore.html" class="see-all">See all &rarr;</a>
+                        <a href="/explore" class="see-all">See all &rarr;</a>
                     </div>
                     <div class="product-list" id="newly-launched-list"></div>
                 </div>
@@ -109,7 +109,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                             <h2>Popular categories</h2>
                         </div>
-                        <a href="explore.html" class="see-all">See all &rarr;</a>
+                        <a href="/explore" class="see-all">See all &rarr;</a>
                     </div>
                     <div class="product-list" id="popular-categories-list"></div>
                 </div>
@@ -121,7 +121,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
                             <h2>Feature Products</h2>
                         </div>
-                        <a href="explore.html" class="see-all">See all &rarr;</a>
+                        <a href="/explore" class="see-all">See all &rarr;</a>
                     </div>
                     <div class="product-list" id="featured-products-list"></div>
                 </div>
@@ -162,7 +162,7 @@
                 <h3>Built something in Nigeria?</h3>
                 <p>Get your product discovered by people looking for Nigerian technology.</p>
             </div>
-            <a href="submit.html" class="btn-accent">Submit Your Product &rarr;</a>
+            <a href="/submit" class="btn-accent">Submit Your Product &rarr;</a>
         </section>
     </main>
 
@@ -171,24 +171,23 @@
         <div class="footer-top">
             <!-- Column 1: Brand & Social -->
             <div class="footer-col brand-col">
-                <a href="index.html" class="logo" style="text-decoration: none; ">Enovox <span class="logo-accent" style="color: rgb(13, 132, 243);">Search</span></a>
+                <a href="/" class="logo" style="text-decoration: none; ">Enovox <span class="logo-accent" style="color: rgb(13, 132, 243);">Search</span></a>
                 <p>Discover what Nigeria is building.</p>
                 <div class="footer-social">
-                    <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
                 </div>
             </div>
 
             <!-- Column 2: Quick Links -->
             <div class="footer-col">
                 <h4>Quick Links</h4>
-                <a href="index.html">Home</a>
-                <a href="explore.html">Explore</a>
+                <a href="/">Home</a>
+                <a href="/explore">Explore</a>
                 <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
-                <a href="submit.html">Submit Product</a>
-                <a href="about.html">About</a>
-                <a href="contact.html">Contact</a>
+                <a href="/submit">Submit Product</a>
+                <a href="/about">About</a>
+                <a href="/contact">Contact</a>
             </div>
 
             <!-- Column 3: Community -->
@@ -201,12 +200,12 @@
             <!-- Column 4: Legal -->
             <div class="footer-col">
                 <h4>Legal</h4>
-                <a href="privacy.html">Privacy Policy</a>
-                <a href="term.html">Terms & Conditions</a>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/term">Terms & Conditions</a>
             </div>
         </div>
     </footer>
-    <script src="js/config.js"></script>
-    <script src="js/home.js"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js"></script>
 </body>
 </html>
