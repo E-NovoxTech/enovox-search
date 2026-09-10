@@ -1,0 +1,324 @@
+/* ==========================================================================
+   Product Detail Page Styles
+   ========================================================================== */
+.product-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    min-height: calc(100vh - 350px);
+}
+
+/* Header Row (Logo, Title, Visit Button) */
+.product-header-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 2rem;
+}
+
+.product-brand-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.product-logo-container {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.product-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+}
+
+.product-logo-fallback {
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-blue);
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+}
+
+.product-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.product-badges {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pricing-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.pricing-badge.free { background-color: #dcfce7; color: #166534; }
+.pricing-badge.paid { background-color: #f1f5f9; color: #475569; }
+.dark-mode .pricing-badge.paid { background-color: #334155; color: #e2e8f0; }
+
+.type-badge {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.btn-large {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+/* Description Block */
+.product-description-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--card-shadow);
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-main);
+}
+
+/* Store Buttons Row */
+.product-stores-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-bottom: 3rem;
+}
+
+.store-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background-color: #1e293b;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: transform 0.2s, background-color 0.2s;
+}
+
+.store-btn:hover {
+    transform: translateY(-2px);
+    background-color: #0f172a;
+}
+
+.store-btn i { font-size: 1.25rem; }
+
+/* Details Section */
+.product-details-section {
+    margin-bottom: 4rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 2rem;
+}
+
+.company-name {
+    font-size: 1.5rem;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.founder-name {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+}
+
+.product-socials {
+    display: flex;
+    gap: 1rem;
+}
+
+.product-socials a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    transition: all 0.2s;
+}
+
+.product-socials a:hover {
+    background-color: var(--color-blue);
+    color: white;
+    border-color: var(--color-blue);
+    transform: translateY(-2px);
+}
+
+/* Similar Products */
+.similar-products-section h3 {
+    font-size: 1.5rem;
+    color: var(--text-main);
+    margin-bottom: 1.5rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .product-header-block {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1.5rem;
+    }
+    
+    .product-primary-action, .product-primary-action .btn-large {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .product-stores-row {
+        justify-content: flex-start;
+        flex-direction: column;
+    }
+    
+    .store-btn {
+        justify-content: center;
+    }
+    
+    .product-description-card {
+        padding: 1.5rem;
+    }
+}
+
+/* ==========================================================================
+   Similar Products Grid & Card Styling (Strict Layout)
+   ========================================================================== */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.product-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    text-align: left; /* Forces text to the left, overriding global center */
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.product-card:hover {
+    border-color: var(--color-blue);
+    box-shadow: var(--card-shadow);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Pins logo and arrow to the top */
+    margin-bottom: 1.25rem;
+    width: 100%;
+}
+
+.card-logo, .card-logo-fallback {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.card-logo {
+    object-fit: cover;
+    border: 1px solid var(--border-color);
+}
+
+.card-logo-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    border: none; /* Removed border to match your second image */
+}
+
+.arrow-icon {
+    color: #cbd5e1; /* Subtle light gray to match your second image */
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.product-card:hover .arrow-icon {
+    color: var(--color-blue);
+    transform: translate(4px, -4px); /* Moves up and right on hover */
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Forces children (title, desc, pill) to the left */
+    flex-grow: 1;
+    width: 100%;
+}
+
+.product-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-main);
+    text-align: left;
+}
+
+.product-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0 0 1.25rem 0;
+    text-align: left;
+    line-height: 1.5;
+    
+    /* Enforce exactly 2 lines so cards stay identical in height */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Push the category pill to the bottom if the description is short */
+.card-body .category-pill {
+    margin-top: auto; 
+}

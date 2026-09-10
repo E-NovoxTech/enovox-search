@@ -1,0 +1,583 @@
+/* ==========================================================================
+   Explore Page Layout
+   ========================================================================== */
+.explore-page {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.explore-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2rem 0;
+}
+
+.explore-header h1 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 2.75rem; /* Matches the homepage sizing */
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+    margin-bottom: 0.75rem;
+    line-height: 1.15;
+}
+
+.text-green {
+    color: var(--color-green);
+}
+
+.explore-header p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.explore-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* ==========================================================================
+   Sidebar Filters
+   ========================================================================== */
+.filters-sidebar {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 100px;
+    box-shadow: var(--card-shadow);
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.filters-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.btn-clear {
+    background: none;
+    border: none;
+    color: var(--color-blue);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: text-decoration 0.2s;
+}
+
+.btn-clear:hover {
+    text-decoration: underline;
+}
+
+.filter-group {
+    margin-bottom: 1.5rem;
+}
+
+.filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.filter-group h4 {
+    font-size: 0.9rem;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.hidden-category {
+    display: none !important;
+}
+
+.see-more-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-transform: lowercase;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0;
+    width: fit-content;
+}
+
+.see-more-btn:hover {
+    color: var(--color-blue);
+}
+
+.see-more-btn svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s;
+}
+
+.see-more-btn.expanded svg {
+    transform: rotate(180deg);
+}
+
+/* Custom Checkboxes */
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.custom-checkbox:hover {
+    color: var(--text-main);
+}
+
+.custom-checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    height: 18px;
+    width: 18px;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.custom-checkbox:hover input ~ .checkmark {
+    border-color: var(--color-green);
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+    background-color: var(--color-green);
+    border-color: var(--color-green);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+/* Custom Radio Buttons */
+.custom-radio {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.custom-radio:hover {
+    color: var(--text-main);
+}
+
+.custom-radio input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.radiomark {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    height: 18px;
+    width: 18px;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.custom-radio:hover input ~ .radiomark {
+    border-color: var(--color-blue);
+}
+
+.custom-radio input:checked ~ .radiomark {
+    border-color: var(--color-blue);
+}
+
+.radiomark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-blue);
+}
+
+.custom-radio input:checked ~ .radiomark:after {
+    display: block;
+}
+
+/* ==========================================================================
+   Main Content Area (Search & Grid)
+   ========================================================================== */
+.explore-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-wrapper .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-wrapper input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    box-shadow: var(--card-shadow);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+}
+
+.search-wrapper input:focus {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.results-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.explore-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.loading-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-size: 1rem;
+    background-color: var(--bg-card);
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+}
+
+.explore-grid .product-card {
+    position: relative;
+    padding: 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.explore-grid .product-logo {
+    margin-bottom: 1rem;
+    margin-right: 0;
+}
+
+.explore-grid .card-arrow {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 18px;
+    height: 18px;
+}
+
+.explore-grid .card-explore-text {
+    display: none;
+}
+
+/* ==========================================================================
+   Numbered Pagination
+   ========================================================================== */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.page-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: var(--color-blue);
+    color: var(--color-blue);
+    background-color: var(--hover-bg);
+}
+
+.page-btn.active {
+    background-color: var(--color-blue);
+    color: white;
+    border-color: var(--color-blue);
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bg-secondary);
+}
+
+/* ==========================================================================
+   Responsive Design (Explore) & Mobile Filter Dropdown
+   ========================================================================== */
+@media (max-width: 992px) {
+    .explore-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-sidebar {
+        position: static;
+        margin-bottom: 2rem;
+        padding: 0.75rem 1.25rem; /* Fix 1: Makes the box thinner and sleek */
+        transition: all 0.3s ease;
+    }
+
+    .filters-header {
+        cursor: pointer;
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    /* Dynamic dropdown chevron */
+    .filters-title::after {
+        content: "▼";
+        font-size: 0.7rem;
+        margin-left: 0.75rem;
+        transition: transform 0.3s ease;
+        color: var(--text-muted);
+        display: inline-block; /* Required for the rotation animation to work */
+    }
+
+    /* Hide form by default on mobile */
+    #filter-form {
+        display: none;
+        margin-top: 1rem;
+    }
+
+    /* Active open state classes */
+    .filters-sidebar.open .filters-header {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* FIX: Force the form into a 2-column grid when open */
+    .filters-sidebar.open #filter-form {
+        display: grid !important; 
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem 1rem;
+        align-items: start;
+    }
+
+    /* Remove the default margins since the grid gap handles spacing now */
+    .filters-sidebar.open .filter-group {
+        margin-bottom: 0;
+    }
+
+    .filters-sidebar.open .filters-title::after {
+        transform: rotate(180deg);
+    }
+}
+
+@media (max-width: 600px) {
+    .explore-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .search-wrapper {
+        max-width: 1000px;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .explore-header h1 {
+        font-size: 2rem;
+    }
+    
+    .explore-header p {
+        font-size: 1rem;
+        padding: 0 1rem;
+    }
+}
+
+
+/* ==========================================================================
+   ADDED RESPONSIVE BREAKPOINTS (Appended Here)
+   ========================================================================== */
+
+/* 1. Large Desktop (1440px and up) */
+@media (min-width: 1440px) {
+    .explore-page {
+        max-width: 1500px; /* Allows the grid to stretch gracefully on ultrawide monitors */
+    }
+    .explore-layout {
+        grid-template-columns: 300px 1fr; /* Gives the sticky sidebar slightly more room */
+        gap: 3rem;
+    }
+    .explore-grid {
+        gap: 2rem; /* Expands spacing between product cards */
+    }
+}
+
+/* 2. Laptop (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .explore-page {
+        padding: 1.5rem;
+    }
+    .explore-layout {
+        gap: 1.5rem; /* Keeps the sidebar and grid from touching before it hits the 992px breakpoint */
+    }
+}
+
+/* 3. Tablet / iPad (max-width: 768px) - Enhancing your existing rule */
+@media (max-width: 768px) {
+    .explore-page {
+        padding: 1.5rem 1rem; /* Reclaims horizontal edge space on tablets */
+    }
+    .explore-grid {
+        /* Lowers the minimum width slightly so you can still fit 2 cards per row on an iPad portrait mode */
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+}
+
+/* 4. Android / Standard Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .explore-header {
+        margin-bottom: 2rem;
+        padding: 1rem 0;
+    }
+    .explore-header h1 {
+        font-size: 1.75rem;
+    }
+    .explore-header p {
+        font-size: 0.95rem;
+    }
+    .filters-sidebar.open #filter-form {
+        /* CRITICAL FIX: Overrides your 992px rule. Forces the filter dropdown into a single column on phones so text doesn't overlap */
+        grid-template-columns: 1fr !important; 
+        gap: 1rem;
+    }
+    .explore-grid {
+        /* Forces product cards to span the full width instead of squishing */
+        grid-template-columns: 1fr;
+    }
+    .search-wrapper input {
+        padding-top: 0.65rem;
+        padding-bottom: 0.65rem;
+    }
+}
+
+/* 5. Smallest iPhone / Narrow Mobile (max-width: 320px) */
+@media (max-width: 320px) {
+    .explore-page {
+        padding: 1rem 0.5rem; /* Maximizes usable screen width */
+    }
+    .explore-header h1 {
+        font-size: 1.5rem;
+    }
+    .explore-grid .product-card {
+        padding: 1rem; /* Reclaims space inside the card */
+    }
+    .search-wrapper input {
+        font-size: 0.85rem;
+        padding-left: 2.25rem; /* Adjusts text so it doesn't overlap the search icon */
+    }
+    .search-wrapper .search-icon {
+        left: 0.75rem;
+        font-size: 0.9rem;
+    }
+    .pagination-container {
+        gap: 0.25rem; /* Pulls pagination buttons closer so they don't break onto a new line */
+    }
+    .page-btn {
+        min-width: 30px; /* Scales down the pagination boxes */
+        height: 30px;
+        font-size: 0.8rem;
+        padding: 0 0.35rem;
+    }
+}

@@ -1,0 +1,455 @@
+/* ==========================================================================
+   Submit Page Base
+   ========================================================================== */
+.submit-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+    min-height: calc(100vh - 350px);
+}
+
+/* ==========================================================================
+   View 1: Auth Wall (Logged Out State)
+   ========================================================================== */
+.auth-wall {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+}
+
+.auth-wall-content {
+    text-align: center;
+    background-color: var(--bg-card);
+    padding: 3rem 2rem;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+    max-width: 500px;
+    width: 100%;
+}
+
+.auth-icon-wrapper {
+    color: var(--color-blue);
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.auth-wall-content h2 {
+    font-size: 1.75rem;
+    color: var(--text-main);
+    margin-bottom: 0.75rem;
+}
+
+.auth-wall-content p {
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.auth-wall-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.auth-wall-actions a {
+    text-align: center;
+    flex: 1;
+}
+
+/* ==========================================================================
+   View 2: Authenticated Layout (Form + Dashboard)
+   ========================================================================== */
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.form-container, .dashboard-sidebar {
+    background-color: var(--bg-card);
+    padding: 2.5rem;
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow);
+}
+
+/* ==========================================================================
+   Left Column: The Submission Form
+   ========================================================================== */
+.form-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+
+.form-header h2 {
+    font-size: 2rem;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+}
+
+.form-header p {
+    color: var(--text-muted);
+}
+
+/* Form Fields */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+}
+
+.form-group input, 
+.form-group textarea, 
+.form-group select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Prevent textareas from being resized horizontally */
+.form-group textarea {
+    resize: vertical;
+}
+
+/* Focus States */
+.form-group input:focus, 
+.form-group textarea:focus, 
+.form-group select:focus {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Specific select dropdown arrow fix for custom UI */
+.form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem top 50%;
+    background-size: 0.65rem auto;
+}
+
+.form-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+}
+
+.full-width {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* Form Alerts (Success & Error messages) */
+.alert {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.alert.hidden {
+    display: none;
+}
+
+.alert.error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.alert.success {
+    background-color: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+}
+
+/* Dark Mode fixes for Alerts */
+.dark-mode .alert.error {
+    background-color: rgba(185, 28, 28, 0.15);
+    color: #fca5a5;
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+.dark-mode .alert.success {
+    background-color: rgba(21, 128, 61, 0.15);
+    color: #86efac;
+    border-color: rgba(74, 222, 128, 0.3);
+}
+
+/* ==========================================================================
+   Right Column: Dashboard Sidebar
+   ========================================================================== */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-header h3 {
+    font-size: 1.25rem;
+    color: var(--text-main);
+}
+
+.btn-text.small {
+    font-size: 0.8rem;
+    padding: 0;
+    color: #ef4444; /* Red color for log out */
+}
+
+.btn-text.small:hover {
+    color: #b91c1c;
+    text-decoration: underline;
+}
+
+.dashboard-section {
+    margin-bottom: 2rem;
+}
+
+.dashboard-section:last-child {
+    margin-bottom: 0;
+}
+
+.dashboard-section h4 {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+/* Individual Product Cards in Dashboard */
+.dev-product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dev-product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    transition: transform 0.2s, border-color 0.2s;
+    text-decoration: none;
+}
+
+.dev-product-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-blue);
+}
+
+.dev-product-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+/* Badges for status */
+.badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+.badge.live {
+    background-color: var(--pill-edu-bg);
+    color: var(--pill-edu-text);
+}
+
+.badge.pending {
+    background-color: var(--pill-ecom-bg);
+    color: var(--pill-ecom-text);
+}
+
+.loading-state-small {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 1rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+}
+
+/* ==========================================================================
+   Responsive Mobile Adjustments
+   ========================================================================== */
+@media (max-width: 992px) {
+    .dashboard-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    /* On tablets/mobile, move the dashboard below the form */
+    .dashboard-sidebar {
+        order: 2;
+    }
+}
+
+@media (max-width: 600px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .auth-wall-actions {
+        flex-direction: column;
+    }
+    
+    .form-container, .dashboard-sidebar {
+        padding: 1.5rem;
+    }
+}
+
+/* ==========================================================================
+   Submit Page & Form Responsiveness
+   ========================================================================== */
+
+/* 1. Ensure all form inputs never exceed their container */
+.form-group input, 
+.form-group select, 
+.form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 100%;
+}
+
+/* 2. Default: Stack grids vertically for Mobile (iPhones, Androids) */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr; /* 1 column on mobile */
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* 3. Safe margins for the main cards on mobile */
+@media (max-width: 768px) {
+    /* Target the main form container and the My Products container */
+    .submit-container, /* Update this class if your wrapper uses a different name */
+    form,
+    .my-products-section {
+        width: calc(100% - 2rem); /* Creates a 1rem gap on both sides */
+        margin: 1rem auto;
+        padding: 1.5rem !important; /* Slightly tighter padding for small screens */
+        box-sizing: border-box;
+        overflow: hidden; /* Prevents horizontal scrolling */
+    }
+}
+
+/* 4. Tablet, Laptop, and Desktop (iPad, Mac, PC) */
+@media (min-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr 1fr; /* Switch back to 2 columns */
+    }
+    
+    .submit-container,
+    form,
+    .my-products-section {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2.5rem;
+    }
+}
+
+/* ==========================================================================
+   Modern Logout Button
+   ========================================================================== */
+.modern-logout-btn {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: none;
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.modern-logout-btn:hover {
+    background-color: #fecaca;
+    color: #b91c1c;
+    transform: translateY(-1px);
+}
+
+.dark-mode .modern-logout-btn {
+    background-color: rgba(220, 38, 38, 0.15);
+    color: #fca5a5;
+}
+
+.dark-mode .modern-logout-btn:hover {
+    background-color: rgba(220, 38, 38, 0.25);
+}
+
+/* ==========================================================================
+   Glowing Live Dot Indicator
+   ========================================================================== */
+.status-badge.live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #dcfce7;
+    color: #166534;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.dark-mode .status-badge.live {
+    background-color: rgba(22, 101, 52, 0.3);
+    color: #86efac;
+}
+
+.glow-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #22c55e;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}

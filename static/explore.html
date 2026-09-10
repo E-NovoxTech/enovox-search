@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explore - Enovox Search</title>
+    <!-- Link to the shared stylesheet (Header, Footer, Colors, Dark Mode) -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Link to Explore specific styles -->
+    <link rel="stylesheet" href="css/explore.css">
+    <!-- FontAwesome for footer icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+</head>
+<body>
+    <!-- Navigation Bar (Identical to Homepage) -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="brand-logo">
+                <img src="assets/logo.svg" alt="E-NovoxTech Logo" class="logo-icon">
+                <span class="brand-name">Enovox Search</span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore</a>
+                <a href="about.html">About Us</a>
+                <a href="submit.html">Submit Tool</a>
+                <a href="contact.html">Contact</a>
+            </nav>
+
+            <div class="nav-actions">
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                
+                <!-- Search Icon -->
+                <a href="explore.html" class="icon-btn" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+
+                <a href="login.html" class="btn-text">Login</a>
+                <a href="signup.html" class="btn-primary">Sign up</a>
+
+                <!-- Hamburger Icon -->
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="explore-page">
+        <!-- Page Header -->
+        <section class="explore-header">
+            <div class="header-container">
+                <h1>Explore <span class="text-green">Nigerian Tech</span></h1>
+                <p>Discover locally built tools used in Nigeria's tech ecosystem. Find the right tools for your projects, business, or next big idea.</p>
+            </div>
+        </section>
+
+        <section class="explore-layout">
+            <!-- Sidebar Filters -->
+            <aside class="filters-sidebar">
+                <div class="filters-header">
+                    <div class="filters-title">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                        <h3>Filters</h3>
+                    </div>
+                    <button id="clear-filters" class="btn-clear">Clear all</button>
+                </div>
+
+                <form id="filter-form">
+                    <!-- Categories -->
+                    <div class="filter-group">
+                        <h4>Category</h4>
+                        <div id="dynamic-category-filters" class="filter-options">
+                            <!-- The category checkboxes will be injected here by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Pricing Model -->
+                    <div class="filter-group">
+                        <h4>Pricing Model</h4>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="pricing" value="Free">
+                            <span class="checkmark"></span> Free
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="pricing" value="Paid">
+                            <span class="checkmark"></span> Paid
+                        </label>
+                    </div>
+
+                    <!-- Product Type -->
+                    <div class="filter-group">
+                        <h4>Product Type</h4>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="product_type" value="Software">
+                            <span class="checkmark"></span> Software
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="product_type" value="App">
+                            <span class="checkmark"></span> App
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="product_type" value="Platform">
+                            <span class="checkmark"></span> Platform
+                        </label>
+                        <label class="custom-checkbox">
+                            <input type="checkbox" name="product_type" value="Tool">
+                            <span class="checkmark"></span> Tool
+                        </label>
+                    </div>
+
+                    <!-- Sort By (Radio Buttons) -->
+                    <div class="filter-group">
+                        <h4>Sort By</h4>
+                        <label class="custom-radio">
+                            <input type="radio" name="sort" value="newest" checked>
+                            <span class="radiomark"></span> Newest First
+                        </label>
+                        <label class="custom-radio">
+                            <input type="radio" name="sort" value="name_asc">
+                            <span class="radiomark"></span> A - Z
+                        </label>
+                        <label class="custom-radio">
+                            <input type="radio" name="sort" value="name_desc">
+                            <span class="radiomark"></span> Z - A
+                        </label>
+                    </div>
+                </form>
+            </aside>
+
+            <!-- Main Content Area -->
+            <div class="explore-content">
+                <!-- Search & Meta Bar -->
+                <div class="explore-toolbar">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" id="explore-search" placeholder="Search tools, apps, or companies...">
+                    </div>
+                    <div class="results-meta">
+                        <span id="results-count">Showing 0 tools</span>
+                    </div>
+                </div>
+
+                <!-- Product Grid (Injected via JS) -->
+                <div class="explore-grid" id="explore-results-grid">
+                    <!-- Skeleton Loader State -->
+                    <div class="loading-state">Loading products...</div>
+                </div>
+
+                <!-- Numbered Pagination -->
+                <div class="pagination-container" id="pagination-wrapper">
+                    <!-- JS will inject page numbers here: [Prev] [1] [2] [3] [Next] -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-top">
+            <div class="footer-col brand-col">
+                <a href="index.html" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
+                <a href="submit.html">Submit Product</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+            </div>
+            <div class="footer-col">
+                <h4>Community</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="term.html">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </footer>
+    <script src="js/config.js"></script>
+    <script src="js/home.js"></script>
+    <script src="js/explore.js"></script>
+</body>
+</html>

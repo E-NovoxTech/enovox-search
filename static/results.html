@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search Results — Enovox Search</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/results.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
+  <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
+  <link rel="manifest" href="/static/assets/site.webmanifest">
+</head>
+<body>
+
+  <nav>
+    <div class="logo">
+      <span class="logo-mark">E</span> Enovox <span class="logo-accent">Search</span>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a href="/static/index.html">Home</a>
+      <a href="#">Explore</a>
+      <a href="#">Ask AI</a>
+      <a href="#">Submit Product</a>
+      <a href="/static/contact.html">Contact</a>
+    </div>
+    <a href="/static/explore.html" class="nav-search-icon" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></a>
+    <button class="hamburger" id="hamburgerBtn">☰</button>
+  </nav>
+  <div class="nav-overlay" id="navOverlay"></div>
+
+  <div class="results-header">
+    <form class="results-search" id="resultsSearchForm">
+      <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+      <input type="text" id="resultsSearchInput" placeholder="Search Nigerian products..." />
+    </form>
+    <p id="resultsCount" class="results-count"></p>
+  </div>
+
+  <div class="results-layout">
+    <aside class="filters">
+      <h4>Category</h4>
+      <select id="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="AI & Automation">AI & Automation</option>
+        <option value="Fintech">Fintech</option>
+        <option value="Education">Education</option>
+        <option value="Business">Business</option>
+        <option value="E-commerce">E-commerce</option>
+        <option value="Transportation">Transportation</option>
+      </select>
+
+      <h4>Pricing</h4>
+      <select id="pricingFilter">
+        <option value="">All Pricing</option>
+        <option value="Free">Free</option>
+        <option value="Freemium">Freemium</option>
+        <option value="Subscription">Subscription</option>
+        <option value="Transaction-based">Transaction-based</option>
+        <option value="Pay-per-use">Pay-per-use</option>
+      </select>
+    </aside>
+    <h4>Product Type</h4>
+      <select id="productTypeFilter">
+        <option value="">All Types</option>
+        <option value="App">App</option>
+        <option value="Software">Software</option>
+        <option value="Platform">Platform</option>
+        <option value="Tool">Tool</option>
+      </select>
+
+    <div class="results-grid" id="resultsGrid"></div>
+  </div>
+
+  <!-- Footer Section -->
+
+ <footer>
+  <div class="footer-top">
+    <!-- Column 1: Brand & Social -->
+    <div class="footer-col brand-col">
+      <a href="/static/index.html" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+      <p>Discover what Nigeria is building.</p>
+      <div class="footer-social">
+        <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+      </div>
+    </div>
+
+    <!-- Column 2: Quick Links -->
+    <div class="footer-col">
+      <h4>Quick Links</h4>
+      <a href="/static/index.html">Home</a>
+      <a href="#">Explore</a>
+      <a href="#">Ask AI</a>
+      <a href="#">Submit Product</a>
+      <a href="/static/about.html">About</a>
+      <a href="/static/contact.html">Contact</a>
+    </div>
+
+    <!-- Column 3: Community -->
+    <div class="footer-col">
+      <h4>Community</h4>
+      <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+      <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+    </div>
+
+    <!-- Column 4: Legal -->
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/static/privacy.html">Privacy Policy</a>
+      <a href="/static/term.html">Terms &amp; Conditions</a>
+    </div>
+  </div>
+</footer>
+
+
+  <script src="/static/js/home.js"></script>
+  <script src="/static/js/results.js"></script>
+</body>
+</html>

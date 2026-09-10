@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | Enovox Search</title>
+    <!-- Keep your global stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Link this new specific stylesheet -->
+    <link rel="stylesheet" href="/static/css/about.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+</head>
+<body>
+
+   <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="brand-logo">
+                <img src="assets/logo.svg" alt="E-NovoxTech Logo" class="logo-icon">
+                <span class="brand-name">Enovox Search</span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore</a>
+                <a href="about.html">About Us</a>
+                <a href="submit.html">Submit Tool</a>
+                <a href="contact.html">Contact</a>
+            </nav>
+
+            <div class="nav-actions">
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                
+                <!-- Search Icon -->
+                <a href="explore.html" class="icon-btn" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+
+                <a href="login.html" class="btn-text">Login</a>
+                <a href="signup.html" class="btn-primary">Sign up</a>
+
+                <!-- Hamburger Icon -->
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+
+    <main class="about-wrapper">
+        <!-- Hero Section -->
+        <section class="about-hero">
+            <div class="hero-content">
+                <h1 style="margin-bottom: 20px; font-family:sans-serif;">About Enovox Search</h1>
+                <h2 class="stylish-heading">Discover Nigerian technology. Find what you need.</h2>
+                <p class="hero-subtitle">Enovox Search is a platform for discovering Nigerian-built technology. Browse products by category, search for tools that solve your problems, and use AI to find relevant solutions. We’re making it easier for 
+                    Nigerian products to be discovered and easier for people to find the technology they need.</p>
+            </div>
+        </section>
+<!-- 
+        Section 1: Why We Built It
+        <section class="about-section why-we-built-it">
+            <div class="section-content text-center">
+                <h2>Nigeria Is Building. People Just Don't Know.</h2>
+                <p>Every day, Nigerian developers are building AI tools, fintech products, education platforms, business software, and other digital solutions.</p>
+                <p>But many of these products remain unknown because there isn't enough visibility or an easy way for people to discover them.</p>
+                <p class="highlight">We built Enovox Search to change that.</p>
+            </div>
+        </section> -->
+
+        <!-- Section 2: What We Do (Modern Feature List) -->
+        <section class="about-section what-we-do">
+            <div class="features-grid">
+                <!-- Feature 1 -->
+                <div class="modern-feature">
+                    <div class="feature-icon-wrapper">🔎</div>
+                    <div class="feature-text">
+                        <h3>Discover</h3>
+                        <p>Find Nigerian-built products based on what you need.</p>
+                    </div>
+                </div>
+                <!-- Feature 2 -->
+                <div class="modern-feature">
+                    <div class="feature-icon-wrapper">🚀</div>
+                    <div class="feature-text">
+                        <h3>Get Discovered</h3>
+                        <p>Developers and startups can list their products and reach more people.</p>
+                    </div>
+                </div>
+                <!-- Feature 3 -->
+                <div class="modern-feature">
+                    <div class="feature-icon-wrapper">🤖</div>
+                    <div class="feature-text">
+                        <h3>Search With AI</h3>
+                        <p>Describe what you're looking for and let AI help you find relevant Nigerian products.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Section 3: Our Mission -->
+        <section class="about-section mission-section">
+            <div class="mission-content text-center">
+                <h2>To become the discovery layer for Nigerian technology.</h2>
+                <p>We want to make it easier for people to discover and use products built in Nigeria, while giving Nigerian builders the visibility they deserve.</p>
+            </div>
+        </section>
+
+        <!-- Final CTA -->
+        <section class="about-cta text-center">
+            <h2>Built something in Nigeria?</h2>
+            <p>Put your product in front of people who are looking for it.</p>
+            <div class="cta-button-container">
+                <a href="submit.html" class="btn-primary">Submit Your Product</a>
+            </div>
+        </section>
+    </main>
+
+
+    <!-- Footer Section -->
+    <footer>
+        <div class="footer-top">
+            <!-- Column 1: Brand & Social -->
+            <div class="footer-col brand-col">
+                <a href="index.html" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <!-- Column 2: Quick Links -->
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
+                <a href="submit.html">Submit Product</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+            </div>
+
+            <!-- Column 3: Community -->
+            <div class="footer-col">
+                <h4>Community</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+            </div>
+
+            <!-- Column 4: Legal -->
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="term.html">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </footer>
+    <script src="js/config.js"></script>
+    <script src="js/home.js"></script>
+
+    <script src="/static/js/theme.js"></script>
+</body>
+</html>

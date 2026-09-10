@@ -1,0 +1,167 @@
+/* ==========================================================================
+   Terms & Conditions / Legal Pages Styles
+   ========================================================================== */
+
+.legal-wrapper {
+    max-width: 800px; /* Narrower width for optimal reading experience */
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+    font-family: inherit;
+}
+
+.legal-header {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    padding-bottom: 1.5rem;
+}
+
+.legal-header h1 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 700;
+    color: var(--text-main, #111827);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.last-updated {
+    font-size: 1.05rem;
+    color: var(--text-muted, #4b5563);
+}
+
+/* Typography for the main content body */
+.legal-content h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-main, #111827);
+    margin: 2.5rem 0 1rem;
+    letter-spacing: normal;
+}
+
+.legal-content p {
+    font-size: 1.05rem;
+    color: var(--text-muted, #374151);
+    line-height: 1.7;
+    margin-bottom: 1.25rem;
+}
+
+.legal-content ul {
+    margin: 0 0 1.5rem 1.5rem; /* Indents the bullets properly */
+    padding: 0;
+}
+
+.legal-content li {
+    font-size: 1.05rem;
+    color: var(--text-muted, #374151);
+    line-height: 1.7;
+    margin-bottom: 0.5rem;
+}
+
+/* Links inside the document */
+.legal-content a {
+    color: var(--color-blue, #2563eb);
+    text-decoration: none;
+}
+
+.legal-content a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
+.dark-mode .legal-header {
+    border-bottom-color: var(--border-color, #374151);
+}
+
+.dark-mode .legal-content p,
+.dark-mode .legal-content li {
+    color: #d1d5db; /* Softer light-gray for comfortable dark mode reading */
+}
+
+/* ==========================================================================
+   Mobile Responsiveness
+   ========================================================================== */
+@media (max-width: 768px) {
+    .legal-wrapper {
+        padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .legal-content h2 {
+        font-size: 1.25rem;
+        margin: 2rem 0 1rem;
+    }
+
+    .legal-content p,
+    .legal-content li {
+        font-size: 1rem; /* Slightly smaller for small screens */
+    }
+}
+
+
+/* ==========================================================================
+   ADDED RESPONSIVE BREAKPOINTS (Appended Here)
+   ========================================================================== */
+
+/* 1. Large Desktop (1440px and up) */
+@media (min-width: 1440px) {
+    .legal-wrapper {
+        max-width: 900px; /* Allows text lines to expand slightly on huge monitors so paragraphs don't look like thin columns */
+        padding-top: 5rem; /* Adds a bit more elegant breathing room at the top */
+    }
+}
+
+/* 2. Laptop (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .legal-wrapper {
+        padding: 3.5rem 1.5rem 5rem; /* Gently scales down the top and bottom padding for standard laptops */
+    }
+}
+
+/* 3. Tablet / iPad (max-width: 768px) - Enhancing your existing rule */
+@media (max-width: 768px) {
+    /* (Your font-sizing logic safely executes above this in the original code) */
+    .legal-header {
+        margin-bottom: 2.5rem; /* Tightens the vertical space between the title and the first paragraph */
+    }
+}
+
+/* 4. Android / Standard Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .legal-wrapper {
+        padding: 2rem 1rem 3rem;
+    }
+    .legal-header {
+        padding-bottom: 1rem;
+        margin-bottom: 2rem;
+    }
+    .last-updated {
+        font-size: 0.95rem; /* Keeps the date text subtle and on a single line */
+    }
+    .legal-content h2 {
+        margin: 1.75rem 0 0.75rem; /* Reduces the gap above subheadings to keep related text visually grouped */
+    }
+    .legal-content ul {
+        margin-left: 1.25rem; /* Pulls bullet points slightly to the left to save horizontal space */
+    }
+}
+
+/* 5. Smallest iPhone / Narrow Mobile (max-width: 320px) */
+@media (max-width: 320px) {
+    .legal-wrapper {
+        padding: 1.5rem 0.75rem 2.5rem; /* Reclaims maximum edge space so text isn't squished */
+    }
+    .legal-header h1 {
+        font-size: 1.75rem; /* Safely overrides the clamp to prevent long legal words from breaking uncomfortably */
+    }
+    .legal-content h2 {
+        font-size: 1.15rem;
+    }
+    .legal-content p, 
+    .legal-content li {
+        font-size: 0.9rem; /* Further reduces text size to avoid endless scrolling on long documents */
+        line-height: 1.6; /* Tightens line height to match the smaller font */
+    }
+    .legal-content ul {
+        margin-left: 1rem; /* Aligns bullets closer to the edge */
+    }
+}

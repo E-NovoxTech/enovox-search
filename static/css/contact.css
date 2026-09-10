@@ -1,0 +1,291 @@
+/* ==========================================================================
+   Contact Page Layout
+   ========================================================================== */
+.contact-wrapper {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+    font-family: inherit;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* ==========================================================================
+   Header Styling
+   ========================================================================== */
+.contact-header {
+    margin-bottom: 4rem;
+}
+
+.stylish-heading {
+    font-size: clamp(2.2rem, 5vw, 3rem); 
+    font-weight: 600; /* Keeping it elegant and soft */
+    letter-spacing: -0.01em;
+    color: var(--text-main, #111827);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.subtitle {
+    font-size: clamp(1rem, 2vw, 1.15rem);
+    color: var(--text-muted, #4b5563);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   Main Grid Layout
+   ========================================================================== */
+.contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr; /* Form takes slightly more space */
+    gap: 4rem;
+    align-items: start;
+}
+
+/* ==========================================================================
+   Left Column: Contact Info
+   ========================================================================== */
+.contact-info h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-main, #111827);
+    margin-bottom: 1rem;
+}
+
+.info-desc {
+    color: var(--text-muted, #4b5563);
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    font-size: 1.05rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(37, 99, 235, 0.08); /* Matches About page icons */
+    color: var(--color-blue, #2563eb);
+    border-radius: 10px;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.info-text strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--text-main, #111827);
+    margin-bottom: 0.2rem;
+}
+
+.info-text a {
+    color: var(--text-muted, #4b5563);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.2s ease;
+}
+
+.info-text a:hover {
+    color: var(--color-blue, #2563eb);
+}
+
+/* ==========================================================================
+   Right Column: Form Card
+   ========================================================================== */
+.contact-form-card {
+    background-color: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 16px; /* Soft corners */
+    padding: 2.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.form-row-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main, #111827);
+    margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: 8px;
+    background-color: transparent;
+    color: var(--text-main, #111827);
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-blue, #2563eb);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1.05rem;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+/* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
+.dark-mode .contact-form-card {
+    background-color: var(--bg-card, #1f2937);
+    border-color: var(--border-color, #374151);
+}
+
+.dark-mode .form-group input,
+.dark-mode .form-group textarea {
+    border-color: #4b5563;
+}
+
+.dark-mode .info-icon {
+    background: rgba(37, 99, 235, 0.15);
+}
+
+/* ==========================================================================
+   Mobile Responsiveness (iPhones, Androids, Tablets)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .contact-wrapper {
+        padding: 2.5rem 1.25rem 4rem;
+    }
+
+    .contact-grid {
+        grid-template-columns: 1fr; /* Stack vertically on small screens */
+        gap: 3rem;
+    }
+
+    .contact-form-card {
+        padding: 1.5rem;
+    }
+
+    .form-row-split {
+        grid-template-columns: 1fr; /* Stack Name and Email fields */
+        gap: 0;
+    }
+}
+
+
+/* ==========================================================================
+   ADDED RESPONSIVE BREAKPOINTS (Appended Here)
+   ========================================================================== */
+
+/* 1. Large Desktop (1440px and up) */
+@media (min-width: 1440px) {
+    .contact-wrapper {
+        max-width: 1200px; /* Expands the container so it doesn't look boxed in on huge screens */
+    }
+    .contact-grid {
+        gap: 6rem; /* Adds more elegant white space between the text and the form */
+    }
+}
+
+/* 2. Laptop (max-width: 1024px) */
+@media (max-width: 1024px) {
+    .contact-wrapper {
+        padding: 3.5rem 2rem 5rem;
+    }
+    .contact-grid {
+        gap: 2.5rem; /* Prevents the contact info and form from squishing together */
+    }
+}
+
+/* 3. Tablet / iPad (max-width: 768px) - Enhancing your existing rule */
+@media (max-width: 768px) {
+    /* (Your original grid-stacking logic runs safely above this) */
+    .contact-header {
+        margin-bottom: 3rem; /* Tightens the space between the header and the stacked content */
+    }
+}
+
+/* 4. Android / Standard Mobile (max-width: 480px) */
+@media (max-width: 480px) {
+    .contact-wrapper {
+        padding: 2rem 1rem 3rem;
+    }
+    .contact-header {
+        margin-bottom: 2rem;
+    }
+    .contact-grid {
+        gap: 2.5rem;
+    }
+    .contact-form-card {
+        padding: 1.25rem;
+    }
+    .info-item {
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+}
+
+/* 5. Smallest iPhone / Narrow Mobile (max-width: 320px) */
+@media (max-width: 320px) {
+    .contact-wrapper {
+        padding: 1.5rem 0.75rem 2.5rem;
+    }
+    .contact-form-card {
+        padding: 1rem;
+        border-radius: 12px;
+    }
+    .info-icon {
+        width: 36px; /* Scales down the icons so they don't overpower the text */
+        height: 36px;
+        font-size: 1rem;
+    }
+    .info-text strong {
+        font-size: 0.85rem;
+    }
+    .info-text a {
+        font-size: 0.9rem;
+    }
+    .form-group label {
+        font-size: 0.85rem;
+    }
+    .form-group input,
+    .form-group textarea {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.9rem; /* Prevents text from clipping in the inputs */
+    }
+    .submit-btn {
+        padding: 0.75rem;
+        font-size: 0.95rem;
+    }
+}

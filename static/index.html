@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enovox Search - Discover Nigerian Tech</title>
+    <!-- Link to the shared stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- FontAwesome for footer icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="manifest" href="assets/site.webmanifest">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="brand-logo">
+                <img src="assets/logo.svg" alt="E-NovoxTech Logo" class="logo-icon">
+                <span class="brand-name">Enovox Search</span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore</a>
+                <a href="about.html">About Us</a>
+                <a href="submit.html">Submit Tool</a>
+                <a href="contact.html">Contact</a>
+            </nav>
+
+            <div class="nav-actions">
+                <!-- Dark Mode Toggle -->
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                
+                <!-- Search Icon -->
+                <a href="explore.html" class="icon-btn" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+
+                <a href="login.html" class="btn-text">Login</a>
+                <a href="signup.html" class="btn-primary">Sign up</a>
+
+                <!-- Hamburger Icon -->
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Main Hero Section -->
+        <section class="hero">
+            <h1 id="hero-headline">Discover What Nigeria Is Building.</h1>
+            <p class="hero-subtitle">Discover AI, software, apps, and digital products built by Nigerian innovators — all in one place.</p>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <form id="hero-search-form" action="explore.html" method="GET">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" name="query" placeholder="Search or type 'AI' for Chat..." required>
+                    <!-- AI Chat Button with Coming Soon popup -->
+                    <button type="button" id="ai-chat-btn" class="btn-ai" onclick="alert('This feature is coming soon!')">
+                        Ask AI
+                    </button>
+                </form>
+            </div>
+
+            <!-- Colorful Category Pills -->
+            <div class="hero-categories-wrapper">
+                <div class="hero-categories" id="home-category-pills">
+                    <!-- JS injects pills here -->
+                </div>
+                <button id="pill-toggle-btn" class="pill-arrow-btn" aria-label="Show more categories">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- 3-Column Content Grid -->
+        <section class="product-grid-section">
+            <div class="grid-container">
+                <!-- Column 1: Newly Launched -->
+                <div class="grid-column" id="col-newly-launched">
+                    <div class="column-header">
+                        <div class="header-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                            <h2>Newly Launched</h2>
+                        </div>
+                        <a href="explore.html" class="see-all">See all &rarr;</a>
+                    </div>
+                    <div class="product-list" id="newly-launched-list"></div>
+                </div>
+
+                <!-- Column 2: Popular Categories -->
+                <div class="grid-column" id="col-popular-categories">
+                    <div class="column-header">
+                        <div class="header-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            <h2>Popular categories</h2>
+                        </div>
+                        <a href="explore.html" class="see-all">See all &rarr;</a>
+                    </div>
+                    <div class="product-list" id="popular-categories-list"></div>
+                </div>
+
+                <!-- Column 3: Feature Products -->
+                <div class="grid-column" id="col-feature-products">
+                    <div class="column-header">
+                        <div class="header-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <h2>Feature Products</h2>
+                        </div>
+                        <a href="explore.html" class="see-all">See all &rarr;</a>
+                    </div>
+                    <div class="product-list" id="featured-products-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mission Section -->
+        <section class="mission">
+            <div class="mission-content">
+                <div class="accent-bar"></div>
+                <h2>Nigeria is building.<br />We're making it <span class="text-blue">easier to find.</span></h2>
+                <p>Nigerian developers and companies are constantly creating useful apps, software, AI tools and digital products, but many remain difficult to discover while people continue using foreign alternatives. Enovox Search helps you find, support and celebrate Nigerian innovation.</p>
+            </div>
+            <div class="mission-visual">
+                <div class="visual-pill">Discover &nbsp;•&nbsp; Support &nbsp;•&nbsp; Grow</div>
+            </div>
+        </section>
+
+        <!-- AI CTA Section -->
+        <section class="ai-cta">
+            <div class="ai-cta-text">
+                <div class="accent-bar light"></div>
+                <h3>Don't know what you're looking for?</h3>
+                <p>Tell Enovox AI what you need and discover Nigerian products that can help.</p>
+            </div>
+            <form class="ai-cta-search" action="#" onsubmit="return false;">
+                <span class="search-icon"></span>
+                <input type="text" placeholder="I need a tool to manage my small business..." />
+                <!-- Changed type to button and added the coming soon popup -->
+                <button type="button" class="btn-primary small" onclick="alert('This feature is coming soon!')">Ask Enovox AI &rarr;</button>
+            </form>
+        </section>
+
+        <!-- Submit CTA Section -->
+        <section class="submit-cta">
+            <div>
+                <div class="accent-bar"></div>
+                <h3>Built something in Nigeria?</h3>
+                <p>Get your product discovered by people looking for Nigerian technology.</p>
+            </div>
+            <a href="submit.html" class="btn-accent">Submit Your Product &rarr;</a>
+        </section>
+    </main>
+
+    <!-- Footer Section -->
+    <footer>
+        <div class="footer-top">
+            <!-- Column 1: Brand & Social -->
+            <div class="footer-col brand-col">
+                <a href="index.html" class="logo" style="text-decoration: none; ">Enovox <span class="logo-accent" style="color: rgb(13, 132, 243);">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+
+            <!-- Column 2: Quick Links -->
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="index.html">Home</a>
+                <a href="explore.html">Explore</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
+                <a href="submit.html">Submit Product</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+            </div>
+
+            <!-- Column 3: Community -->
+            <div class="footer-col">
+                <h4>Community</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+            </div>
+
+            <!-- Column 4: Legal -->
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="term.html">Terms & Conditions</a>
+            </div>
+        </div>
+    </footer>
+    <script src="js/config.js"></script>
+    <script src="js/home.js"></script>
+</body>
+</html>

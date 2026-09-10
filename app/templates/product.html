@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO Meta Tags -->
+    <title>{{ product.name }} - Enovox Search</title>
+    <meta name="description" content="{{ product.description | truncate(150) }}">
+    <meta property="og:title" content="{{ product.name }} - Enovox Search">
+    <meta property="og:description" content="{{ product.description | truncate(150) }}">
+    {% if product.logo_url %}
+    <meta property="og:image" content="{{ product.logo_url }}">
+    {% endif %}
+    
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/explore.css">
+    <link rel="stylesheet" href="/static/css/product.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/static/assets/site.webmanifest">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/static/index.html" class="brand-logo">
+                <img src="/static/assets/logo.svg" alt="Enovox search" class="logo-icon">
+                <span class="brand-name">Enovox Search</span>
+            </a>
+
+            <nav class="nav-links">
+                <a href="/static/index.html">Home</a>
+                <a href="/static/explore.html">Explore</a>
+                <a href="/static/about.html">About Us</a>
+                <a href="/static/submit.html">Submit Tool</a>
+                <a href="/static/contact.html">Contact</a>
+            </nav>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <a href="/static/explore.html" class="icon-btn" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+                <div id="nav-auth-buttons" style="display: flex; gap: inherit; align-items: center;">
+                    <a href="/static/login.html" class="btn-text">Login</a>
+                    <a href="/static/signup.html" class="btn-primary">Sign up</a>
+                </div>
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="product-page">
+        <!-- Top Row: Logo, Title, Visit Website -->
+        <div class="product-header-block">
+            <div class="product-brand-group">
+                <div class="product-logo-container">
+                    {% if product.logo_url %}
+                        <img src="{{ product.logo_url }}" alt="{{ product.name }} Logo" class="product-logo-img">
+                    {% else %}
+                        <div class="product-logo-fallback">{{ product.name[0] | upper }}</div>
+                    {% endif %}
+                </div>
+                <div class="product-title-group">
+                    <h1 class="product-name">{{ product.name }}</h1>
+                    <div class="product-badges">
+                        <span class="category-pill pill-{{ product.category | lower | replace(' & ', '-') | replace(' ', '-') }}">
+                            {{ product.category }}
+                        </span>
+                        <span class="pricing-badge {{ 'free' if product.pricing | lower == 'free' else 'paid' }}">
+                            {{ product.pricing }}
+                        </span>
+                        {% if product.product_type %}
+                            <span class="type-badge">{{ product.product_type }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="product-primary-action">
+                <a href="{{ product.website }}" target="_blank" rel="noopener noreferrer" class="btn-primary btn-large">Visit Website <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left: 8px; font-size: 0.85em;"></i></a>
+            </div>
+        </div>
+
+        <!-- Middle Row: Description -->
+        <div class="product-description-card">
+            <p>{{ product.description }}</p>
+        </div>
+
+        <!-- Store Buttons Row -->
+        {% if product.appstore_url or product.playstore_url %}
+        <div class="product-stores-row">
+            {% if product.appstore_url %}
+                <a href="{{ product.appstore_url }}" target="_blank" rel="noopener noreferrer" class="store-btn apple-btn">
+                    <i class="fa-brands fa-apple"></i> Download on App Store
+                </a>
+            {% endif %}
+            {% if product.playstore_url %}
+                <a href="{{ product.playstore_url }}" target="_blank" rel="noopener noreferrer" class="store-btn google-btn">
+                    <i class="fa-brands fa-google-play"></i> Get it on Google Play
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Details Row: Company, Founders, Socials -->
+        <div class="product-details-section">
+            {% if product.company_name %}
+                <h2 class="company-name">{{ product.company_name }}</h2>
+            {% endif %}
+            
+            <p class="founder-name"><strong>Founder(s):</strong> {{ product.founder }}</p>
+            
+            {% if product.twitter_url or product.instagram_url or product.facebook_url or product.linkedin_url %}
+            <div class="product-socials">
+                {% if product.twitter_url %}
+                    <a href="{{ product.twitter_url }}" target="_blank" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                {% endif %}
+                {% if product.linkedin_url %}
+                    <a href="{{ product.linkedin_url }}" target="_blank" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                {% endif %}
+                {% if product.instagram_url %}
+                    <a href="{{ product.instagram_url }}" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                {% endif %}
+                {% if product.facebook_url %}
+                    <a href="{{ product.facebook_url }}" target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Similar Products Section -->
+        <div class="similar-products-section">
+            <div class="section-header">
+                <h3>Similar Products</h3>
+            </div>
+            <!-- Data attribute passes the product ID to JavaScript securely -->
+            <div id="similar-products-grid" class="grid-container" data-product-id="{{ product.id }}">
+                <div class="loading-state-small">Loading similar products...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-top">
+            <div class="footer-col brand-col">
+                <a href="/static/index.html" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="#" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="/static/index.html">Home</a>
+                <a href="/static/explore.html">Explore</a>
+                <a href="#">Ask AI</a>
+                <a href="/static/submit.html">Submit Product</a>
+                <a href="/static/about.html">About</a>
+                <a href="/static/contact.html">Contact</a>
+            </div>
+            <div class="footer-col">
+                <h4>Community</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="/static/privacy.html">Privacy Policy</a>
+                <a href="/static/term.html">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js"></script>
+    <script src="/static/js/product.js"></script>
+</body>
+</html>
