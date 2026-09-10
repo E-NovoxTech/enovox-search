@@ -19,3 +19,8 @@ app.include_router(submissions.router)
 app.include_router(pages.router)
 app.include_router(developers.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/ping")
+def ping():
+    return {"status": "OK"}
