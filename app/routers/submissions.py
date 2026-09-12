@@ -4,7 +4,7 @@ import os
 
 from .. import models, schemas
 from ..database import get_db
-from ..utils import generate_slug
+from ..utils import generate_slug, send_submission_alert
 from .developers import get_current_developer
 
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
@@ -22,6 +22,14 @@ def submit_product(
     db.add(new_submission)
     db.commit()
     db.refresh(new_submission)
+    
+    # Trigger email alert to admin
+    send_submission_alert(
+        product_name=new_submission.name,
+        developer_email=current_dev.email,
+        category=new_submission.category
+    )
+    
     return {"message": "Submission received. We'll review it shortly.", "id": new_submission.id}
 
 

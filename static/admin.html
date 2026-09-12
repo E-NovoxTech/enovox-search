@@ -25,113 +25,150 @@
         </div>
     </div>
 
-    <!-- Main Dashboard -->
+    <!-- Main Dashboard Layout -->
     <div id="dashboard-layout" class="hidden">
-        
-        <!-- NEW: Mobile Header -->
-        <div class="mobile-admin-header">
-            <button id="admin-hamburger" aria-label="Open Menu">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <span>Enovox Admin</span>
-        </div>
 
-        <!-- NEW: Sidebar Overlay for Mobile -->
-        <div id="admin-sidebar-overlay" class="sidebar-overlay"></div>
-
-        <!-- ADDED ID: id="admin-sidebar" -->
-        <aside class="admin-sidebar" id="admin-sidebar">
-            <div class="sidebar-brand">Enovox Admin</div>
-            <nav class="sidebar-nav">
-                <!-- Tabs remain the same -->
-                <button class="nav-tab active" data-target="products-tab">Products</button>
-                <button class="nav-tab" data-target="submissions-tab">Submissions</button>
-                <button class="nav-tab" data-target="developers-tab">Developers</button>
-            </nav>
-            <div class="sidebar-footer">
-                <button id="logout-admin-btn" class="btn-danger">Clear Admin Key</button>
+        <!-- Top Header Bar: MOBILE ONLY (hidden on desktop via CSS, min-width: 769px) -->
+        <div class="admin-top-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button id="admin-hamburger" aria-label="Open Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+                <span>Enovox Admin</span>
             </div>
-        </aside>
 
-        <!-- Main Content Area remains the same -->
-        <main class="admin-main">
-
-        <!-- Main Content Area -->
-        <main class="admin-main">
-            <div id="global-alert" class="alert hidden"></div>
-
-            <!-- PRODUCTS TAB -->
-            <section id="products-tab" class="tab-content active">
-                <div class="section-header">
-                    <h2>All Products</h2>
-                    <button id="open-create-modal-btn" class="btn-primary">+ Add Product Manually</button>
-                </div>
-                <div class="table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Status</th>
-                                <th>Badges</th>
-                                <th>Date Added</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="products-table-body">
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- SUBMISSIONS TAB -->
-            <section id="submissions-tab" class="tab-content hidden">
-                <div class="section-header">
-                    <h2>Submissions</h2>
-                    <div class="filter-toggles">
-                        <label><input type="radio" name="sub-filter" value="pending" checked> Pending Only</label>
-                        <label><input type="radio" name="sub-filter" value="all"> All History</label>
+            <!-- Notification Bell Instance #1 (mobile header) -->
+            <div class="admin-notifications-wrapper">
+                <button class="notification-bell-btn" aria-label="Notifications">
+                    🔔
+                    <span class="notification-badge badge popular">0</span>
+                </button>
+                <div class="notification-dropdown hidden">
+                    <div class="notif-dropdown-header">
+                        <strong>Admin Notifications</strong>
+                        <button class="clear-all-notifications">Clear All</button>
+                    </div>
+                    <div class="notification-list">
+                        <p class="notif-empty">No new notifications</p>
                     </div>
                 </div>
-                <div class="table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Product Name</th>
-                                <th>Category</th>
-                                <th>Developer</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="submissions-table-body">
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            </div>
+        </div>
 
-            <!-- DEVELOPERS TAB -->
-            <section id="developers-tab" class="tab-content hidden">
-                <div class="section-header">
-                    <h2>Registered Developers</h2>
+        <!-- Dashboard Body Container (Sidebar + Main Content Side-by-Side) -->
+        <div class="dashboard-body">
+            <!-- Sidebar Overlay for Mobile -->
+            <div id="admin-sidebar-overlay" class="sidebar-overlay"></div>
+
+            <!-- Sidebar -->
+            <aside class="admin-sidebar" id="admin-sidebar">
+                <div class="sidebar-brand-row">
+                    <div class="sidebar-brand">Enovox Admin</div>
+
+                    <!-- Notification Bell Instance #2 (desktop, lives in sidebar) -->
+                    <div class="admin-notifications-wrapper sidebar-notifications-wrapper">
+                        <button class="notification-bell-btn" aria-label="Notifications">
+                            🔔
+                            <span class="notification-badge badge popular">0</span>
+                        </button>
+                        <div class="notification-dropdown hidden">
+                            <div class="notif-dropdown-header">
+                                <strong>Admin Notifications</strong>
+                                <button class="clear-all-notifications">Clear All</button>
+                            </div>
+                            <div class="notification-list">
+                                <p class="notif-empty">No new notifications</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="table-container">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Email</th>
-                                <th>Signup Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="developers-table-body">
-                            <!-- Injected via JS -->
-                        </tbody>
-                    </table>
+                <nav class="sidebar-nav">
+                    <button class="nav-tab active" data-target="products-tab">Products</button>
+                    <button class="nav-tab" data-target="submissions-tab">Submissions</button>
+                    <button class="nav-tab" data-target="developers-tab">Developers</button>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="logout-admin-btn" class="btn-danger">Clear Admin Key</button>
                 </div>
-            </section>
-        </main>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="admin-main">
+                <div id="global-alert" class="alert hidden"></div>
+
+                <!-- PRODUCTS TAB -->
+                <section id="products-tab" class="tab-content active">
+                    <div class="section-header">
+                        <h2>All Products</h2>
+                        <button id="open-create-modal-btn" class="btn-primary">+ Add Product Manually</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Badges</th>
+                                    <th>Date Added</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- SUBMISSIONS TAB -->
+                <section id="submissions-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Submissions</h2>
+                        <div class="filter-toggles">
+                            <label><input type="radio" name="sub-filter" value="pending" checked> Pending Only</label>
+                            <label><input type="radio" name="sub-filter" value="all"> All History</label>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Developer</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="submissions-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- DEVELOPERS TAB -->
+                <section id="developers-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Registered Developers</h2>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Email</th>
+                                    <th>Signup Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="developers-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
     </div>
 
     <!-- Create / Edit Product Modal -->
@@ -141,10 +178,10 @@
                 <h2 id="modal-title">Create New Product</h2>
                 <button id="close-modal-btn" class="close-btn">&times;</button>
             </div>
-            
+
             <form id="admin-product-form" class="admin-form">
                 <input type="hidden" id="edit_product_id" name="id">
-                
+
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Product Name *</label>
@@ -235,7 +272,7 @@
                     <label>Description *</label>
                     <textarea name="description" rows="4" required></textarea>
                 </div>
-                
+
                 <div class="modal-actions">
                     <button type="submit" class="btn-primary" id="save-product-btn">Save Product</button>
                 </div>
