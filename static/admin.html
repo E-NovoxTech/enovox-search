@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enovox Admin Dashboard</title>
     <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
@@ -96,11 +97,42 @@
             <main class="admin-main">
                 <div id="global-alert" class="alert hidden"></div>
 
+                <!-- QUICK STATS BAR (always visible, regardless of active tab) -->
+                <div class="stats-bar" id="stats-bar">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total-products">–</div>
+                        <div class="stat-label">Total Products</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-pending-submissions">–</div>
+                        <div class="stat-label">Pending Submissions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total-developers">–</div>
+                        <div class="stat-label">Total Developers</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total-rejected">–</div>
+                        <div class="stat-label">Total Rejected</div>
+                    </div>
+                </div>
+
                 <!-- PRODUCTS TAB -->
                 <section id="products-tab" class="tab-content active">
                     <div class="section-header">
                         <h2>All Products</h2>
                         <button id="open-create-modal-btn" class="btn-primary">+ Add Product Manually</button>
+                    </div>
+                    <div class="toolbar">
+                        <input type="text" id="products-search" placeholder="Search by name...">
+                        <select id="products-category-filter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="products-status-filter">
+                            <option value="">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="deactivated">Deactivated</option>
+                        </select>
                     </div>
                     <div class="table-container">
                         <table class="admin-table">
@@ -118,21 +150,37 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-bar" id="products-pagination"></div>
                 </section>
 
                 <!-- SUBMISSIONS TAB -->
                 <section id="submissions-tab" class="tab-content hidden">
                     <div class="section-header">
                         <h2>Submissions</h2>
-                        <div class="filter-toggles">
-                            <label><input type="radio" name="sub-filter" value="pending" checked> Pending Only</label>
-                            <label><input type="radio" name="sub-filter" value="all"> All History</label>
-                        </div>
+                    </div>
+                    <div class="toolbar">
+                        <input type="text" id="submissions-search" placeholder="Search by name...">
+                        <select id="submissions-category-filter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="submissions-status-filter">
+                            <option value="">All Statuses</option>
+                            <option value="pending" selected>Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="bulk-actions-bar hidden" id="submissions-bulk-bar">
+                        <span id="submissions-selected-count">0 selected</span>
+                        <button class="btn-success" id="bulk-approve-btn">Approve Selected</button>
+                        <button class="btn-danger" id="bulk-reject-btn">Reject Selected</button>
+                        <button class="btn-secondary" id="bulk-clear-btn">Clear Selection</button>
                     </div>
                     <div class="table-container">
                         <table class="admin-table">
                             <thead>
                                 <tr>
+                                    <th style="width: 36px;"><input type="checkbox" id="submissions-select-all"></th>
                                     <th>Product Name</th>
                                     <th>Category</th>
                                     <th>Developer</th>
@@ -145,12 +193,16 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-bar" id="submissions-pagination"></div>
                 </section>
 
                 <!-- DEVELOPERS TAB -->
                 <section id="developers-tab" class="tab-content hidden">
                     <div class="section-header">
                         <h2>Registered Developers</h2>
+                    </div>
+                    <div class="toolbar">
+                        <input type="text" id="developers-search" placeholder="Search by email...">
                     </div>
                     <div class="table-container">
                         <table class="admin-table">
@@ -166,6 +218,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-bar" id="developers-pagination"></div>
                 </section>
             </main>
         </div>
@@ -279,6 +332,40 @@
             </form>
         </div>
     </div>
+
+    <!-- Submission Detail / Edit-before-approve Modal -->
+    <div id="submission-detail-modal" class="overlay hidden">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <h2>Submission Details</h2>
+                <button id="close-submission-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div id="submission-detail-body">
+                <!-- Injected via JS: read-only meta + editable field form -->
+            </div>
+            <div class="modal-actions submission-modal-actions">
+                <button class="btn-danger" id="detail-reject-btn">Reject</button>
+                <button class="btn-success" id="detail-approve-btn">Save &amp; Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Reason Modal (used for single-row and bulk reject) -->
+    <div id="reject-reason-modal" class="overlay hidden">
+        <div class="modal-box">
+            <h2>Reject Submission<span id="reject-reason-plural"></span></h2>
+            <p id="reject-reason-context" class="text-muted" style="margin: 0.5rem 0 1rem;"></p>
+            <div class="form-group">
+                <label>Reason (optional)</label>
+                <textarea id="reject-reason-input" rows="3" placeholder="e.g. Missing required screenshots, duplicate listing..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="reject-reason-cancel-btn">Cancel</button>
+                <button class="btn-danger" id="reject-reason-confirm-btn">Confirm Reject</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
 </body>

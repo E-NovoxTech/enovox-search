@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from .routers import products, submissions, pages, developers
 from fastapi.staticfiles import StaticFiles
+from app.routers import ai
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -18,6 +19,7 @@ app.include_router(products.router)
 app.include_router(submissions.router)
 app.include_router(pages.router)
 app.include_router(developers.router)
+app.include_router(ai.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 

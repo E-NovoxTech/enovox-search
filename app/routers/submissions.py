@@ -17,8 +17,8 @@ def submit_product(
     current_dev: models.Developer = Depends(get_current_developer)
 ):
     data = submission.dict()
-    data["email"] = current_dev.email  # always use the logged-in developer's real email
-    new_submission = models.Submission(**data, developer_id=current_dev.id)
+    data["email"] = current_dev.email
+    new_submission = models.Submission(**data, developer_id=current_dev.id, status="pending")
     db.add(new_submission)
     db.commit()
     db.refresh(new_submission)
@@ -29,7 +29,6 @@ def submit_product(
         developer_email=current_dev.email,
         category=new_submission.category
     )
-    
     return {"message": "Submission received. We'll review it shortly.", "id": new_submission.id}
 
 
@@ -38,15 +37,35 @@ def list_submissions(admin_key: str, db: Session = Depends(get_db)):
     if admin_key != os.getenv("ADMIN_KEY"):
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
-    return db.query(models.Submission).filter(models.Submission.reviewed == False).all()
+    return db.query(models.Submission).filter(models.Submission.status == "pending").all()
 
 
 @router.get("/me")
 def my_submissions(current_dev: models.Developer = Depends(get_current_developer), db: Session = Depends(get_db)):
     return db.query(models.Submission).filter(
         models.Submission.developer_id == current_dev.id,
-        models.Submission.reviewed == False
+        models.Submission.status == "pending"
     ).all()
+
+
+@router.get("/admin/all")
+def list_all_submissions(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    return db.query(models.Submission).order_by(models.Submission.id.desc()).all()
+
+
+@router.get("/{submission_id}", response_model=schemas.SubmissionDetail)
+def get_submission_detail(submission_id: int, admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    submission = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    return submission
 
 
 @router.post("/{submission_id}/approve")
@@ -81,26 +100,24 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
     )
     db.add(new_product)
 
-    submission.reviewed = True
+    submission.status = "approved"
     db.commit()
     db.refresh(new_product)
 
     return {"message": f"{new_product.name} approved and now live.", "product_id": new_product.id, "slug": new_product.slug}
 
 
-@router.get("/admin/all")
-def list_all_submissions(admin_key: str, db: Session = Depends(get_db)):
+@router.post("/{submission_id}/reject")
+def reject_submission(submission_id: int, admin_key: str, payload: schemas.RejectSubmission, db: Session = Depends(get_db)):
     if admin_key != os.getenv("ADMIN_KEY"):
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
-    submissions = db.query(models.Submission).order_by(models.Submission.id.desc()).all()
-    return [
-        {
-            "id": s.id,
-            "name": s.name,
-            "category": s.category,
-            "email": s.email,
-            "status": "approved" if s.reviewed else "pending",
-        }
-        for s in submissions
-    ]
+    submission = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    submission.status = "rejected"
+    submission.rejection_reason = payload.reason
+    db.commit()
+
+    return {"message": f"{submission.name} rejected."}

@@ -15,11 +15,11 @@ body { background-color: var(--bg-main); color: var(--text-main); font-size: 14p
 .hidden { display: none !important; }
 
 /* Layout & Structure */
-#dashboard-layout { 
-    display: flex; 
-    flex-direction: column; 
-    height: 100vh; 
-    overflow: hidden; 
+#dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .admin-top-header {
@@ -53,12 +53,12 @@ body { background-color: var(--bg-main); color: var(--text-main); font-size: 14p
     position: relative;
 }
 
-.admin-sidebar { 
-    width: 250px; 
-    background: #1e293b; 
-    color: white; 
-    display: flex; 
-    flex-direction: column; 
+.admin-sidebar {
+    width: 250px;
+    background: #1e293b;
+    color: white;
+    display: flex;
+    flex-direction: column;
     flex-shrink: 0;
 }
 
@@ -81,21 +81,29 @@ body { background-color: var(--bg-main); color: var(--text-main); font-size: 14p
 .admin-main { flex: 1; padding: 2rem; overflow-y: auto; background-color: var(--bg-main); }
 
 /* Typography & Buttons */
-.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
 h2 { font-size: 1.5rem; }
 button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .btn-primary { background: var(--color-blue); color: white; border: none; padding: 0.5rem 1rem; }
 .btn-primary:hover { background: #1d4ed8; }
-.btn-danger { background: var(--color-red); color: white; border: none; padding: 0.5rem 1rem; width: 100%; }
+.btn-danger { background: var(--color-red); color: white; border: none; padding: 0.5rem 1rem; }
 .btn-success { background: var(--color-green); color: white; border: none; padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+.btn-secondary { background: #e2e8f0; color: var(--text-main); border: none; padding: 0.5rem 1rem; }
+.btn-small { padding: 0.35rem 0.7rem; font-size: 0.78rem; }
+.text-muted { color: var(--text-muted); }
+
+/* Sidebar footer button stays full width */
+.sidebar-footer .btn-danger { width: 100%; }
 
 /* Tables */
 .table-container { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-color); overflow: visible; }
 .admin-table { width: 100%; border-collapse: collapse; text-align: left; }
-.admin-table th, .admin-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+.admin-table th, .admin-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); vertical-align: top; }
 .admin-table th { background: #f1f5f9; font-weight: 600; color: var(--text-muted); }
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover { background: #f8fafc; }
+.admin-table tr.clickable-row { cursor: pointer; }
+.admin-table .row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
 
 /* Badges */
 .badge { padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-right: 0.25rem; display: inline-block; }
@@ -104,6 +112,7 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .badge.feature { background: #dbeafe; color: #1e40af; }
 .badge.popular { background: #f3e8ff; color: #6b21a8; }
 .badge.new { background: #ffedd5; color: #9a3412; }
+.rejection-reason-note { display: block; margin-top: 0.35rem; font-size: 0.78rem; color: var(--text-muted); max-width: 220px; }
 
 /* 3-Dot Menu Dropdown */
 .action-menu { position: relative; display: inline-block; }
@@ -117,23 +126,98 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .dropdown-content button.danger { color: var(--color-red); }
 
 /* Modals & Forms */
-.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 1rem; }
 .modal-box { background: white; padding: 2rem; border-radius: 12px; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
 .modal-box.large { max-width: 800px; }
 .modal-header { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
 .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
 .admin-input { width: 100%; padding: 0.75rem; margin: 1rem 0; border: 1px solid var(--border-color); border-radius: 6px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-.form-group { display: flex; flex-direction: column; }
+.form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
 .form-group.full-width { grid-column: 1 / -1; }
 .form-group label { margin-bottom: 0.25rem; font-weight: 500; font-size: 0.85rem; }
-.form-group input, .form-group select, .form-group textarea { padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; }
-.modal-actions { margin-top: 1.5rem; text-align: right; }
+.form-group input, .form-group select, .form-group textarea { padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; }
+.modal-actions { margin-top: 1.5rem; text-align: right; display: flex; justify-content: flex-end; gap: 0.75rem; }
+.submission-modal-actions { border-top: 1px solid var(--border-color); padding-top: 1rem; }
+
+/* Submission detail read-only meta block */
+.submission-meta { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; }
+.submission-meta .meta-label { color: var(--text-muted); margin-right: 0.3rem; }
+.submission-meta-reason { width: 100%; color: #991b1b; }
 
 /* Alerts */
 .alert { padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 500; }
 .alert.success { background: #dcfce7; color: #166534; }
 .alert.error { background: #fee2e2; color: #991b1b; }
+
+/* Quick Stats Bar */
+.stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+}
+.stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+.stat-label { color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; }
+
+/* Toolbar: search + filters */
+.toolbar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.toolbar input[type="text"] {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+.toolbar select {
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: white;
+}
+
+/* Bulk actions bar */
+.bulk-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+.bulk-actions-bar span { font-weight: 600; color: #1e40af; font-size: 0.85rem; }
+
+/* Pagination */
+.pagination-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+.pagination-bar button {
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+}
+.pagination-bar button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ==========================================================================
    Notification Bell (shared component — rendered once in the mobile top
@@ -176,7 +260,6 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     overflow-y: auto;
     color: #333;
 }
-/* In the sidebar the bell sits near the left edge, so open the dropdown to the right */
 .sidebar-notifications-wrapper .notification-dropdown {
     right: auto;
     left: 0;
@@ -234,8 +317,7 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
    ========================================================================== */
 .sidebar-overlay { display: none; }
 
-/* DESKTOP (>= 769px): top header bar is gone entirely — only sidebar + main content show.
-   The sidebar's own bell instance is the visible one here. */
+/* DESKTOP (>= 769px): top header bar is gone entirely — only sidebar + main content show. */
 @media (min-width: 769px) {
     .admin-top-header {
         display: none;
@@ -280,6 +362,9 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     .admin-main {
         padding: 1rem;
     }
+    .stats-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
     .section-header {
         flex-direction: column;
         align-items: flex-start;
@@ -288,10 +373,11 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     .section-header h2 {
         font-size: 1.25rem;
     }
-    .filter-toggles {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+    .toolbar {
+        flex-direction: column;
+    }
+    .toolbar input[type="text"], .toolbar select {
+        width: 100%;
     }
     .table-container {
         overflow-x: auto;
@@ -341,6 +427,12 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     .admin-main {
         padding: 1rem;
     }
+    .stats-bar {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.6rem;
+    }
+    .stat-card { padding: 0.85rem; }
+    .stat-value { font-size: 1.35rem; }
     .section-header h2 {
         font-size: 1.1rem;
     }
@@ -351,9 +443,6 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     .btn-primary, .btn-success {
         padding: 0.5rem 0.8rem;
         font-size: 0.85rem;
-    }
-    .filter-toggles {
-        gap: 0.4rem;
     }
     .nav-tab {
         padding: 0.8rem 1.25rem;
@@ -367,6 +456,9 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     }
     .admin-main {
         padding: 0.75rem;
+    }
+    .stats-bar {
+        grid-template-columns: 1fr;
     }
     .section-header h2 {
         font-size: 1rem;

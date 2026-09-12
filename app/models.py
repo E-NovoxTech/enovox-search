@@ -64,5 +64,6 @@ class Submission(Base):
     instagram_url = Column(String, nullable=True)
     facebook_url = Column(String, nullable=True)
     linkedin_url = Column(String, nullable=True)
-    reviewed = Column(Boolean, default=False)
+    status = Column(String, default="pending")
+    rejection_reason = Column(Text, nullable=True)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)

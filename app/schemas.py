@@ -112,3 +112,33 @@ class SubmissionOut(BaseModel):
 
     class Config:
         from_attributes = True
+class SubmissionDetail(BaseModel):
+    id: int
+    name: str
+    company: Optional[str] = None
+    description: str
+    category: str
+    website: Optional[str] = None
+    pricing: Optional[str] = None
+    product_type: Optional[str] = None
+    email: Optional[str] = None
+    logo_url: Optional[str] = None
+    appstore_url: Optional[str] = None
+    playstore_url: Optional[str] = None
+    user_count_range: Optional[str] = None
+    founder: str
+    twitter_url: Optional[str] = None
+    instagram_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    status: str
+    rejection_reason: Optional[str] = None
+    developer_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class RejectSubmission(BaseModel):
+    reason: Optional[str] = None
+    
