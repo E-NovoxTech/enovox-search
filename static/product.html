@@ -134,6 +134,9 @@
                 {% if product.facebook_url %}
                     <a href="{{ product.facebook_url }}" target="_blank" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
                 {% endif %}
+                {% if product.github_url %}
+                    <a href="{{ product.github_url }}" target="_blank" aria-label="Github"><i class="fa-brands fa-square-github"></i></a>
+                {% endif %}
             </div>
             {% endif %}
         </div>
