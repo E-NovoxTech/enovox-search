@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In - Enovox Search</title>
+    <title>Ask AI — Enovox Search</title>
+    <meta name="description" content="Describe what you need and Enovox AI will point you to Nigerian-built tools that fit.">
     <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/auth.css">
+    <link rel="stylesheet" href="/static/css/ai.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
@@ -14,7 +15,9 @@
     <link rel="manifest" href="/static/assets/site.webmanifest">
 </head>
 <body>
-    <!-- Navigation Bar -->
+    <!-- Navigation Bar — matches login.html / signup.html exactly.
+         "Ask AI" is functional here (we ARE the ask page); other pages keep
+         their own "coming soon" placeholder link, untouched. -->
     <header class="navbar">
         <div class="nav-container">
             <a href="/" class="brand-logo">
@@ -27,7 +30,7 @@
                 <a href="/explore">Explore</a>
                 <a href="/about">About Us</a>
                 <a href="/submit">Submit Tool</a>
-                <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
+                <a href="/ai" class="active">Ask AI</a>
                 <a href="/contact">Contact</a>
             </nav>
 
@@ -48,50 +51,61 @@
         </div>
     </header>
 
-    <main class="auth-page">
-        <div class="auth-card">
+    <!-- ==========================================================================
+         ASK AI PAGE — single page, two states (initial / results), no chat history
+         ========================================================================== -->
+    <main class="ai-page">
+        <div class="ai-container">
 
-            <!-- Account type toggle: User (default) vs Developer.
-                 Changes which endpoint auth.js posts to, and drives the
-                 redirect/nav logic after success. -->
-            <div class="account-type-toggle" role="tablist" aria-label="Account type">
-                <button type="button" class="account-type-btn active" data-type="user" role="tab" aria-selected="true">
-                    User
-                    <span class="account-type-sub">Just here to search</span>
-                </button>
-                <button type="button" class="account-type-btn" data-type="developer" role="tab" aria-selected="false">
-                    Developer
-                    <span class="account-type-sub">I want to list my product</span>
-                </button>
-            </div>
-            <input type="hidden" id="account_type" value="user">
+            <!-- STATE 1: initial search box -->
+            <section id="ai-initial" class="ai-state">
+                <h1>Ask Enovox AI</h1>
+                <p class="ai-subtitle">Describe what you need — I'll point you to Nigerian-built tools that fit.</p>
 
-            <h2 id="auth-title" data-user-text="Welcome Back" data-dev-text="Welcome Back">Welcome Back</h2>
-            <p class="auth-subtitle" id="auth-subtitle" data-user-text="Log in to continue searching" data-dev-text="Log in to manage your products">Log in to continue searching</p>
-
-            <div id="auth-alert" class="alert hidden"></div>
-
-            <form id="login-form" novalidate>
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="you@example.com">
-                    <span class="field-error" id="email-error"></span>
+                <form id="ai-form" class="ai-search-form">
+                    <div class="ai-input-wrap">
+                        <textarea
+                            id="ai-query"
+                            rows="1"
+                            maxlength="600"
+                            placeholder="e.g. &quot;I need a tool to accept card payments online&quot;"
+                            aria-label="Describe what you need"
+                        ></textarea>
+                        <button type="submit" id="ai-submit-btn" class="btn-ai">
+                            <span class="btn-ask-text">Ask AI</span>
+                            <span class="btn-spinner hidden" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+                <p class="ai-subtitle" style="text-align: center; margin-bottom: 40px;">Enovox AI can make mistakes. Please double-check responses.</p>
+                <div class="ai-example-queries">
+                    <p class="ai-example-label">Try searching for:</p>
+                    <button type="button" class="example-query-btn" data-query="I need an app for my business, recommend me the best product">I need an app for my business, recommend me the best product</button>
+                    <button type="button" class="example-query-btn" data-query="I need an Educational app">I need an Educational app</button>
+                    <button type="button" class="example-query-btn" data-query="Nigerian alternative to PayPal">Nigerian alternative to PayPal</button>
                 </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="••••••••">
-                    <span class="field-error" id="password-error"></span>
-                </div>
-                <button type="submit" id="login-btn" class="btn-primary full-width">Log In</button>
-            </form>
+            </section>
 
-            <div class="auth-footer">
-                <p>New here? <a href="/signup" class="auth-link">Sign up</a></p>
+            <!-- Loading indicator -->
+            <div id="ai-loading" class="ai-loading hidden">
+                <div class="spinner"></div>
+                <p>Thinking — checking a few Nigerian-built tools for you...</p>
             </div>
+
+            <!-- Error / quota banner -->
+            <div id="ai-error" class="ai-error-banner hidden"></div>
+
+            <!-- STATE 2: results -->
+            <section id="ai-results" class="ai-state hidden">
+                <button type="button" id="ai-new-search-btn" class="btn-text-link">&larr; Ask something else</button>
+                <div id="ai-answer" class="ai-answer-block"></div>
+                <div id="ai-products" class="ai-products-grid"></div>
+            </section>
+
         </div>
     </main>
 
-    <!-- Footer -->
+    <!-- Footer — matches login.html / signup.html exactly -->
     <footer>
         <div class="footer-top">
             <div class="footer-col brand-col">
@@ -106,7 +120,7 @@
                 <h4>Quick Links</h4>
                 <a href="/">Home</a>
                 <a href="/explore">Explore</a>
-                <a href="#">Ask AI</a>
+                <a href="/ai">Ask AI</a>
                 <a href="/submit">Submit Product</a>
                 <a href="/about">About</a>
                 <a href="/contact">Contact</a>
@@ -124,8 +138,12 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="/static/js/home.js"></script>
-    <script src="/static/js/auth.js"></script>
+    <!-- Scripts. NOTE: no home.js include yet — I don't have its contents, so
+         ai.js below handles theme + hamburger itself using the same
+         .dark-mode class / sun-icon / moon-icon / active-slider mechanism
+         your real style.css defines. Swap this for home.js once you share
+         it and confirm it uses the same approach. -->
+    <script src="/static/js/ai.js"></script>
+    <script src="/static/js/nav-auth.js"></script>
 </body>
 </html>

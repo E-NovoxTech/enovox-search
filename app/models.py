@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, Date, ForeignKey
+from datetime import datetime, date
 from .database import Base
 
 
@@ -67,3 +67,20 @@ class Submission(Base):
     status = Column(String, default="pending")
     rejection_reason = Column(Text, nullable=True)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)
+    
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SearchUsage(Base):
+    __tablename__ = "search_usage"
+
+    id = Column(Integer, primary_key=True, index=True)
+    identifier = Column(String, index=True, nullable=False)  
+    date = Column(Date, default=date.today, index=True)
+    count = Column(Integer, default=0)

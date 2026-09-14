@@ -27,6 +27,10 @@ def about_page(request: Request):
 def submit_page(request: Request):
     return templates.TemplateResponse(request=request, name="submit.html")
 
+@router.get("/ai")
+def submit_page(request: Request):
+    return templates.TemplateResponse(request=request, name="ai.html")
+
 @router.get("/contact")
 def contact_page(request: Request):
     return templates.TemplateResponse(request=request, name="contact.html")
@@ -75,6 +79,7 @@ def sitemap(db: Session = Depends(get_db)):
         f"{site_url}/explore",
         f"{site_url}/about",
         f"{site_url}/submit",
+        f"{site_url}/ai",
         f"{site_url}/contact",
         f"{site_url}/privacy",
         f"{site_url}/term",

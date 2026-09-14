@@ -5,6 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+from datetime import date
 
 
 def generate_slug(name: str, db: Session) -> str:
@@ -54,3 +55,24 @@ def send_submission_alert(product_name: str, developer_email: str, category: str
         print("Admin email notification sent successfully.")
     except Exception as e:
         print(f"Failed to send email notification: {e}")
+        
+
+
+def check_and_increment_usage(db: Session, identifier: str, limit: int) -> bool:
+    """Returns True if allowed (and increments count), False if over limit."""
+    today = date.today()
+    usage = db.query(models.SearchUsage).filter(
+        models.SearchUsage.identifier == identifier,
+        models.SearchUsage.date == today
+    ).first()
+
+    if not usage:
+        usage = models.SearchUsage(identifier=identifier, date=today, count=0)
+        db.add(usage)
+
+    if usage.count >= limit:
+        return False
+
+    usage.count += 1
+    db.commit()
+    return True

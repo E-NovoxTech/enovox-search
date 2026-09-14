@@ -1,5 +1,3 @@
-
-
 const API_BASE_URL = '';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -62,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroRotation();
     initThemeToggle();
     initMobileMenu();
+    initAuthState();
     
     if (document.getElementById('newly-launched-list')) {
         loadGridData();
@@ -134,6 +133,57 @@ function initThemeToggle() {
             moonIcon.style.display = 'none';
             localStorage.setItem('enovox_theme', 'light');
         }
+    });
+}
+
+/* ==========================================================================
+   Global Logged-In Nav State
+   Reads "enovox_dev_token" / "enovox_account_type" (set by auth.js on
+   successful login/signup) and swaps the Login / Sign up links for a
+   logged-in state, on every page that loads this file:
+     - developer -> "Dashboard" link + "Logout"
+     - user      -> plain "Signed in" text (no link -- users don't have a
+                    dashboard) + "Logout"
+   Reuses the existing .btn-text / .btn-primary classes rather than adding
+   new markup or CSS, so it follows your real light/dark mode automatically.
+   ========================================================================== */
+function initAuthState() {
+    const TOKEN_KEY = 'enovox_dev_token';
+    const ACCOUNT_TYPE_KEY = 'enovox_account_type';
+    const DASHBOARD_URL = '/dashboard';
+
+    const navActions = document.querySelector('.nav-actions');
+    if (!navActions) return;
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return; // not logged in -- leave Login / Sign up exactly as they are
+
+    // Scoped to .nav-actions specifically so this never touches unrelated
+    // links elsewhere on the page (e.g. the "New here? Sign up" link inside
+    // the login card itself).
+    const loginLink = navActions.querySelector('a.btn-text[href="/login"]');
+    const signupLink = navActions.querySelector('a.btn-primary[href="/signup"]');
+    if (!loginLink || !signupLink) return; // markup doesn't match, or already swapped
+
+    const isDeveloper = localStorage.getItem(ACCOUNT_TYPE_KEY) === 'developer';
+
+    if (isDeveloper) {
+        loginLink.textContent = 'Dashboard';
+        loginLink.setAttribute('href', DASHBOARD_URL);
+    } else {
+        loginLink.textContent = 'Signed in';
+        loginLink.removeAttribute('href');
+        loginLink.style.cursor = 'default';
+    }
+
+    signupLink.textContent = 'Logout';
+    signupLink.removeAttribute('href');
+    signupLink.style.cursor = 'pointer';
+    signupLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(ACCOUNT_TYPE_KEY);
+        window.location.href = '/';
     });
 }
 

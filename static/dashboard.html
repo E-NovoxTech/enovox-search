@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact | Enovox Search</title>
+    <title>Dashboard - Enovox Search</title>
     <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/contact.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
@@ -14,6 +14,7 @@
     <link rel="manifest" href="/static/assets/site.webmanifest">
 </head>
 <body>
+    <!-- Navigation Bar — matches every other page -->
     <header class="navbar">
         <div class="nav-container">
             <a href="/" class="brand-logo">
@@ -32,12 +33,12 @@
 
             <div class="nav-actions">
                 <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
-                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.79" y2="19.79"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.79" y2="4.22"></line></svg>
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
                 <a href="/explore" class="icon-btn" aria-label="Search">
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-</a>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
                 <a href="/login" class="btn-text">Login</a>
                 <a href="/signup" class="btn-primary">Sign up</a>
                 <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
@@ -47,77 +48,59 @@
         </div>
     </header>
 
-    <main class="contact-wrapper">
-        <!-- Header Section -->
-        <div class="contact-header text-center">
-            <h1 class="stylish-heading">Get in Touch</h1>
-            <p class="subtitle">Have a question about a product, want to partner, or just saying hi? We'd love to hear from you.</p>
-        </div>
-    
-        <!-- Main Grid -->
-        <div class="contact-grid">
-            
-            <!-- Left Column: Contact Info -->
-            <div class="contact-info">
-                <h2>Contact Information</h2>
-                <p class="info-desc">Fill out the form, or reach out to us directly via email. We aim to respond within 24-48 hours.</p>
-    
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fa-solid fa-envelope"></i>
-                    </div>
-                    <div class="info-text">
-                        <strong>Email</strong>
-                        <a href="mailto:enovoxsearch@gmail.com">enovoxsearch@gmail.com</a>
-                    </div>
+    <main class="dashboard-page">
+        <div class="dashboard-container">
+
+            <!-- Profile card: email + joined date (decoded from the JWT — no
+                 extra API call), plus Logout -->
+            <section class="profile-card">
+                <div class="profile-avatar" id="profile-avatar">?</div>
+                <div class="profile-info">
+                    <p class="profile-email" id="profile-email">Loading...</p>
+                    <p class="profile-joined" id="profile-joined"></p>
                 </div>
-    
-                <div class="info-item">
-                    <div class="info-icon">
-                        <i class="fa-brands fa-x-twitter"></i>
+                <button type="button" id="dashboard-logout-btn" class="btn-primary">Logout</button>
+            </section>
+
+            <!-- Notification tray, same pattern as the admin dashboard -->
+            <div class="admin-notifications-wrapper dev-notif-wrapper">
+                <button class="notification-bell-btn dev-bell-btn" aria-label="Notifications">
+                    🔔<span class="notification-badge dev-notif-badge">0</span>
+                </button>
+                <div class="notification-dropdown dev-notif-dropdown hidden">
+                    <div class="notif-dropdown-header">
+                        <strong>Notifications</strong>
+                        <button class="clear-all-notifications">Clear All</button>
                     </div>
-                    <div class="info-text">
-                        <strong>Follow Us</strong>
-                        <a href="https://x.com/EnovoxSearch" target="_blank">@EnovoxSearch</a> 
-                    </div>
+                    <div class="notification-list"><p class="notif-empty">No new notifications</p></div>
                 </div>
             </div>
-    
-            <!-- Right Column: Form -->
-            <div class="contact-form-card">
-                <!-- Updated Formspree Endpoint -->
-                <form action="https://formspree.io/f/mnpqlogj" method="POST">
-                    <div class="form-row-split">
-                        <div class="form-group">
-                            <label for="name">Your Name</label>
-                            <input type="text" id="name" name="name" required placeholder="e.g. Emmanuel">
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email Address</label>
-                            <input type="email" id="email" name="email" required placeholder="you@example.com">
-                        </div>
-                    </div>
-    
-                    <div class="form-group">
-                        <label for="subject">Subject</label>
-                        <input type="text" id="subject" name="subject" required placeholder="How can we help?">
-                    </div>
-    
-                    <div class="form-group">
-                        <label for="message">Message</label>
-                        <textarea id="message" name="message" rows="5" required placeholder="Write your message here..."></textarea>
-                    </div>
-    
-                    <button type="submit" class="btn-primary submit-btn">Send Message</button>
-                </form>
-            </div>
+
+            <!-- Approved products -->
+            <section class="products-section">
+                <div class="section-header">
+                    <h2>Your Approved Products</h2>
+                    <a href="/submit" class="btn-accent">+ Submit New Product</a>
+                </div>
+
+                <div id="dashboard-products-loading" class="dashboard-status">Loading your products...</div>
+                <div id="dashboard-products-empty" class="dashboard-status hidden">
+                    You don't have any approved products yet. Once your submission is reviewed and approved, it'll show up here.
+                </div>
+                <div id="dashboard-products-error" class="dashboard-status error hidden"></div>
+
+                <div id="dashboard-products-grid" class="dashboard-products-grid"></div>
+            </section>
+
         </div>
     </main>
 
+    <!-- Footer — matches every other page -->
     <footer>
         <div class="footer-top">
             <div class="footer-col brand-col">
                 <a href="/" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
                 <div class="footer-social">
                     <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
                     <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
@@ -127,9 +110,10 @@
                 <h4>Quick Links</h4>
                 <a href="/">Home</a>
                 <a href="/explore">Explore</a>
+                <a href="#">Ask AI</a>
+                <a href="/submit">Submit Product</a>
                 <a href="/about">About</a>
                 <a href="/contact">Contact</a>
-                <a href="/submit">Submit Product</a>
             </div>
             <div class="footer-col">
                 <h4>Community</h4>
@@ -144,6 +128,8 @@
         </div>
     </footer>
 
+    <!-- Scripts -->
     <script src="/static/js/home.js"></script>
+    <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

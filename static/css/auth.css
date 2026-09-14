@@ -1,215 +1,193 @@
 /* ==========================================================================
-   Authentication Pages Base
+   auth.css — Login / Sign Up pages
+   Styles .auth-page / .auth-card and everything inside them. Built entirely
+   off the variables already defined in style.css (--bg-card, --text-main,
+   --color-green, --border-color, etc.) so it follows your real light/dark
+   mode automatically via the .dark-mode class — no new tokens introduced.
    ========================================================================== */
+
 .auth-page {
+    min-height: calc(100vh - 220px); /* roughly viewport minus navbar + footer */
     display: flex;
-    justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 400px); /* Adjusts for header/footer */
-    padding: 4rem 1.5rem;
+    justify-content: center;
+    padding: 3rem 1.5rem;
     background-color: var(--bg-secondary);
 }
 
 .auth-card {
+    width: 100%;
+    max-width: 420px;
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2.5rem;
-    width: 100%;
-    max-width: 440px;
+    border-radius: 20px;
+    padding: 2.5rem 2.25rem;
     box-shadow: var(--card-shadow);
 }
 
-.auth-card h2 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: var(--text-main);
+/* Account type toggle (User / Developer) */
+.account-type-toggle {
+    display: flex;
+    gap: 4px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    padding: 4px;
+    margin-bottom: 1.5rem;
+}
+.account-type-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 0.55rem 0.6rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
     text-align: center;
-    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    transition: background-color 0.2s, color 0.2s;
+}
+.account-type-btn .account-type-sub {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+.account-type-btn.active {
+    background-color: var(--color-green);
+    color: #ffffff;
+}
+.account-type-btn:not(.active):hover {
+    color: var(--text-main);
+}
+
+.auth-card h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.4rem;
+    text-align: center;
 }
 
 .auth-subtitle {
-    text-align: center;
     color: var(--text-muted);
-    margin-bottom: 2rem;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
+    text-align: center;
+    margin-bottom: 1.75rem;
 }
 
-/* ==========================================================================
-   Form Elements
-   ========================================================================== */
+/* Alert banner (#auth-alert) */
+.alert {
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+}
+.alert.hidden { display: none; }
+.alert.error {
+    background-color: rgba(225, 29, 72, 0.1);
+    color: #be123c;
+    border: 1px solid rgba(225, 29, 72, 0.25);
+}
+.alert.success {
+    background-color: rgba(0, 135, 81, 0.1);
+    color: var(--color-green);
+    border: 1px solid rgba(0, 135, 81, 0.25);
+}
+.dark-mode .alert.error {
+    background-color: rgba(225, 29, 72, 0.15);
+    color: #fda4af;
+    border-color: rgba(225, 29, 72, 0.3);
+}
+.dark-mode .alert.success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Form */
 .form-group {
     margin-bottom: 1.25rem;
-    display: flex;
-    flex-direction: column;
 }
-
 .form-group label {
+    display: block;
+    font-size: 0.85rem;
     font-weight: 600;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
     color: var(--text-main);
+    margin-bottom: 0.4rem;
 }
-
 .form-group input {
-    padding: 0.75rem 1rem;
+    width: 100%;
+    padding: 0.7rem 0.9rem;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: var(--bg-main);
     color: var(--text-main);
     font-size: 0.95rem;
+    outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
-
+.form-group input::placeholder {
+    color: var(--text-muted);
+}
 .form-group input:focus {
-    outline: none;
     border-color: var(--color-blue);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.full-width {
-    width: 100%;
-    padding: 0.85rem;
-    font-size: 1rem;
-    margin-top: 1rem;
+/* Inline field validation */
+.field-error {
+    display: none;
+    color: #be123c;
+    font-size: 0.78rem;
+    margin-top: 0.4rem;
+}
+.dark-mode .field-error { color: #fda4af; }
+.form-group.has-error input {
+    border-color: #be123c;
+}
+.form-group.has-error .field-error {
+    display: block;
 }
 
-/* ==========================================================================
-   Footer & Alerts
-   ========================================================================== */
+.full-width { width: 100%; }
+button.full-width {
+    border: none;
+    cursor: pointer;
+    font-size: 0.98rem;
+    margin-top: 0.4rem;
+}
+
 .auth-footer {
     text-align: center;
     margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
 }
-
 .auth-link {
     color: var(--color-blue);
     font-weight: 600;
 }
-
 .auth-link:hover {
     text-decoration: underline;
 }
 
-.alert {
-    padding: 0.85rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.alert.hidden {
-    display: none;
-}
-
-.alert.error {
-    background-color: #fee2e2;
-    color: #b91c1c;
-    border: 1px solid #fca5a5;
-}
-
-/* Dark mode alert overrides */
-.dark-mode .alert.error {
-    background-color: rgba(185, 28, 28, 0.15);
-    color: #fca5a5;
-    border-color: rgba(248, 113, 113, 0.3);
-}
-
-@media (max-width: 480px) {
-    .auth-card {
-        padding: 2rem 1.5rem;
-    }
-}
-
-
 /* ==========================================================================
-   ADDED RESPONSIVE BREAKPOINTS (Appended Here)
+   Responsive
    ========================================================================== */
-
-/* 1. Large Desktop (1440px and up) */
-@media (min-width: 1440px) {
-    .auth-card {
-        padding: 3rem; /* Extra breathing room inside the card for huge screens */
-        max-width: 480px; /* Scales the form slightly wider so it doesn't look tiny */
-    }
-    .auth-card h2 {
-        font-size: 2rem;
-    }
-}
-
-/* 2. Laptop (max-width: 1024px) */
-@media (max-width: 1024px) {
-    .auth-page {
-        padding: 3.5rem 1.5rem;
-    }
-}
-
-/* 3. Tablet / iPad (max-width: 768px) */
-@media (max-width: 768px) {
-    .auth-page {
-        padding: 3rem 1rem; /* Reduces outer padding slightly on tablets */
-    }
-}
-
-/* 4. Android / Standard Mobile (max-width: 480px) - Enhances your existing rule */
 @media (max-width: 480px) {
     .auth-page {
         padding: 2rem 1rem;
     }
-    .auth-card h2 {
-        font-size: 1.5rem; /* Reduces heading size to prevent line-wrapping */
-    }
-    .auth-subtitle {
-        margin-bottom: 1.5rem;
-        font-size: 0.9rem;
-    }
-    .form-group input {
-        padding: 0.7rem 0.85rem; /* Makes input fields a bit tighter for mobile */
-    }
-    .full-width {
-        font-size: 0.95rem;
-    }
-}
-
-/* 5. Smallest iPhone / Narrow Mobile (max-width: 320px) */
-@media (max-width: 320px) {
-    .auth-page {
-        padding: 1.5rem 0.5rem; /* Maximizes usable screen space */
-    }
     .auth-card {
-        padding: 1.5rem 1rem; /* Extreme space-saving inside the card */
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
     }
     .auth-card h2 {
-        font-size: 1.25rem;
-    }
-    .auth-subtitle {
-        font-size: 0.8rem;
-        margin-bottom: 1.25rem;
-    }
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    .form-group label {
-        font-size: 0.85rem;
-    }
-    .form-group input {
-        padding: 0.6rem 0.75rem;
-        font-size: 0.85rem; /* Prevents text from being cut off in the input box */
-    }
-    .full-width {
-        padding: 0.75rem;
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-    }
-    .auth-footer {
-        font-size: 0.85rem;
-        padding-top: 1rem;
-        margin-top: 1rem;
+        font-size: 1.3rem;
     }
 }

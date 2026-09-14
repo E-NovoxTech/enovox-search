@@ -17,10 +17,10 @@ def get_current_developer(authorization: Optional[str] = Header(None), db: Sessi
     token = authorization.replace("Bearer ", "")
     developer_id = decode_token(token)
 
-    if not developer_id:
+    payload = decode_token(token)
+    if not payload or payload["type"] != "developer":
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-    developer = db.query(models.Developer).filter(models.Developer.id == developer_id).first()
+    developer = db.query(models.Developer).filter(models.Developer.id == payload["account_id"]).first()
     if not developer:
         raise HTTPException(status_code=401, detail="Developer not found")
 
@@ -41,7 +41,7 @@ def signup(data: schemas.DeveloperSignup, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_developer)
 
-    token = create_token(new_developer.id)
+    token = create_token(new_developer.id, "developer")
     return {"access_token": token}
 
 
@@ -51,7 +51,7 @@ def login(data: schemas.DeveloperLogin, db: Session = Depends(get_db)):
     if not developer or not verify_password(data.password, developer.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_token(developer.id)
+    token = create_token(new_developer.id, "developer")
     return {"access_token": token}
 
 

@@ -27,6 +27,7 @@
                 <a href="/explore">Explore</a>
                 <a href="/about">About Us</a>
                 <a href="/submit">Submit Tool</a>
+                <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/contact">Contact</a>
             </nav>
 
@@ -49,23 +50,40 @@
 
     <main class="auth-page">
         <div class="auth-card">
-            <h2>Create Developer Account</h2>
-            <p class="auth-subtitle">Join to list your tech products</p>
-            
+
+            <!-- Account type toggle: User (default) vs Developer -->
+            <div class="account-type-toggle" role="tablist" aria-label="Account type">
+                <button type="button" class="account-type-btn active" data-type="user" role="tab" aria-selected="true">
+                    User
+                    <span class="account-type-sub">Just here to search</span>
+                </button>
+                <button type="button" class="account-type-btn" data-type="developer" role="tab" aria-selected="false">
+                    Developer
+                    <span class="account-type-sub">I want to list my product</span>
+                </button>
+            </div>
+            <input type="hidden" id="account_type" value="user">
+
+            <h2 id="auth-title" data-user-text="Create Your Account" data-dev-text="Create Developer Account">Create Your Account</h2>
+            <p class="auth-subtitle" id="auth-subtitle" data-user-text="Join to search Nigerian tech with AI" data-dev-text="Join to list your tech products">Join to search Nigerian tech with AI</p>
+
             <div id="auth-alert" class="alert hidden"></div>
 
-            <form id="signup-form">
+            <form id="signup-form" novalidate>
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="developer@example.com">
+                    <input type="email" id="email" name="email" required placeholder="you@example.com">
+                    <span class="field-error" id="email-error"></span>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required minlength="6" placeholder="At least 6 characters">
+                    <input type="password" id="password" name="password" required minlength="8" placeholder="At least 8 characters">
+                    <span class="field-error" id="password-error"></span>
                 </div>
                 <div class="form-group">
                     <label for="confirm_password">Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required minlength="6" placeholder="Repeat your password">
+                    <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Repeat your password">
+                    <span class="field-error" id="confirm_password-error"></span>
                 </div>
                 <button type="submit" id="signup-btn" class="btn-primary full-width">Create Account</button>
             </form>
