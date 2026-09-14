@@ -188,6 +188,10 @@
     overflow-y: auto;
     z-index: 50;
 }
+
+.dev-notif-dropdown.hidden {
+    display: none !important;
+}
 .notif-dropdown-header {
     display: flex;
     justify-content: space-between;
