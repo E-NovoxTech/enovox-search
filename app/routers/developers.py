@@ -51,7 +51,7 @@ def login(data: schemas.DeveloperLogin, db: Session = Depends(get_db)):
     if not developer or not verify_password(data.password, developer.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    token = create_token(new_developer.id, "developer")
+    token = create_token(developer.id, "developer")
     return {"access_token": token}
 
 

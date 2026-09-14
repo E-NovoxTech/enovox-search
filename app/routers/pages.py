@@ -42,6 +42,9 @@ def privacy_page(request: Request):
 @router.get("/term")
 def term_page(request: Request):
     return templates.TemplateResponse(request=request, name="term.html")
+@router.get("/dashboard")
+def term_page(request: Request):
+    return templates.TemplateResponse(request=request, name="dashboard.html")
 
 # Added Auth and Admin Pages
 @router.get("/login")
