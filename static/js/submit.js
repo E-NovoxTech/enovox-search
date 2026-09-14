@@ -103,7 +103,12 @@
             twitter_url: form.twitter_url.value.trim(),
             linkedin_url: form.linkedin_url.value.trim(),
             instagram_url: form.instagram_url.value.trim(),
-            facebook_url: form.facebook_url.value.trim()
+            facebook_url: form.facebook_url.value.trim(),
+            // NEW fields — keywords is the hidden, comma-separated input that
+            // submit-tags.js keeps in sync as chips are added/removed.
+            keywords: form.keywords.value.trim(),
+            contact_email: form.contact_email.value.trim(),
+            github_url: form.github_url.value.trim() || null
         };
 
         const optionalFields = [
@@ -147,17 +152,23 @@
                 throw new Error(errorMsg);
             }
 
-            // Success!
-            form.reset();
-            showAlert('success', "Thanks! Your product is under review. We'll notify you once it's approved.");
-            
-            // Refresh the dashboard so the user immediately sees it in the "Under Review" list
-            loadDashboard(token);
+            // Success! Show a brief confirmation, then send them to the
+            // dashboard rather than staying on this page.
+            // NOTE: the current MVP dashboard only lists APPROVED products —
+            // it has no "pending" section — so this freshly-submitted item
+            // won't actually be visible there until an admin approves it.
+            // Worth adding a "pending" section to /dashboard later so this
+            // redirect doesn't feel like the submission vanished.
+            showAlert('success', "Thanks! Your product is under review. Taking you to your dashboard...");
+            submitBtn.textContent = 'Redirecting...';
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1200);
+            return;
 
         } catch (error) {
             console.error('Submission Error:', error);
             showAlert('error', error.message);
-        } finally {
             submitBtn.textContent = 'Submit Product';
             submitBtn.disabled = false;
         }

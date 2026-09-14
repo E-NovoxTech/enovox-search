@@ -242,7 +242,7 @@
         } catch (e) {
             // fall through to default below
         }
-        window.location.href = '/home';
+        window.location.href = '/';
     }
 
     /* ==========================================================================

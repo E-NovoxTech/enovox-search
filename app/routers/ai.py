@@ -95,7 +95,8 @@ def ask(request: AskRequest, http_request: Request, db: Session = Depends(get_db
                 models.Product.status == True,
                 models.Product.name.ilike(f"%{kw}%") |
                 models.Product.description.ilike(f"%{kw}%") |
-                models.Product.category.ilike(f"%{kw}%")
+                models.Product.category.ilike(f"%{kw}%") |
+                models.Product.keywords.ilike(f"%{kw}%")
             ).limit(5).all()
             for p in results:
                 if p.id not in seen_ids:

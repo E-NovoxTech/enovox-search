@@ -12,6 +12,20 @@
     <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
     <link rel="manifest" href="/static/assets/site.webmanifest">
+    <!-- Scoped styles for the new keyword tag-input widget only — kept
+         inline since I don't have submit.css to safely edit blind. Move
+         into submit.css whenever convenient; nothing else here depends on it. -->
+    <style>
+        .tag-input-wrap { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; border:1px solid var(--border-color); border-radius:10px; padding:.5rem .6rem; background-color:var(--bg-main); }
+        .tag-input-wrap:focus-within { border-color:var(--color-blue); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+        .tag-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+        .tag-chip { display:inline-flex; align-items:center; gap:.35rem; background-color:var(--color-green); color:#fff; padding:.25rem .6rem; border-radius:999px; font-size:.8rem; font-weight:600; }
+        .tag-chip button { background:none; border:none; color:#fff; cursor:pointer; font-weight:700; line-height:1; padding:0; }
+        #keyword-input { flex:1; min-width:120px; border:none; outline:none; background:transparent; color:var(--text-main); font-size:.9rem; padding:.3rem 0; }
+        .form-group.has-error .tag-input-wrap { border-color:#be123c; }
+        .field-error { color:#be123c; font-size:.78rem; margin-top:.35rem; display:block; }
+        .dark-mode .field-error { color:#fda4af; }
+    </style>
 </head>
 <body>
     <!-- Navigation Bar (Perfected version with all fixes) -->
@@ -122,6 +136,18 @@
                         </div>
                     </div>
 
+                    <!-- NEW: Keywords / Tags (required) -->
+                    <div class="form-group" id="keywords-wrap-group">
+                        <label for="keyword-input">Keywords / Tags *</label>
+                        <div class="tag-input-wrap" id="keywords-wrap">
+                            <div class="tag-chips" id="keyword-chips"></div>
+                            <input type="text" id="keyword-input" placeholder="Type a keyword and press Enter">
+                        </div>
+                        <input type="hidden" id="keywords" name="keywords">
+                        <small class="form-hint">Add up to 10 keywords that describe your product (e.g. invoicing, POS, payments) — helps users find you through Ask AI and search.</small>
+                        <span class="field-error" id="keywords-error"></span>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="website">Website URL *</label>
@@ -198,6 +224,19 @@
                         </div>
                     </div>
 
+                    <!-- NEW: Contact Email (required) + GitHub URL (optional) -->
+                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="contact_email">Contact Email *</label>
+                            <input type="email" id="contact_email" name="contact_email" required placeholder="support@yourcompany.com">
+                            <small class="form-hint">A public email users can reach you at — separate from your login email, in case you'd rather share a support/business address.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="github_url">GitHub URL (Optional)</label>
+                            <input type="url" id="github_url" name="github_url" placeholder="https://github.com/yourusername or https://github.com/yourorg/repo">
+                        </div>
+                    </div>
+
                     <div class="form-group agreement-check">
                         <label>
                             <input type="checkbox" id="agree-terms" name="agree_terms" required>
@@ -271,5 +310,6 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/home.js"></script>
     <script src="/static/js/submit.js"></script>
+    <script src="/static/js/submit-tags.js"></script>
 </body>
 </html>

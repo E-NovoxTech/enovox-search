@@ -18,6 +18,7 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
+    keywords = Column(String, nullable=True)
     category = Column(String, nullable=False)
     pricing = Column(String, nullable=True)
     website = Column(String, nullable=True)
@@ -41,6 +42,7 @@ class Product(Base):
     instagram_url = Column(String, nullable=True)
     facebook_url = Column(String, nullable=True)
     linkedin_url = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
 
 
 class Submission(Base):
@@ -51,6 +53,7 @@ class Submission(Base):
     company = Column(String, nullable=True)
     founder = Column(String, nullable=True)
     description = Column(Text, nullable=False)
+    keywords = Column(String, nullable=True)
     category = Column(String, nullable=False)
     website = Column(String, nullable=True)
     pricing = Column(String, nullable=True)
@@ -64,6 +67,8 @@ class Submission(Base):
     instagram_url = Column(String, nullable=True)
     facebook_url = Column(String, nullable=True)
     linkedin_url = Column(String, nullable=True)
+    github_url = Column(String, nullable=True)
+    contact_email = Column(String, nullable=True)
     status = Column(String, default="pending")
     rejection_reason = Column(Text, nullable=True)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)

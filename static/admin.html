@@ -241,10 +241,6 @@
                         <input type="text" name="name" required>
                     </div>
                     <div class="form-group">
-                        <label>Contact Email (For manual entry)</label>
-                        <input type="email" name="contact_email">
-                    </div>
-                    <div class="form-group">
                         <label>Category *</label>
                         <select name="category" required>
                             <option value="" disabled selected>Select a category</option>
@@ -259,6 +255,14 @@
                             <option value="Platform">Platform</option>
                             <option value="Tool">Tool</option>
                         </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Keywords / Tags *</label>
+                        <div class="tag-input-wrapper" id="keywords-tag-wrapper">
+                            <div class="tag-chip-list" id="keywords-chip-list"></div>
+                            <input type="text" id="keywords-tag-entry" placeholder="Type a keyword and press Enter or , (max 10)">
+                        </div>
+                        <div class="error-text hidden" id="keywords-error"></div>
                     </div>
                     <div class="form-group">
                         <label>Pricing *</label>
@@ -303,6 +307,16 @@
                     <div class="form-group">
                         <label>Company Name</label>
                         <input type="text" name="company_name" placeholder="e.g., Paystack Payments Limited">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Email *</label>
+                        <input type="email" name="contact_email" required>
+                        <div class="error-text hidden" id="contact-email-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>GitHub URL (Optional)</label>
+                        <input type="url" name="github_url" placeholder="https://github.com/username or https://github.com/org/repo">
+                        <div class="error-text hidden" id="github-url-error"></div>
                     </div>
                     <div class="form-group">
                         <label>X / Twitter URL</label>

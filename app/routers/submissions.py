@@ -81,6 +81,7 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
         slug=generate_slug(submission.name, db),
         name=submission.name,
         description=submission.description,
+        keywords=submission.keywords,
         category=submission.category,
         pricing=submission.pricing,
         website=submission.website,
@@ -96,7 +97,10 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
         instagram_url=submission.instagram_url,
         facebook_url=submission.facebook_url,
         linkedin_url=submission.linkedin_url,
+        contact_email=submission.contact_email,
+        github_url=submission.github_url,
         status=True,
+        
     )
     db.add(new_product)
 

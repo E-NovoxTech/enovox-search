@@ -54,6 +54,10 @@
     let currentDetailSubmissionId = null;
     let rejectContext = null; // { ids: [...] }
 
+    // Keywords/Tags entered in the manual "Add Product" modal. Reset on open.
+    let productKeywordTags = [];
+    const MAX_KEYWORD_TAGS = 10;
+
     // DOM Elements
     const loginOverlay = document.getElementById('admin-login-overlay');
     const dashboardLayout = document.getElementById('dashboard-layout');
@@ -122,6 +126,7 @@
         setupToolbars();
         setupSubmissionDetailModal();
         setupRejectReasonModal();
+        setupKeywordsTagInput();
         initNotifications();
     });
 
@@ -166,6 +171,8 @@
                 productForm.reset();
                 document.getElementById('edit_product_id').value = '';
                 document.getElementById('modal-title').textContent = 'Create New Product';
+                resetKeywordsTagInput();
+                clearProductFormErrors();
                 productModal.classList.remove('hidden');
             });
         }
@@ -180,20 +187,30 @@
         if (productForm) {
             productForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+
+                if (!validateProductForm()) {
+                    return;
+                }
+
                 const id = document.getElementById('edit_product_id').value;
                 const formData = new FormData(productForm);
                 const payload = Object.fromEntries(formData.entries());
 
+                // New fields: keywords (joined string, not array), contact_email, github_url
+                payload.keywords = productKeywordTags.join(', ');
+                payload.contact_email = productForm.contact_email.value.trim();
+                payload.github_url = productForm.github_url.value.trim();
+
                 [
                     'appstore_url',
                     'playstore_url',
-                    'contact_email',
                     'platform',
                     'company_name',
                     'twitter_url',
                     'linkedin_url',
                     'instagram_url',
-                    'facebook_url'
+                    'facebook_url',
+                    'github_url'
                 ].forEach(key => {
                     if (!payload[key] || payload[key].trim() === '') {
                         payload[key] = null;
@@ -225,6 +242,144 @@
                 }
             });
         }
+    }
+
+    /* ==========================================================================
+       Manual "Add Product" form: Keywords/Tags input + validation
+       ========================================================================== */
+    function setupKeywordsTagInput() {
+        const entry = document.getElementById('keywords-tag-entry');
+        if (!entry) return;
+
+        entry.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                addKeywordTag(entry.value);
+                entry.value = '';
+            } else if (e.key === 'Backspace' && entry.value === '' && productKeywordTags.length > 0) {
+                // Convenience: backspace on empty entry removes the last tag
+                removeKeywordTag(productKeywordTags.length - 1);
+            }
+        });
+
+        entry.addEventListener('blur', () => {
+            if (entry.value.trim() !== '') {
+                addKeywordTag(entry.value);
+                entry.value = '';
+            }
+        });
+    }
+
+    function addKeywordTag(rawValue) {
+        const value = (rawValue || '').trim().replace(/,+$/, '').trim();
+        if (value === '') return;
+
+        if (productKeywordTags.length >= MAX_KEYWORD_TAGS) {
+            showFieldError('keywords-error', `You can add up to ${MAX_KEYWORD_TAGS} keywords.`);
+            return;
+        }
+
+        const alreadyExists = productKeywordTags.some(t => t.toLowerCase() === value.toLowerCase());
+        if (alreadyExists) {
+            showFieldError('keywords-error', `"${value}" is already added.`);
+            return;
+        }
+
+        productKeywordTags.push(value);
+        clearFieldError('keywords-error');
+        renderKeywordTags();
+    }
+
+    function removeKeywordTag(index) {
+        productKeywordTags.splice(index, 1);
+        renderKeywordTags();
+    }
+
+    function renderKeywordTags() {
+        const list = document.getElementById('keywords-chip-list');
+        if (!list) return;
+        list.innerHTML = '';
+        productKeywordTags.forEach((tag, index) => {
+            const chip = document.createElement('span');
+            chip.className = 'tag-chip';
+            chip.innerHTML = `${escapeHTML(tag)} <button type="button" class="tag-chip-remove" aria-label="Remove ${escapeHTML(tag)}">&times;</button>`;
+            chip.querySelector('.tag-chip-remove').addEventListener('click', () => removeKeywordTag(index));
+            list.appendChild(chip);
+        });
+    }
+
+    function resetKeywordsTagInput() {
+        productKeywordTags = [];
+        renderKeywordTags();
+        const entry = document.getElementById('keywords-tag-entry');
+        if (entry) entry.value = '';
+    }
+
+    function isValidEmail(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    }
+
+    function isValidUrl(value) {
+        try {
+            new URL(value);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function validateProductForm() {
+        clearProductFormErrors();
+        let isValid = true;
+
+        // Keywords: at least 1 tag required. Also absorb anything still sitting
+        // in the entry box (user may have typed a tag but not pressed Enter).
+        const entry = document.getElementById('keywords-tag-entry');
+        if (entry && entry.value.trim() !== '') {
+            addKeywordTag(entry.value);
+            entry.value = '';
+        }
+        if (productKeywordTags.length === 0) {
+            showFieldError('keywords-error', 'Add at least one keyword or tag.');
+            isValid = false;
+        }
+
+        // Contact email: required + format
+        const contactEmail = productForm.contact_email.value.trim();
+        if (contactEmail === '') {
+            showFieldError('contact-email-error', 'Contact email is required.');
+            isValid = false;
+        } else if (!isValidEmail(contactEmail)) {
+            showFieldError('contact-email-error', 'Enter a valid email address.');
+            isValid = false;
+        }
+
+        // GitHub URL: optional, but must be a valid URL if provided
+        const githubUrl = productForm.github_url.value.trim();
+        if (githubUrl !== '' && !isValidUrl(githubUrl)) {
+            showFieldError('github-url-error', 'Enter a valid URL (e.g. https://github.com/username).');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    function showFieldError(elId, message) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.textContent = message;
+        el.classList.remove('hidden');
+    }
+
+    function clearFieldError(elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.textContent = '';
+        el.classList.add('hidden');
+    }
+
+    function clearProductFormErrors() {
+        ['keywords-error', 'contact-email-error', 'github-url-error'].forEach(clearFieldError);
     }
 
     /* ==========================================================================
@@ -557,12 +712,22 @@
 
             ['name', 'contact_email', 'category', 'product_type', 'pricing', 'user_count_range',
              'website', 'logo_url', 'appstore_url', 'playstore_url', 'founder', 'platform',
-             'company_name', 'twitter_url', 'linkedin_url', 'instagram_url', 'facebook_url', 'description'
+             'company_name', 'twitter_url', 'linkedin_url', 'instagram_url', 'facebook_url',
+             'github_url', 'description'
             ].forEach(field => {
                 if (productForm[field]) {
                     productForm[field].value = p[field] !== null ? p[field] : '';
                 }
             });
+
+            // Rehydrate the keywords tag input from the product's stored
+            // comma-separated string.
+            resetKeywordsTagInput();
+            if (p.keywords) {
+                p.keywords.split(',').map(k => k.trim()).filter(Boolean).forEach(k => productKeywordTags.push(k));
+                renderKeywordTags();
+            }
+            clearProductFormErrors();
 
             productModal.classList.remove('hidden');
         } catch (error) {

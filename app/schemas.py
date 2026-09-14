@@ -65,6 +65,7 @@ class SubmissionCreate(BaseModel):
     company: Optional[str] = None
     founder: str = Field(..., min_length=2, max_length=100)
     description: str = Field(..., min_length=20, max_length=1000)
+    keywords: str
     category: str
     website: Optional[str] = None
     pricing: Optional[str] = None
@@ -78,6 +79,8 @@ class SubmissionCreate(BaseModel):
     instagram_url: Optional[str] = None
     facebook_url: Optional[str] = None
     linkedin_url: Optional[str] = None
+    contact_email: str
+    github_url: Optional[str] = None
     
 class DeveloperSignup(BaseModel):
     email: EmailStr

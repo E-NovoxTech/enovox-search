@@ -5,6 +5,11 @@
    mode automatically via .dark-mode — no new tokens introduced.
    ========================================================================== */
 
+/* Missing from style.css — same fix as ai.css needed earlier. Without this,
+   every element with class="hidden" (loading text, empty state, error box)
+   renders visible all the time, regardless of what the fetch actually returns. */
+.hidden { display: none !important; }
+
 .dashboard-page {
     min-height: calc(100vh - 200px);
     background-color: var(--bg-secondary);
@@ -187,10 +192,6 @@
     max-height: 360px;
     overflow-y: auto;
     z-index: 50;
-}
-
-.dev-notif-dropdown.hidden {
-    display: none !important;
 }
 .notif-dropdown-header {
     display: flex;
