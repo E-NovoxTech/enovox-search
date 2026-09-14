@@ -59,6 +59,9 @@ def login(data: schemas.DeveloperLogin, db: Session = Depends(get_db)):
 def my_products(current_dev: models.Developer = Depends(get_current_developer), db: Session = Depends(get_db)):
     return db.query(models.Product).filter(models.Product.developer_id == current_dev.id).all()
 
+@router.get("/me")
+def get_my_account(current_dev: models.Developer = Depends(get_current_developer)):
+    return {"email": current_dev.email, "created_at": current_dev.created_at}
 
 @router.get("/admin/all")
 def list_all_developers(admin_key: str, db: Session = Depends(get_db)):

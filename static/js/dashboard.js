@@ -38,14 +38,11 @@
     });
 
     /* ==========================================================================
-       Developer notification tray — polls GET /developers/me/submissions,
+       Developer notification tray — polls GET /submissions/me,
        diffs each submission's status against what we last saw (stored in
        localStorage), and raises a notification when one flips to
        approved/rejected. Notifications themselves also persist in
        localStorage so they survive a refresh, same as the admin tray.
-       ASSUMPTION: GET /developers/me/submissions exists (Bearer auth),
-       returns objects with at least {id, name, status}. Confirm with
-       backend — if the path differs, only the fetch URL below changes.
        ========================================================================== */
     function initDevNotifications(token) {
         const NOTIF_KEY = 'enovox_dev_notifications';
@@ -103,7 +100,7 @@
 
         async function poll() {
             try {
-                const res = await fetch(`${API_URL}/developers/me/submissions`, {
+                const res = await fetch(`${API_URL}/submissions/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!res.ok) return;
