@@ -152,3 +152,16 @@ class UserSignup(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str  
+
+class VerifyEmail(BaseModel):
+    email: str
+    code: str
+    account_type: str
+
+class ResendCode(BaseModel):
+    email: str
+    account_type: str
+    
+class GoogleAuth(BaseModel):
+    credential: str
+    account_type: Optional[str] = None

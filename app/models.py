@@ -8,9 +8,12 @@ class Developer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
+    hashed_password = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)   
+    is_verified = Column(Boolean, default=False)
+    verification_code = Column(String, nullable=True)
+    verification_code_expires = Column(DateTime, nullable=True)
+    auth_provider = Column(String, default="password", nullable=True)
 
 class Product(Base):
     __tablename__ = "products"
@@ -78,8 +81,12 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_verified = Column(Boolean, default=False)
+    verification_code = Column(String, nullable=True)
+    verification_code_expires = Column(DateTime, nullable=True)
+    auth_provider = Column(String, default="password", nullable=True)
 
 
 class SearchUsage(Base):

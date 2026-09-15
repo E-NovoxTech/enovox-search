@@ -6,6 +6,9 @@ from .routers import products, submissions, pages, developers
 from fastapi.staticfiles import StaticFiles
 from app.routers import ai
 from app.routers import users
+from app.routers import verification
+from app.routers import google_auth
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -22,6 +25,8 @@ app.include_router(pages.router)
 app.include_router(developers.router)
 app.include_router(ai.router)
 app.include_router(users.router)
+app.include_router(verification.router)
+app.include_router(google_auth.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 

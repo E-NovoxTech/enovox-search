@@ -73,7 +73,7 @@ def product_page(slug: str, request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request=request, name="product.html", context={"product": product})
 @router.get("/sitemap.xml")
 def sitemap(db: Session = Depends(get_db)):
-    site_url = os.getenv("SITE_URL", "https://enovox-search.onrender.com")
+    site_url = os.getenv("SITE_URL", "https://search.enovoxtech.com")
 
     products = db.query(models.Product).filter(models.Product.status == True).all()
 
@@ -100,5 +100,5 @@ def sitemap(db: Session = Depends(get_db)):
 
 @router.get("/robots.txt")
 def robots():
-    content = "User-agent: *\nAllow: /\nSitemap: " + os.getenv("SITE_URL", "https://enovox-search.onrender.com") + "/sitemap.xml"
+    content = "User-agent: *\nAllow: /\nSitemap: " + os.getenv("SITE_URL", "https://search.enovoxtech.com") + "/sitemap.xml"
     return Response(content=content, media_type="text/plain")

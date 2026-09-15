@@ -38,7 +38,7 @@ def send_submission_alert(product_name: str, developer_email: str, category: str
     - Developer Email: {developer_email}
     
     Log in to your admin dashboard to approve or reject it:
-    https://enovox-search.onrender.com/admin
+    https://search.enovoxtech.com/admin
     """
 
     message = MIMEMultipart()

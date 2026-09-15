@@ -50,6 +50,7 @@
 
     <main class="auth-page">
         <div class="auth-card">
+            <div id="auth-form-view">
 
             <!-- Account type toggle: User (default) vs Developer -->
             <div class="account-type-toggle" role="tablist" aria-label="Account type">
@@ -91,6 +92,57 @@
             <div class="auth-footer">
                 <p>Already have an account? <a href="/login" class="auth-link">Log in</a></p>
             </div>
+
+            <div class="gsi-divider"><span>or</span></div>
+            <div id="google-signin-button"></div>
+            <div id="google-signin-error" class="alert hidden" style="margin-top:0.75rem;"></div>
+
+            </div><!-- /auth-form-view -->
+
+            <!-- Choose-account-type modal — only shown when Google sign-in
+                 hits a brand-new email with no account_type yet. -->
+            <div id="google-account-type-modal" class="gsi-modal-overlay hidden">
+                <div class="gsi-modal">
+                    <button type="button" class="gsi-modal-close" id="gsi-modal-close" aria-label="Close">&times;</button>
+                    <h3>Choose your account type</h3>
+                    <p class="auth-subtitle" style="margin-bottom:1.25rem;">One more step — tell us how you'll use Enovox Search.</p>
+                    <div class="gsi-modal-choices">
+                        <button type="button" class="account-type-btn gsi-choice-btn" data-type="user">
+                            User
+                            <span class="account-type-sub">Just here to search</span>
+                        </button>
+                        <button type="button" class="account-type-btn gsi-choice-btn" data-type="developer">
+                            Developer
+                            <span class="account-type-sub">I want to list my product</span>
+                        </button>
+                    </div>
+                    <div id="gsi-modal-error" class="alert hidden" style="margin-top:1rem;"></div>
+                </div>
+            </div>
+
+            <!-- Email verification screen — shown right after signup, or
+                 after a 403 "not verified" login attempt. Same markup/ids
+                 as login.html so auth.js's verify logic works identically. -->
+            <div id="verify-screen" class="hidden">
+                <h2>Verify Your Email</h2>
+                <p class="auth-subtitle" id="verify-message">We sent a 6-digit code to your email. Enter it below to continue.</p>
+
+                <div id="verify-alert" class="alert hidden"></div>
+
+                <form id="verify-form" novalidate>
+                    <div class="form-group">
+                        <label for="verify-code">Verification Code</label>
+                        <input type="text" id="verify-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
+                        <span class="field-error" id="verify-code-error"></span>
+                    </div>
+                    <button type="submit" id="verify-btn" class="btn-primary full-width">Verify</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Didn't get a code? <a href="#" id="resend-code-link" class="auth-link">Resend</a></p>
+                    <p class="field-error" id="resend-message"></p>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -130,5 +182,22 @@
     <!-- Scripts -->
     <script src="/static/js/home.js"></script>
     <script src="/static/js/auth.js"></script>
+
+    <!-- Google Sign-In. client_id below is a placeholder — swap in the real
+         one when you send it over. handleGoogleResponse is defined (and
+         exposed on window) in auth.js. -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: "861554047183-72jmrbvpsjjnknu9d2adukth7un0bips.apps.googleusercontent.com",
+                callback: handleGoogleResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("google-signin-button"),
+                { theme: "outline", size: "large", width: "100%" }
+            );
+        };
+    </script>
 </body>
 </html>

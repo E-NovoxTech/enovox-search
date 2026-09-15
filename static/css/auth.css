@@ -6,6 +6,11 @@
    mode automatically via the .dark-mode class — no new tokens introduced.
    ========================================================================== */
 
+/* Same missing-utility bug as ai.css/dashboard.css before it — auth.css only
+   had ".alert.hidden", not a standalone ".hidden", so class="hidden" on the
+   verify-screen wrapper (or anything else without .alert) would never hide. */
+.hidden { display: none !important; }
+
 .auth-page {
     min-height: calc(100vh - 220px); /* roughly viewport minus navbar + footer */
     display: flex;
@@ -174,6 +179,99 @@ button.full-width {
 }
 .auth-link:hover {
     text-decoration: underline;
+}
+.auth-link.disabled-link {
+    pointer-events: none;
+    opacity: 0.6;
+}
+#resend-message {
+    margin-top: 0.5rem;
+    color: var(--color-green);
+}
+#resend-message.resend-error {
+    color: #be123c;
+}
+.dark-mode #resend-message.resend-error {
+    color: #fda4af;
+}
+
+/* Google Sign-In divider + button + inline error */
+.gsi-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+.gsi-divider::before,
+.gsi-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: var(--border-color);
+}
+#google-signin-button {
+    display: flex;
+    justify-content: center;
+}
+
+/* Choose-account-type modal (Google new-account flow) */
+.gsi-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+.gsi-modal {
+    position: relative;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    padding: 2rem 1.75rem;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: var(--card-shadow);
+    text-align: center;
+}
+.gsi-modal h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.4rem;
+}
+.gsi-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.9rem;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.gsi-modal-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+.gsi-modal-choices .account-type-btn {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+.gsi-modal-choices .account-type-btn:hover {
+    background-color: var(--color-green);
+    color: #ffffff;
 }
 
 /* ==========================================================================
