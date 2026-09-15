@@ -8,11 +8,27 @@ from app.routers import ai
 from app.routers import users
 from app.routers import verification
 from app.routers import google_auth
-
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import RedirectResponse
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Enovox Search")
+OLD_HOST = "enovox-search.onrender.com"  
+NEW_DOMAIN = "https://search.enovoxtech.com"
+
+class RedirectOldDomainMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        host = request.headers.get("host", "")
+        if host == OLD_HOST:
+            new_url = f"{NEW_DOMAIN}{request.url.path}"
+            if request.url.query:
+                new_url += f"?{request.url.query}"
+            return RedirectResponse(url=new_url, status_code=301)
+        return await call_next(request)
+
+app.add_middleware(RedirectOldDomainMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
