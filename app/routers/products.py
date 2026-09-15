@@ -7,6 +7,7 @@ import os
 from .. import models, schemas
 from ..database import get_db
 from ..utils import generate_slug
+from ..indexnow_utils import submit_to_indexnow
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -136,6 +137,7 @@ def create_product(product: schemas.ProductBase, admin_key: str, db: Session = D
     db.add(new_product)
     db.commit()
     db.refresh(new_product)
+    submit_to_indexnow(f"/product/{new_product.slug}")
     return new_product
 
 

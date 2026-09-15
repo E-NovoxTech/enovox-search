@@ -6,6 +6,7 @@ from .. import models, schemas
 from ..database import get_db
 from ..utils import generate_slug, send_submission_alert
 from .developers import get_current_developer
+from ..indexnow_utils import submit_to_indexnow
 
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
 
@@ -100,13 +101,14 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
         contact_email=submission.contact_email,
         github_url=submission.github_url,
         status=True,
-        
     )
-    db.add(new_product)
 
+    db.add(new_product)
     submission.status = "approved"
     db.commit()
     db.refresh(new_product)
+
+    submit_to_indexnow(f"/product/{new_product.slug}")
 
     return {"message": f"{new_product.name} approved and now live.", "product_id": new_product.id, "slug": new_product.slug}
 
