@@ -3,6 +3,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from fastapi import Response
 import os
+from fastapi.responses import PlainTextResponse
 
 from .. import models
 from ..database import get_db
@@ -11,6 +12,9 @@ router = APIRouter(tags=["Pages"])
 templates = Jinja2Templates(directory="static")
 
 # Clean URL routes for all static pages
+@router.get("/ab18ee55ab8d4d5ba822aef73d159ea8.txt")
+def indexnow_key():
+    return PlainTextResponse("ab18ee55ab8d4d5ba822aef73d159ea8")
 @router.get("/")
 def home_page(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
