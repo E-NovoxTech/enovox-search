@@ -273,6 +273,12 @@
                             <option value="Paid">Paid</option>
                         </select>
                     </div>
+                    <div class="form-group" id="pricing-details-group">
+                        <label id="pricing-details-label">Pricing Details</label>
+                        <input type="text" name="pricing_details" id="pricing_details"
+                            placeholder="$5/mo, ₦5,000/month, Free tier + $10/mo Pro">
+                        <div class="error-text hidden" id="pricing-details-error"></div>
+                    </div>
                     <div class="form-group">
                         <label>User Count Range</label>
                         <select name="user_count_range">
@@ -384,5 +390,6 @@
 
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
+    <script src="/static/js/submit-tags.js"></script>
 </body>
 </html>

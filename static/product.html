@@ -78,9 +78,12 @@
                         <span class="category-pill pill-{{ product.category | lower | replace(' & ', '-') | replace(' ', '-') }}">
                             {{ product.category }}
                         </span>
-                        <span class="pricing-badge {{ 'free' if product.pricing | lower == 'free' else 'paid' }}">
+                                <span class="pricing-badge {{ 'free' if product.pricing | lower == 'free' else 'paid' }}">
                             {{ product.pricing }}
                         </span>
+                        {% if product.pricing_details %}
+                            <span class="text-muted pricing-details">{{ product.pricing_details }}</span>
+                        {% endif %}
                         {% if product.product_type %}
                             <span class="type-badge">{{ product.product_type }}</span>
                         {% endif %}

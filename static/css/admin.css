@@ -479,3 +479,55 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
         margin-bottom: 0.25rem;
     }
 }
+.tag-input-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: .5rem .6rem;
+    background-color: var(--bg-main);
+}
+.tag-input-wrapper:focus-within {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.tag-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+}
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    background-color: var(--color-green);
+    color: #fff;
+    padding: .25rem .6rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+.tag-chip-remove {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+}
+#keywords-tag-entry {
+    flex: 1;
+    min-width: 120px;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-main);
+    font-size: .9rem;
+    padding: .3rem 0;
+}
+.form-group.has-error .tag-input-wrapper {
+    border-color: #be123c;
+}

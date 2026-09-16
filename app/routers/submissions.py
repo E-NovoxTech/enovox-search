@@ -85,6 +85,7 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
         keywords=submission.keywords,
         category=submission.category,
         pricing=submission.pricing,
+        pricing_details=submission.pricing_details,
         website=submission.website,
         product_type=submission.product_type,
         logo_url=submission.logo_url,

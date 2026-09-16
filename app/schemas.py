@@ -8,6 +8,7 @@ class ProductBase(BaseModel):
     description: str
     category: str
     pricing: Optional[str] = None
+    pricing_details: Optional[str] = None
     website: Optional[str] = None
     platform: Optional[str] = None
     product_type: Optional[str] = None
@@ -69,6 +70,7 @@ class SubmissionCreate(BaseModel):
     category: str
     website: Optional[str] = None
     pricing: Optional[str] = None
+    pricing_details: Optional[str] = None
     product_type: Optional[str] = None
     email: Optional[EmailStr] = None
     logo_url: Optional[str] = None

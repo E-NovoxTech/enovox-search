@@ -26,6 +26,9 @@
         .form-group.has-error .tag-input-wrap { border-color:#be123c; }
         .field-error { color:#be123c; font-size:.78rem; margin-top:.35rem; display:block; }
         .dark-mode .field-error { color:#fda4af; }
+        /* NEW: error border for plain text/select inputs (pricing_details uses this,
+           since it isn't wrapped in .tag-input-wrap like the keywords widget is) */
+        .form-group.has-error input[type="text"] { border-color:#be123c; }
     </style>
 </head>
 <body>
@@ -163,6 +166,17 @@
                                 <option value="Paid">Paid</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- NEW: Pricing Details — required only when Pricing Model = Paid.
+                         Conditional required/optional logic + inline validation lives in submit.js
+                         (see setupPricingDetailsLogic / updatePricingDetailsRequirement). -->
+                    <div class="form-group" id="pricing-details-group">
+                        <label for="pricing_details" id="pricing-details-label">Pricing Details</label>
+                        <input type="text" id="pricing_details" name="pricing_details"
+                               placeholder="$5/mo, ₦5,000/month, Free tier + $10/mo Pro">
+                        <small class="form-hint">Give the actual pricing specifics. Required for paid products.</small>
+                        <span class="field-error" id="pricing-details-error"></span>
                     </div>
 
                     <div class="form-group">

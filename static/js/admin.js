@@ -16,6 +16,7 @@
         { key: 'category', label: 'Category', type: 'select', options: 'CATEGORIES' },
         { key: 'product_type', label: 'Product Type', type: 'select', options: 'PRODUCT_TYPES' },
         { key: 'pricing', label: 'Pricing', type: 'select', options: 'PRICING' },
+        { key: 'pricing_details', label: 'Pricing Details', type: 'text' },
         { key: 'user_count_range', label: 'User Count Range', type: 'select', options: 'USER_COUNT' },
         { key: 'website', label: 'Website URL', type: 'url' },
         { key: 'logo_url', label: 'Logo URL', type: 'url' },
@@ -127,6 +128,7 @@
         setupSubmissionDetailModal();
         setupRejectReasonModal();
         setupKeywordsTagInput();
+        setupPricingDetailsLogic();
         initNotifications();
     });
 
@@ -173,6 +175,7 @@
                 document.getElementById('modal-title').textContent = 'Create New Product';
                 resetKeywordsTagInput();
                 clearProductFormErrors();
+                updatePricingDetailsRequirement();
                 productModal.classList.remove('hidden');
             });
         }
@@ -200,6 +203,7 @@
                 payload.keywords = productKeywordTags.join(', ');
                 payload.contact_email = productForm.contact_email.value.trim();
                 payload.github_url = productForm.github_url.value.trim();
+                payload.pricing_details = productForm.pricing_details.value.trim();
 
                 [
                     'appstore_url',
@@ -315,6 +319,33 @@
         if (entry) entry.value = '';
     }
 
+    /* ==========================================================================
+       Manual "Add Product" form: Pricing Details — conditional required logic
+       Required when Pricing = "Paid", optional when "Free". Mirrors the same
+       logic used on the public submit page (submit.js).
+       ========================================================================== */
+    function setupPricingDetailsLogic() {
+        const pricingSelect = productForm ? productForm.querySelector('select[name="pricing"]') : null;
+        if (!pricingSelect) return;
+
+        pricingSelect.addEventListener('change', updatePricingDetailsRequirement);
+        updatePricingDetailsRequirement();
+    }
+
+    function updatePricingDetailsRequirement() {
+        const pricingSelect = productForm ? productForm.querySelector('select[name="pricing"]') : null;
+        const detailsInput = document.getElementById('pricing_details');
+        const detailsLabel = document.getElementById('pricing-details-label');
+        if (!pricingSelect || !detailsInput || !detailsLabel) return;
+
+        const isPaid = pricingSelect.value === 'Paid';
+        detailsLabel.textContent = isPaid ? 'Pricing Details *' : 'Pricing Details';
+
+        if (!isPaid || detailsInput.value.trim() !== '') {
+            clearFieldError('pricing-details-error');
+        }
+    }
+
     function isValidEmail(value) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
     }
@@ -354,6 +385,14 @@
             isValid = false;
         }
 
+        // Pricing details: required only when Pricing = Paid
+        const pricingValue = productForm.pricing.value;
+        const pricingDetailsValue = productForm.pricing_details.value.trim();
+        if (pricingValue === 'Paid' && pricingDetailsValue === '') {
+            showFieldError('pricing-details-error', 'Please specify pricing details for paid products.');
+            isValid = false;
+        }
+
         // GitHub URL: optional, but must be a valid URL if provided
         const githubUrl = productForm.github_url.value.trim();
         if (githubUrl !== '' && !isValidUrl(githubUrl)) {
@@ -379,7 +418,7 @@
     }
 
     function clearProductFormErrors() {
-        ['keywords-error', 'contact-email-error', 'github-url-error'].forEach(clearFieldError);
+        ['keywords-error', 'contact-email-error', 'pricing-details-error', 'github-url-error'].forEach(clearFieldError);
     }
 
     /* ==========================================================================
@@ -710,7 +749,7 @@
             document.getElementById('edit_product_id').value = p.id;
             document.getElementById('modal-title').textContent = 'Edit Product';
 
-            ['name', 'contact_email', 'category', 'product_type', 'pricing', 'user_count_range',
+            ['name', 'contact_email', 'category', 'product_type', 'pricing', 'pricing_details', 'user_count_range',
              'website', 'logo_url', 'appstore_url', 'playstore_url', 'founder', 'platform',
              'company_name', 'twitter_url', 'linkedin_url', 'instagram_url', 'facebook_url',
              'github_url', 'description'
@@ -728,6 +767,7 @@
                 renderKeywordTags();
             }
             clearProductFormErrors();
+            updatePricingDetailsRequirement();
 
             productModal.classList.remove('hidden');
         } catch (error) {
