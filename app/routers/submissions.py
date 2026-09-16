@@ -82,42 +82,74 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    new_product = models.Product(
-        slug=generate_slug(submission.name, db),
-        name=submission.name,
-        description=submission.description,
-        keywords=submission.keywords,
-        category=submission.category,
-        pricing=submission.pricing,
-        pricing_details=submission.pricing_details,
-        website=submission.website,
-        product_type=submission.product_type,
-        logo_url=submission.logo_url,
-        appstore_url=submission.appstore_url,
-        playstore_url=submission.playstore_url,
-        user_count_range=submission.user_count_range,
-        developer_id=submission.developer_id,
-        founder=submission.founder,
-        company_name=submission.company,
-        twitter_url=submission.twitter_url,
-        instagram_url=submission.instagram_url,
-        facebook_url=submission.facebook_url,
-        linkedin_url=submission.linkedin_url,
-        contact_email=submission.contact_email,
-        github_url=submission.github_url,
-        status=True,
-    )
+    if submission.product_id:
+        # This is an EDIT to an existing product — apply changes, republish
+        product = db.query(models.Product).filter(models.Product.id == submission.product_id).first()
+        if not product:
+            raise HTTPException(status_code=404, detail="Linked product not found")
 
-    db.add(new_product)
-    submission.status = "approved"
-    db.commit()
-    db.refresh(new_product)
+        editable_fields = [
+            "name", "description", "category", "pricing", "pricing_details",
+            "website", "product_type", "logo_url", "appstore_url", "playstore_url",
+            "user_count_range", "founder", "twitter_url",
+            "instagram_url", "facebook_url", "linkedin_url", "keywords",
+            "contact_email", "github_url"
+        ]
+        for field in editable_fields:
+            value = getattr(submission, field)
+            if value is not None:
+                setattr(product, field, value)
 
-    submit_to_indexnow(f"/product/{new_product.slug}")
+        if submission.company is not None:
+            product.company_name = submission.company
 
-    return {"message": f"{new_product.name} approved and now live.", "product_id": new_product.id, "slug": new_product.slug}
+        product.status = True
+        submission.status = "approved"
+        db.commit()
+        db.refresh(product)
 
+        submit_to_indexnow(f"/product/{product.slug}")
 
+        return {"message": f"Edit to {product.name} approved and live."}
+
+    else:
+        # Brand-new submission — your original logic, unchanged
+        new_product = models.Product(
+            slug=generate_slug(submission.name, db),
+            name=submission.name,
+            description=submission.description,
+            keywords=submission.keywords,
+            pricing_details=submission.pricing_details,
+            category=submission.category,
+            pricing=submission.pricing,
+            website=submission.website,
+            product_type=submission.product_type,
+            logo_url=submission.logo_url,
+            appstore_url=submission.appstore_url,
+            playstore_url=submission.playstore_url,
+            user_count_range=submission.user_count_range,
+            developer_id=submission.developer_id,
+            founder=submission.founder,
+            company_name=submission.company,
+            twitter_url=submission.twitter_url,
+            instagram_url=submission.instagram_url,
+            facebook_url=submission.facebook_url,
+            linkedin_url=submission.linkedin_url,
+            contact_email=submission.contact_email,
+            github_url=submission.github_url,
+            status=True,
+        )
+
+        db.add(new_product)
+        submission.status = "approved"
+        db.commit()
+        db.refresh(new_product)
+
+        submit_to_indexnow(f"/product/{new_product.slug}")
+
+        return {"message": f"{new_product.name} approved and now live.", "product_id": new_product.id, "slug": new_product.slug}
+    
+    
 @router.post("/{submission_id}/reject")
 def reject_submission(submission_id: int, admin_key: str, payload: schemas.RejectSubmission, db: Session = Depends(get_db)):
     if admin_key != os.getenv("ADMIN_KEY"):
@@ -129,6 +161,36 @@ def reject_submission(submission_id: int, admin_key: str, payload: schemas.Rejec
 
     submission.status = "rejected"
     submission.rejection_reason = payload.reason
+
+    # If this was an edit to an existing product, restore visibility — original data untouched
+    if submission.product_id:
+        product = db.query(models.Product).filter(models.Product.id == submission.product_id).first()
+        if product:
+            product.status = True
+
     db.commit()
 
     return {"message": f"{submission.name} rejected."}
+
+@router.put("/{submission_id}/edit")
+def edit_submission(
+    submission_id: int,
+    data: schemas.SubmissionEdit,
+    db: Session = Depends(get_db),
+    current_dev: models.Developer = Depends(get_current_developer)
+):
+    submission = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    if submission.developer_id != current_dev.id:
+        raise HTTPException(status_code=403, detail="Not your submission")
+    if submission.status != "pending":
+        raise HTTPException(status_code=400, detail="Only pending submissions can be edited")
+
+    update_data = data.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(submission, field, value)
+
+    db.commit()
+    db.refresh(submission)
+    return submission

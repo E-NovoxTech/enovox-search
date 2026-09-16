@@ -167,3 +167,24 @@ class ResendCode(BaseModel):
 class GoogleAuth(BaseModel):
     credential: str
     account_type: Optional[str] = None
+class SubmissionEdit(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    pricing: Optional[str] = None
+    pricing_details: Optional[str] = None
+    website: Optional[str] = None
+    product_type: Optional[str] = None
+    logo_url: Optional[str] = None
+    appstore_url: Optional[str] = None
+    playstore_url: Optional[str] = None
+    user_count_range: Optional[str] = None
+    founder: Optional[str] = None
+    company: Optional[str] = None
+    twitter_url: Optional[str] = None
+    instagram_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    keywords: Optional[str] = None
+    contact_email: Optional[str] = None
+    github_url: Optional[str] = None

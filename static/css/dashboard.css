@@ -95,6 +95,11 @@
 .dark-mode .dashboard-status.error {
     color: #fda4af;
 }
+.dashboard-status.info {
+    border-style: solid;
+    border-color: rgba(37, 99, 235, 0.3);
+    color: var(--color-blue);
+}
 
 .dashboard-products-grid {
     display: grid;
@@ -148,6 +153,115 @@
     color: var(--text-muted);
     margin-top: 0.2rem;
 }
+
+/* NEW: badges + edit button reused by both approved and pending cards */
+.dashboard-status-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    margin-top: 0.3rem;
+}
+.dashboard-status-badge.pending { background: rgba(202, 138, 4, 0.15); color: #a16207; }
+.dark-mode .dashboard-status-badge.pending { background: rgba(202, 138, 4, 0.25); color: #fde047; }
+.dashboard-status-badge.rejected { background: rgba(225, 29, 72, 0.12); color: #be123c; }
+.dark-mode .dashboard-status-badge.rejected { background: rgba(225, 29, 72, 0.2); color: #fda4af; }
+.dashboard-rejection-reason {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+.dashboard-edit-btn {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.4rem;
+    align-self: flex-start;
+}
+.dashboard-edit-btn:hover { background: var(--hover-bg); }
+.dashboard-product-card.non-link { cursor: default; }
+.dashboard-product-info { display: flex; flex-direction: column; }
+
+/* NEW: lightweight edit modal (mirrors the site's existing overlay/modal-box
+   pattern used elsewhere, rebuilt here since dashboard.html doesn't link
+   admin.css) */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+.modal-box {
+    background-color: var(--bg-card);
+    border-radius: 18px;
+    padding: 1.75rem;
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--card-shadow);
+}
+.modal-box.large { max-width: 640px; }
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.form-hint { display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; }
+
+/* Keyword tag-input widget (mirrors submit.html's inline version) */
+.tag-input-wrap { display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; border:1px solid var(--border-color); border-radius:10px; padding:.5rem .6rem; background-color:var(--bg-main); }
+.tag-input-wrap:focus-within { border-color: var(--color-blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.tag-chips { display:flex; flex-wrap:wrap; gap:.4rem; }
+.tag-chip { display:inline-flex; align-items:center; gap:.35rem; background-color:var(--color-green); color:#fff; padding:.25rem .6rem; border-radius:999px; font-size:.8rem; font-weight:600; }
+.tag-chip button { background:none; border:none; color:#fff; cursor:pointer; font-weight:700; line-height:1; padding:0; }
+#edit_keyword-input { flex:1; min-width:120px; border:none; outline:none; background:transparent; color:var(--text-main); font-size:.9rem; padding:.3rem 0; }
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+.modal-header h2 { font-size: 1.15rem; font-weight: 700; color: var(--text-main); }
+.close-btn { background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer; line-height: 1; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+.btn-secondary { background: var(--bg-secondary); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.55rem 1.1rem; border-radius: 8px; cursor: pointer; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem; }
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+.field-error {
+    display: none;
+    color: #be123c;
+    font-size: 0.78rem;
+    margin-top: 0.35rem;
+}
+.dark-mode .field-error { color: #fda4af; }
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error .tag-input-wrap {
+    border-color: #be123c;
+}
+.form-group.has-error .field-error { display: block; }
 
 /* Notification tray (mirrors admin dashboard's bell/dropdown pattern) */
 .dev-notif-wrapper {

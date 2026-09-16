@@ -77,6 +77,7 @@ class Submission(Base):
     status = Column(String, default="pending")
     rejection_reason = Column(Text, nullable=True)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
     
 class User(Base):
     __tablename__ = "users"

@@ -4,6 +4,8 @@ from sqlalchemy import or_, func
 from typing import Optional, List
 import os
 
+from app.routers.developers import get_current_developer
+
 from .. import models, schemas
 from ..database import get_db
 from ..utils import generate_slug
@@ -202,3 +204,32 @@ def deactivate_product(product_id: int, admin_key: str, db: Session = Depends(ge
     product.status = False
     db.commit()
     return {"message": f"{product.name} deactivated (hidden from public listing)."}
+@router.put("/me/{product_id}/edit")
+def edit_my_product(
+    product_id: int,
+    data: schemas.SubmissionEdit,
+    db: Session = Depends(get_db),
+    current_dev: models.Developer = Depends(get_current_developer)
+):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if product.developer_id != current_dev.id:
+        raise HTTPException(status_code=403, detail="Not your product")
+
+    update_data = data.dict(exclude_unset=True)
+
+    edit_submission = models.Submission(
+        **update_data,
+        email=current_dev.email,
+        developer_id=current_dev.id,
+        status="pending",
+        product_id=product.id
+    )
+    db.add(edit_submission)
+
+    product.status = False  # unpublish while edit is under review
+    db.commit()
+    db.refresh(edit_submission)
+
+    return {"message": "Edit submitted for review. Product is temporarily hidden until approved.", "submission_id": edit_submission.id}
