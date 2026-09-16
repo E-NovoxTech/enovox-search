@@ -6,6 +6,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 from datetime import date
+import resend
+
+resend.api_key = os.getenv("RESEND_API_KEY")
 
 
 def generate_slug(name: str, db: Session) -> str:
@@ -20,42 +23,31 @@ def generate_slug(name: str, db: Session) -> str:
     return slug
 
 
+
 def send_submission_alert(product_name: str, developer_email: str, category: str):
-    sender_email = os.getenv("EMAIL_SENDER")
-    sender_password = os.getenv("EMAIL_PASSWORD")
-    admin_email = os.getenv("ADMIN_EMAIL", sender_email)
-    
-    if not sender_email or not sender_password:
-        print("Email credentials not configured. Skipping notification.")
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not admin_email:
+        print("ADMIN_EMAIL not configured. Skipping notification.")
         return
 
-    subject = f"🚀 New Product Submission: {product_name}"
-    body = f"""
-    A new product has been submitted to Enovox Search and is waiting for your review!
-    
-    - Product Name: {product_name}
-    - Category: {category}
-    - Developer Email: {developer_email}
-    
-    Log in to your admin dashboard to approve or reject it:
-    https://search.enovoxtech.com/admin
-    """
-
-    message = MIMEMultipart()
-    message["From"] = sender_email
-    message["To"] = admin_email
-    message["Subject"] = subject
-    message.attach(MIMEText(body, "plain"))
-
     try:
-        with smtplib.SMTP(os.getenv("SMTP_SERVER", "smtp.gmail.com"), int(os.getenv("SMTP_PORT", 587))) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, admin_email, message.as_string())
+        resend.Emails.send({
+            "from": os.getenv("EMAIL_FROM"),
+            "to": admin_email,
+            "subject": f"🚀 New Product Submission: {product_name}",
+            "html": f"""
+                <p>A new product has been submitted to Enovox Search and is waiting for your review!</p>
+                <ul>
+                    <li>Product Name: {product_name}</li>
+                    <li>Category: {category}</li>
+                    <li>Developer Email: {developer_email}</li>
+                </ul>
+                <p><a href="https://search.enovoxtech.com/admin">Log in to your admin dashboard</a></p>
+            """
+        })
         print("Admin email notification sent successfully.")
     except Exception as e:
-        print(f"Failed to send email notification: {e}")
-        
+        print(f"Failed to send email notification: {e}") 
 
 
 def check_and_increment_usage(db: Session, identifier: str, limit: int) -> bool:

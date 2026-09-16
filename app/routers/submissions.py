@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import os
+from fastapi import BackgroundTasks
+
 
 from .. import models, schemas
 from ..database import get_db
@@ -11,9 +13,11 @@ from ..indexnow_utils import submit_to_indexnow
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
 
 
+
 @router.post("/")
 def submit_product(
     submission: schemas.SubmissionCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_dev: models.Developer = Depends(get_current_developer)
 ):
@@ -23,15 +27,15 @@ def submit_product(
     db.add(new_submission)
     db.commit()
     db.refresh(new_submission)
-    
-    # Trigger email alert to admin
-    send_submission_alert(
+
+    background_tasks.add_task(
+        send_submission_alert,
         product_name=new_submission.name,
         developer_email=current_dev.email,
         category=new_submission.category
     )
-    return {"message": "Submission received. We'll review it shortly.", "id": new_submission.id}
 
+    return {"message": "Submission received. We'll review it shortly.", "id": new_submission.id}
 
 @router.get("/")
 def list_submissions(admin_key: str, db: Session = Depends(get_db)):
