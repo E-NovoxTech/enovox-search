@@ -1,18 +1,25 @@
 /**
  * js/product.js
  * Fetches and renders the Similar Products grid on the product detail page.
+ * Also handles: Claim Product modal, Share/Copy popover, and appending a
+ * tracking param to the outbound "Visit Website" link.
  */
 
 (function() {
     const API_URL = "";
+    const TOKEN_KEY = 'enovox_dev_token';
+    const ACCOUNT_TYPE_KEY = 'enovox_account_type';
 
     document.addEventListener('DOMContentLoaded', () => {
         const grid = document.getElementById('similar-products-grid');
-        if (!grid) return;
+        if (grid) {
+            const productId = grid.getAttribute('data-product-id');
+            if (productId) fetchSimilarProducts(productId, grid);
+        }
 
-        // Retrieve the product ID injected by Jinja2
-        const productId = grid.getAttribute('data-product-id');
-        if (productId) fetchSimilarProducts(productId, grid);
+        setupOutboundTracking();
+        setupSharePopover();
+        setupClaimModal();
     });
 
     async function fetchSimilarProducts(id, container) {
@@ -71,6 +78,228 @@
         } catch (error) {
             console.error(error);
             container.innerHTML = ''; // Silently fail and hide section to maintain clean UI
+        }
+    }
+
+    /* ==========================================================================
+       NEW: Outbound tracking param on the "Visit Website" link
+       ========================================================================== */
+    function appendTrackingParams(url) {
+        if (!url) return url;
+        const separator = url.includes('?') ? '&' : '?';
+        return `${url}${separator}utm_source=enovoxsearch&utm_medium=referral`;
+    }
+
+    function setupOutboundTracking() {
+        const link = document.getElementById('visit-website-btn');
+        if (!link) return;
+        const originalHref = link.getAttribute('href');
+        link.setAttribute('href', appendTrackingParams(originalHref));
+    }
+
+    /* ==========================================================================
+       NEW: Share + copy popover
+       Shares this page's own URL (not the product's external website), so
+       no tracking param is appended here — that's scoped to outbound links
+       to the product's real site per the "TRACKING PARAMETER ON OUTBOUND
+       LINKS" spec, and this link isn't outbound.
+       ========================================================================== */
+    function setupSharePopover() {
+        const shareBtn = document.getElementById('share-product-btn');
+        const popover = document.getElementById('share-popover');
+        const urlTextEl = document.getElementById('share-url-text');
+        const copyBtn = document.getElementById('copy-share-url-btn');
+        const copyConfirm = document.getElementById('copy-confirm-msg');
+        if (!shareBtn || !popover || !urlTextEl) return;
+
+        const pageUrl = window.location.origin + window.location.pathname;
+        urlTextEl.textContent = pageUrl;
+        urlTextEl.title = pageUrl; // full URL on hover even though it's visually truncated
+
+        // Product name is already rendered by Jinja2 — reused here rather
+        // than adding a new data attribute for it.
+        const nameEl = document.querySelector('.product-name');
+        const productName = nameEl ? nameEl.textContent.trim() : 'this product';
+        const encodedUrl = encodeURIComponent(pageUrl);
+        const shareText = encodeURIComponent(`Check out ${productName} on Enovox Search`);
+
+        const whatsappLink = document.getElementById('share-whatsapp');
+        const xLink = document.getElementById('share-x');
+        const linkedinLink = document.getElementById('share-linkedin');
+        if (whatsappLink) whatsappLink.href = `https://wa.me/?text=${shareText}%20${encodedUrl}`;
+        if (xLink) xLink.href = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${shareText}`;
+        if (linkedinLink) linkedinLink.href = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+
+        shareBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            popover.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!popover.contains(e.target) && e.target !== shareBtn) {
+                popover.classList.add('hidden');
+            }
+        });
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(pageUrl);
+                    if (copyConfirm) {
+                        copyConfirm.classList.remove('hidden');
+                        setTimeout(() => copyConfirm.classList.add('hidden'), 2000);
+                    }
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                }
+            });
+        }
+    }
+
+    /* ==========================================================================
+       NEW: Claim product modal
+       ASSUMPTION: not-logged-in / wrong-account-type users are sent to
+       /login with ?type=developer&redirect=<this page> query params. These
+       params are NOT currently read by login.html/signup.html/auth.js — I
+       only touched product.html/.css/.js for this task, so the "pre-select
+       Developer" and "return here after login" behavior described in the
+       spec needs a small follow-up edit to those auth files to actually
+       take effect. Harmless to include now either way.
+       ========================================================================== */
+    function setupClaimModal() {
+        const claimBtn = document.getElementById('claim-product-btn');
+        const modal = document.getElementById('claim-modal');
+        const closeBtn = document.getElementById('claim-modal-close');
+        const cancelBtn = document.getElementById('claim-modal-cancel');
+        const form = document.getElementById('claim-form');
+        if (!claimBtn || !modal || !form) return;
+
+        claimBtn.addEventListener('click', () => handleClaimClick(claimBtn));
+        closeBtn.addEventListener('click', closeClaimModal);
+        cancelBtn.addEventListener('click', closeClaimModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeClaimModal(); });
+        form.addEventListener('submit', (e) => handleClaimSubmit(e, claimBtn));
+    }
+
+    function handleClaimClick(claimBtn) {
+        const token = localStorage.getItem(TOKEN_KEY);
+        const accountType = localStorage.getItem(ACCOUNT_TYPE_KEY);
+
+        // Not logged in, or logged in as a User (not Developer) — claiming
+        // requires a developer account per the backend contract.
+        if (!token || accountType !== 'developer') {
+            const redirectTo = window.location.pathname;
+            window.location.href = `/login?type=developer&redirect=${encodeURIComponent(redirectTo)}`;
+            return;
+        }
+
+        openClaimModal(claimBtn.getAttribute('data-product-id'), token);
+    }
+
+    async function openClaimModal(productId, token) {
+        const modal = document.getElementById('claim-modal');
+        const form = document.getElementById('claim-form');
+        const alertEl = document.getElementById('claim-modal-alert');
+
+        form.reset();
+        form.dataset.productId = productId;
+        alertEl.className = 'alert hidden';
+        alertEl.textContent = '';
+        setClaimFormDisabled(false);
+        document.getElementById('claim-modal-submit').textContent = 'Submit Claim';
+
+        modal.classList.remove('hidden');
+
+        // Pre-fill email from the account, if available (the JWT itself
+        // doesn't carry email — confirmed earlier — so this reads the real
+        // profile endpoint instead).
+        try {
+            const res = await fetch(`${API_URL}/developers/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const emailInput = document.getElementById('claim_email');
+                if (data.email && emailInput) emailInput.value = data.email;
+            }
+        } catch (err) {
+            // Non-fatal — email field just stays editable/blank.
+        }
+    }
+
+    function closeClaimModal() {
+        document.getElementById('claim-modal').classList.add('hidden');
+    }
+
+    function setClaimFormDisabled(disabled) {
+        const form = document.getElementById('claim-form');
+        if (!form) return;
+        Array.from(form.elements).forEach(el => { el.disabled = disabled; });
+    }
+
+    async function handleClaimSubmit(e, claimBtn) {
+        e.preventDefault();
+        const form = e.target;
+        const alertEl = document.getElementById('claim-modal-alert');
+        const submitBtn = document.getElementById('claim-modal-submit');
+        const token = localStorage.getItem(TOKEN_KEY);
+        const productId = form.dataset.productId;
+
+        if (!token || !productId) return;
+
+        alertEl.className = 'alert hidden';
+        alertEl.textContent = '';
+
+        const payload = {
+            name: form.name.value.trim(),
+            email: form.email.value.trim(),
+            role: form.role.value,
+            social_url: form.social_url.value.trim() || null
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        try {
+            const res = await fetch(`${API_URL}/products/${productId}/claim`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data.detail || 'Could not submit your claim. Please try again.');
+            }
+
+            // Success (auto_verified true or false) — show the returned
+            // message, then close the modal and disable the form so a
+            // second submit can't fire while it's closing.
+            alertEl.textContent = data.message || 'Claim submitted.';
+            alertEl.className = 'alert success';
+            setClaimFormDisabled(true);
+            submitBtn.textContent = 'Done';
+
+            setTimeout(() => {
+                closeClaimModal();
+                if (data.auto_verified) {
+                    // Ownership was verified immediately — the Claim button
+                    // itself has no way to know this without a page reload,
+                    // since visibility is server-controlled by developer_id.
+                    claimBtn.textContent = 'Ownership verified';
+                    claimBtn.disabled = true;
+                }
+            }, 1800);
+
+        } catch (err) {
+            alertEl.textContent = err.message;
+            alertEl.className = 'alert error';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Claim';
         }
     }
 

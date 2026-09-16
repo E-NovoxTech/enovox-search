@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from typing import Optional, List
 import os
+from urllib.parse import urlparse
+from fastapi import BackgroundTasks
+from ..utils import send_claim_alert
+
 
 from app.routers.developers import get_current_developer
 
@@ -204,6 +208,57 @@ def deactivate_product(product_id: int, admin_key: str, db: Session = Depends(ge
     product.status = False
     db.commit()
     return {"message": f"{product.name} deactivated (hidden from public listing)."}
+
+
+@router.get("/admin/claims")
+def list_pending_claims(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    return db.query(models.ClaimRequest).filter(models.ClaimRequest.status == "pending").all()
+
+
+@router.post("/admin/claims/{claim_id}/approve")
+def approve_claim(claim_id: int, admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    claim = db.query(models.ClaimRequest).filter(models.ClaimRequest.id == claim_id).first()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if claim.status != "pending":
+        raise HTTPException(status_code=400, detail="Claim already processed")
+
+    product = db.query(models.Product).filter(models.Product.id == claim.product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    product.developer_id = claim.developer_id
+    claim.status = "approved"
+    db.commit()
+
+    return {"message": f"Claim approved. {product.name} is now owned by developer #{claim.developer_id}."}
+
+
+@router.post("/admin/claims/{claim_id}/reject")
+def reject_claim(claim_id: int, admin_key: str, payload: schemas.RejectSubmission, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    claim = db.query(models.ClaimRequest).filter(models.ClaimRequest.id == claim_id).first()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if claim.status != "pending":
+        raise HTTPException(status_code=400, detail="Claim already processed")
+
+    claim.status = "rejected"
+    claim.rejection_reason = payload.reason
+    db.commit()
+
+    return {"message": "Claim rejected."}
+
+
+
 @router.put("/me/{product_id}/edit")
 def edit_my_product(
     product_id: int,
@@ -233,3 +288,70 @@ def edit_my_product(
     db.refresh(edit_submission)
 
     return {"message": "Edit submitted for review. Product is temporarily hidden until approved.", "submission_id": edit_submission.id}
+
+
+def extract_domain(url: str) -> str:
+    if not url:
+        return ""
+    parsed = urlparse(url if "://" in url else f"https://{url}")
+    domain = parsed.netloc.lower()
+    return domain.replace("www.", "")
+
+
+@router.post("/{product_id}/claim")
+def claim_product(
+    product_id: int,
+    background_tasks: BackgroundTasks,
+    data: schemas.ClaimSubmit,
+    db: Session = Depends(get_db),
+    current_dev: models.Developer = Depends(get_current_developer)
+):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if product.developer_id is not None:
+        raise HTTPException(status_code=400, detail="This product already has an owner")
+
+    existing_claim = db.query(models.ClaimRequest).filter(
+        models.ClaimRequest.product_id == product_id,
+        models.ClaimRequest.developer_id == current_dev.id,
+        models.ClaimRequest.status == "pending"
+    ).first()
+    if existing_claim:
+        raise HTTPException(status_code=400, detail="You already have a pending claim on this product")
+
+    claimant_domain = extract_domain(data.email.split("@")[-1])
+    product_domain = extract_domain(product.website)
+
+    auto_verified = claimant_domain and product_domain and claimant_domain == product_domain
+
+    new_claim = models.ClaimRequest(
+        product_id=product_id,
+        developer_id=current_dev.id,
+        name=data.name,
+        email=data.email,
+        role=data.role,
+        social_url=data.social_url,
+        status="approved" if auto_verified else "pending"
+    )
+    db.add(new_claim)
+
+    if auto_verified:
+        product.developer_id = current_dev.id
+        db.commit()
+        db.refresh(product)
+        return {"message": "Ownership verified automatically — you now manage this listing.", "auto_verified": True}
+    else:
+        db.commit()
+        db.refresh(new_claim)
+        # Notify admin
+        
+        background_tasks.add_task(
+            send_claim_alert,
+            product_name=product.name,
+            claimant_name=data.name,
+            claimant_email=data.email,
+            role=data.role
+        )
+        return {"message": "Claim submitted for review. We'll verify ownership and get back to you.", "auto_verified": False}

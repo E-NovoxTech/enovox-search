@@ -73,8 +73,36 @@
                     {% endif %}
                 </div>
                 <div class="product-title-group">
-                    <h1 class="product-name">{{ product.name }}</h1>
-                    <div class="product-badges">
+                    <div class="product-name-row">
+                        <h1 class="product-name">{{ product.name }}</h1>
+                        <!-- NEW: share icon -->
+                        <button type="button" id="share-product-btn" class="icon-btn share-icon-btn" aria-label="Share this product">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                            <span class="icon-tooltip">Share</span>
+                        </button>
+                    </div>
+                    <!-- NEW: share popover — copy link + WhatsApp/X/LinkedIn -->
+                    <div id="share-popover" class="share-popover hidden">
+                        <div class="share-url-row">
+                            <span id="share-url-text" class="share-url-text"></span>
+                            <button type="button" id="copy-share-url-btn" class="icon-btn" aria-label="Copy link">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <span id="copy-confirm-msg" class="copy-confirm hidden">Copied!</span>
+                        </div>
+                        <div class="share-menu-row">
+                            <a id="share-whatsapp" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </a>
+                            <a id="share-x" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
+                                <i class="fa-brands fa-x-twitter"></i>
+                            </a>
+                            <a id="share-linkedin" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+                                <i class="fa-brands fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="product-badges" style="margin-top: 10px;">
                         <span class="category-pill pill-{{ product.category | lower | replace(' & ', '-') | replace(' ', '-') }}">
                             {{ product.category }}
                         </span>
@@ -91,7 +119,10 @@
                 </div>
             </div>
             <div class="product-primary-action">
-                <a href="{{ product.website }}" target="_blank" rel="noopener noreferrer" class="btn-primary btn-large">Visit Website <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left: 8px; font-size: 0.85em;"></i></a>
+                <a id="visit-website-btn" href="{{ product.website }}" target="_blank" rel="noopener noreferrer" class="btn-primary btn-large">Visit Website <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left: 8px; font-size: 0.85em;"></i></a>
+                {% if not product.developer_id %}
+                    <button id="claim-product-btn" data-product-id="{{ product.id }}" class="btn-secondary btn-large">Claim this product</button>
+                {% endif %}
             </div>
         </div>
 
@@ -156,6 +187,46 @@
             </div>
         </div>
     </main>
+
+    <!-- NEW: Claim product modal -->
+    <div id="claim-modal" class="overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2>Claim This Product</h2>
+                <button type="button" id="claim-modal-close" class="close-btn" aria-label="Close">&times;</button>
+            </div>
+            <div id="claim-modal-alert" class="alert hidden"></div>
+            <form id="claim-form" novalidate>
+                <div class="form-group">
+                    <label for="claim_name">Your Name</label>
+                    <input type="text" id="claim_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="claim_email">Email</label>
+                    <input type="email" id="claim_email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="claim_role">Your Role</label>
+                    <select id="claim_role" name="role" required>
+                        <option value="" disabled selected>Select your role</option>
+                        <option value="Founder">Founder</option>
+                        <option value="Co-founder">Co-founder</option>
+                        <option value="Owner">Owner</option>
+                        <option value="Team Member">Team Member</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="claim_social_url">LinkedIn / Social URL (Optional)</label>
+                    <input type="url" id="claim_social_url" name="social_url" placeholder="https://linkedin.com/in/...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="claim-modal-cancel" class="btn-secondary">Cancel</button>
+                    <button type="submit" id="claim-modal-submit" class="btn-primary">Submit Claim</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer>

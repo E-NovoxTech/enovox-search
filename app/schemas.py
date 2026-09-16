@@ -188,3 +188,10 @@ class SubmissionEdit(BaseModel):
     keywords: Optional[str] = None
     contact_email: Optional[str] = None
     github_url: Optional[str] = None
+
+
+class ClaimSubmit(BaseModel):
+    name: str
+    email: str
+    role: str
+    social_url: Optional[str] = None

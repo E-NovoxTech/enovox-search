@@ -1,5 +1,7 @@
 import re
 from sqlalchemy.orm import Session
+
+from app.email_utils import EMAIL_FROM
 from . import models
 import smtplib
 from email.mime.text import MIMEText
@@ -68,3 +70,29 @@ def check_and_increment_usage(db: Session, identifier: str, limit: int) -> bool:
     usage.count += 1
     db.commit()
     return True
+
+def send_claim_alert(product_name: str, claimant_name: str, claimant_email: str, role: str):
+    admin_email = os.getenv("ADMIN_EMAIL")
+    if not admin_email:
+        print("ADMIN_EMAIL not configured. Skipping notification.")
+        return
+
+    try:
+        resend.Emails.send({
+            "from": EMAIL_FROM,
+            "to": admin_email,
+            "subject": f"🔎 Ownership Claim Needs Review: {product_name}",
+            "html": f"""
+                <p>Someone is claiming ownership of a product and their email domain didn't auto-match.</p>
+                <ul>
+                    <li>Product: {product_name}</li>
+                    <li>Claimant Name: {claimant_name}</li>
+                    <li>Claimant Email: {claimant_email}</li>
+                    <li>Role: {role}</li>
+                </ul>
+                <p><a href="https://search.enovoxtech.com/admin">Review in admin dashboard</a></p>
+            """
+        })
+        print("Claim alert email sent.")
+    except Exception as e:
+        print(f"Failed to send claim alert: {e}")

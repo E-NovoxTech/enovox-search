@@ -60,6 +60,108 @@
     line-height: 1.2;
 }
 
+/* NEW: wraps the title + share icon on one row */
+.product-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    position: relative;
+}
+.product-name-row .product-name { margin-bottom: 0; }
+.share-icon-btn { flex-shrink: 0; margin-top: -0.4rem; position: relative; }
+
+/* NEW: small hover tooltip on the share icon */
+.icon-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1e293b;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 10;
+}
+.icon-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+}
+.share-icon-btn:hover .icon-tooltip { opacity: 1; }
+
+/* NEW: share popover */
+.share-popover {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
+    margin: 0.5rem 0;
+    box-shadow: var(--card-shadow);
+    max-width: 420px;
+    position: relative;
+}
+.share-url-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+}
+.share-url-text {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.share-menu-row {
+    display: flex;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 0.6rem;
+}
+.share-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    transition: all 0.2s;
+}
+.share-menu-btn:hover {
+    background-color: var(--color-blue);
+    color: #fff;
+}
+.copy-confirm {
+    position: absolute;
+    right: 0.5rem;
+    top: -1.6rem;
+    background-color: var(--color-blue);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
 .product-badges {
     display: flex;
     gap: 0.75rem;
@@ -213,6 +315,8 @@
     .product-description-card {
         padding: 1.5rem;
     }
+
+    .share-popover { max-width: 100%; }
 }
 
 /* ==========================================================================
@@ -322,3 +426,65 @@
 .card-body .category-pill {
     margin-top: auto; 
 }
+
+/* ==========================================================================
+   NEW: Claim product modal
+   (style.css/product.css had no .overlay/.modal-box pattern to reuse on
+   this page, so this is a fresh, scoped definition — same visual language
+   as the rest of the site, no existing classes touched.)
+   ========================================================================== */
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+.modal-box {
+    background-color: var(--bg-card);
+    border-radius: 18px;
+    padding: 1.75rem;
+    max-width: 440px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--card-shadow);
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+.modal-header h2 { font-size: 1.15rem; font-weight: 700; color: var(--text-main); }
+.close-btn { background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer; line-height: 1; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+.btn-secondary { background: var(--bg-secondary); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.55rem 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem; }
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.alert { padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.85rem; margin-bottom: 1rem; }
+.alert.hidden { display: none; }
+.alert.success { background: rgba(0, 135, 81, 0.1); color: var(--color-green); border: 1px solid rgba(0, 135, 81, 0.25); }
+.alert.error { background: rgba(225, 29, 72, 0.1); color: #be123c; border: 1px solid rgba(225, 29, 72, 0.25); }
+.dark-mode .alert.success { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
+.dark-mode .alert.error { background: rgba(225, 29, 72, 0.15); color: #fda4af; }
+
+/* Generic .hidden — same missing-utility gap found on other pages before;
+   adding it here too since this page has its own overlay/popover elements
+   that rely on it. */
+.hidden { display: none !important; }
