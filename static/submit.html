@@ -47,6 +47,10 @@
                 <a href="/submit" class="active">Submit Tool</a>
                 <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/contact">Contact</a>
+                <div class="nav-auth-mobile">
+                    <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
+                    <a href="/signup" class="mobile-auth-pill mobile-auth-accent auth-signup-slot">Sign up</a>
+                </div>
             </nav>
 
             <div class="nav-actions">
@@ -63,8 +67,8 @@
 
                 <!-- Auth Buttons (JS will alter these if logged in) -->
                 <div id="nav-auth-buttons" style="display: flex; gap: inherit; align-items: center;">
-                    <a href="/login" class="btn-text">Login</a>
-                    <a href="/signup" class="btn-primary">Sign up</a>
+                    <a href="/login" class="btn-text auth-login-slot">Login</a>
+                <a href="/signup" class="btn-primary auth-signup-slot">Sign up</a>
                 </div>
 
                 <!-- Hamburger Icon -->
@@ -326,5 +330,6 @@
     <script src="/static/js/home.js"></script>
     <script src="/static/js/submit.js"></script>
     <script src="/static/js/submit-tags.js"></script>
+    <script src="/static/js/nav-auth.js"></script>
 </body>
 </html>

@@ -1034,3 +1034,60 @@ footer {
         padding: 1.5rem 1rem;
     }
 }
+
+/* ==========================================================================
+   Mobile Auth Slot (inside hamburger slider) — REQUIRED GLOBAL BLOCK
+   ========================================================================== */
+.nav-auth-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* Hide the desktop Login/Signup (or Dashboard/Logout) pair from the
+       header on mobile — they now live inside the slider instead */
+    .nav-actions .auth-login-slot,
+    .nav-actions .auth-signup-slot {
+        display: none;
+    }
+
+    .nav-auth-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        padding: 1.25rem 2rem;
+        margin-top: auto;
+    }
+.mobile-auth-pill {
+    display: inline-block;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    transition: opacity 0.2s, transform 0.2s, background-color 0.2s;
+}
+
+.mobile-auth-pill:hover {
+    opacity: 0.85;
+}
+
+/* Dashboard / "Signed in" — plain clickable text, matches desktop .btn-text */
+.mobile-auth-primary {
+    background: none;
+    color: var(--text-main);
+    padding: 0.4rem 0;
+    width: fit-content;
+}
+
+/* Logout — small solid button, not a giant pill */
+.mobile-auth-accent {
+    background-color: var(--color-green);
+    color: #ffffff !important;
+    padding: 0.45rem 1.1rem;
+    border-radius: 8px;
+    width: fit-content;
+}
+
+.mobile-auth-accent:hover {
+    background-color: #00683e;
+    transform: none;
+}}

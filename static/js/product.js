@@ -1,8 +1,8 @@
 /**
  * js/product.js
  * Fetches and renders the Similar Products grid on the product detail page.
- * Also handles: Claim Product modal, Share/Copy popover, and appending a
- * tracking param to the outbound "Visit Website" link.
+ * Also handles: Claim Product modal, Share/Copy popover, Pricing Details
+ * dropdown, and appending a tracking param to the outbound "Visit Website" link.
  */
 
 (function() {
@@ -19,6 +19,7 @@
 
         setupOutboundTracking();
         setupSharePopover();
+        setupPricingDropdown();
         setupClaimModal();
     });
 
@@ -82,7 +83,7 @@
     }
 
     /* ==========================================================================
-       NEW: Outbound tracking param on the "Visit Website" link
+       Outbound tracking param on the "Visit Website" link
        ========================================================================== */
     function appendTrackingParams(url) {
         if (!url) return url;
@@ -98,7 +99,7 @@
     }
 
     /* ==========================================================================
-       NEW: Share + copy popover
+       Share + copy popover
        Shares this page's own URL (not the product's external website), so
        no tracking param is appended here — that's scoped to outbound links
        to the product's real site per the "TRACKING PARAMETER ON OUTBOUND
@@ -132,6 +133,7 @@
 
         shareBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            closePricingPanel(); // don't allow both popovers open at once
             popover.classList.toggle('hidden');
         });
 
@@ -140,24 +142,49 @@
                 popover.classList.add('hidden');
             }
         });
-
-        if (copyBtn) {
-            copyBtn.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(pageUrl);
-                    if (copyConfirm) {
-                        copyConfirm.classList.remove('hidden');
-                        setTimeout(() => copyConfirm.classList.add('hidden'), 2000);
-                    }
-                } catch (err) {
-                    console.error('Copy failed:', err);
-                }
-            });
-        }
     }
 
     /* ==========================================================================
-       NEW: Claim product modal
+       NEW: Pricing Details dropdown
+       Collapsed by default. Clicking the toggle reveals a panel that sits
+       absolutely positioned over the "Visit Website" box (same wrapper,
+       inset: 0 in CSS), rather than pushing layout around. Closes on an
+       outside click or when the share popover is opened.
+       ========================================================================== */
+    function setupPricingDropdown() {
+        const toggle = document.getElementById('pricing-details-toggle');
+        const panel = document.getElementById('pricing-details-panel');
+        if (!toggle || !panel) return;
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = !panel.classList.contains('hidden');
+            if (isOpen) {
+                closePricingPanel();
+            } else {
+                document.getElementById('share-popover')?.classList.add('hidden');
+                panel.classList.remove('hidden');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!panel.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+                closePricingPanel();
+            }
+        });
+    }
+
+    function closePricingPanel() {
+        const toggle = document.getElementById('pricing-details-toggle');
+        const panel = document.getElementById('pricing-details-panel');
+        if (!toggle || !panel) return;
+        panel.classList.add('hidden');
+        toggle.setAttribute('aria-expanded', 'false');
+    }
+
+    /* ==========================================================================
+       Claim product modal
        ASSUMPTION: not-logged-in / wrong-account-type users are sent to
        /login with ?type=developer&redirect=<this page> query params. These
        params are NOT currently read by login.html/signup.html/auth.js — I

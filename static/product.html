@@ -40,6 +40,10 @@
                 <a href="/submit">Submit Tool</a>
                 <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/contact">Contact</a>
+                <div class="nav-auth-mobile">
+                    <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
+                    <a href="/signup" class="mobile-auth-pill mobile-auth-accent auth-signup-slot">Sign up</a>
+                </div>
             </nav>
 
             <div class="nav-actions">
@@ -51,8 +55,8 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </a>
                 <div id="nav-auth-buttons" style="display: flex; gap: inherit; align-items: center;">
-                    <a href="/login" class="btn-text">Login</a>
-                    <a href="/signup" class="btn-primary">Sign up</a>
+                    <a href="/login" class="btn-text auth-login-slot">Login</a>
+                    <a href="/signup" class="btn-primary auth-signup-slot">Sign up</a>
                 </div>
                 <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
@@ -62,68 +66,85 @@
     </header>
 
     <main class="product-page">
-        <!-- Top Row: Logo, Title, Visit Website -->
+        <!-- Top Row: Logo, Title, Category pill / Claim badge -->
         <div class="product-header-block">
-            <div class="product-brand-group">
-                <div class="product-logo-container">
-                    {% if product.logo_url %}
-                        <img src="{{ product.logo_url }}" alt="{{ product.name }} Logo" class="product-logo-img">
-                    {% else %}
-                        <div class="product-logo-fallback">{{ product.name[0] | upper }}</div>
-                    {% endif %}
-                </div>
-                <div class="product-title-group">
-                    <div class="product-name-row">
-                        <h1 class="product-name">{{ product.name }}</h1>
-                        <!-- NEW: share icon -->
-                        <button type="button" id="share-product-btn" class="icon-btn share-icon-btn" aria-label="Share this product">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            <span class="icon-tooltip">Share</span>
-                        </button>
+            <div class="product-header-top">
+                <div class="product-brand-group">
+                    <div class="product-logo-container">
+                        {% if product.logo_url %}
+                            <img src="{{ product.logo_url }}" alt="{{ product.name }} Logo" class="product-logo-img">
+                        {% else %}
+                            <div class="product-logo-fallback">{{ product.name[0] | upper }}</div>
+                        {% endif %}
                     </div>
-                    <!-- NEW: share popover — copy link + WhatsApp/X/LinkedIn -->
-                    <div id="share-popover" class="share-popover hidden">
-                        <div class="share-url-row">
-                            <span id="share-url-text" class="share-url-text"></span>
-                            <button type="button" id="copy-share-url-btn" class="icon-btn" aria-label="Copy link">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <div class="product-title-group">
+                        <div class="product-name-row">
+                            <h1 class="product-name">{{ product.name }}</h1>
+                            <button type="button" id="share-product-btn" class="icon-btn share-icon-btn" aria-label="Share this product">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                                <span class="icon-tooltip">Share</span>
                             </button>
-                            <span id="copy-confirm-msg" class="copy-confirm hidden">Copied!</span>
                         </div>
-                        <div class="share-menu-row">
-                            <a id="share-whatsapp" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp">
-                                <i class="fa-brands fa-whatsapp"></i>
-                            </a>
-                            <a id="share-x" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
-                                <i class="fa-brands fa-x-twitter"></i>
-                            </a>
-                            <a id="share-linkedin" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
-                                <i class="fa-brands fa-linkedin-in"></i>
-                            </a>
+                        <!-- Share popover — copy link + WhatsApp/X/LinkedIn -->
+                        <div id="share-popover" class="share-popover hidden">
+                            <div class="share-url-row">
+                                <span id="share-url-text" class="share-url-text"></span>
+                                <button type="button" id="copy-share-url-btn" class="icon-btn" aria-label="Copy link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                </button>
+                                <span id="copy-confirm-msg" class="copy-confirm hidden">Copied!</span>
+                            </div>
+                            <div class="share-menu-row">
+                                <a id="share-whatsapp" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp">
+                                    <i class="fa-brands fa-whatsapp"></i>
+                                </a>
+                                <a id="share-x" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
+                                    <i class="fa-brands fa-x-twitter"></i>
+                                </a>
+                                <a id="share-linkedin" class="share-menu-btn" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+                                    <i class="fa-brands fa-linkedin-in"></i>
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                    <div class="product-badges" style="margin-top: 10px;">
-                        <span class="category-pill pill-{{ product.category | lower | replace(' & ', '-') | replace(' ', '-') }}">
-                            {{ product.category }}
-                        </span>
-                                <span class="pricing-badge {{ 'free' if product.pricing | lower == 'free' else 'paid' }}">
-                            {{ product.pricing }}
-                        </span>
-                        {% if product.pricing_details %}
-                            <span class="text-muted pricing-details">{{ product.pricing_details }}</span>
-                        {% endif %}
-                        {% if product.product_type %}
-                            <span class="type-badge">{{ product.product_type }}</span>
-                        {% endif %}
+                        <div class="product-badges">
+                            <span class="category-pill pill-{{ product.category | lower | replace(' & ', '-') | replace(' ', '-') }}">
+                                {{ product.category }}
+                            </span>
+                            <span class="pricing-pill {{ 'free' if product.pricing | lower == 'free' else 'paid' }}">
+                                {{ 'Free' if product.pricing | lower == 'free' else 'Paid' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="product-primary-action">
-                <a id="visit-website-btn" href="{{ product.website }}" target="_blank" rel="noopener noreferrer" class="btn-primary btn-large">Visit Website <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left: 8px; font-size: 0.85em;"></i></a>
+
                 {% if not product.developer_id %}
-                    <button id="claim-product-btn" data-product-id="{{ product.id }}" class="btn-secondary btn-large">Claim this product</button>
+                <button type="button" id="claim-product-btn" data-product-id="{{ product.id }}" class="claim-badge-btn">
+                    Claim Product
+                </button>
                 {% endif %}
             </div>
+
+            <!-- Pricing Details dropdown — only rendered for paid products.
+                 Free products skip this entirely; there's nothing to expand. -->
+            {% if product.pricing | lower != 'free' %}
+            <div class="pricing-dropdown-wrap">
+                <button type="button" id="pricing-details-toggle" class="pricing-toggle-btn" aria-expanded="false" aria-controls="pricing-details-panel">
+                    Pricing Details
+                    <svg class="chevron-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div id="pricing-details-panel" class="pricing-details-panel hidden">
+                    {% if product.pricing_details %}
+                        <p class="pricing-details-text">{{ product.pricing_details }}</p>
+                    {% else %}
+                        <p class="pricing-details-text">No additional pricing details provided.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <a id="visit-website-btn" href="{{ product.website }}" target="_blank" rel="noopener noreferrer" class="visit-website-box">
+                Visit Website <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
         </div>
 
         <!-- Middle Row: Description -->
@@ -188,7 +209,7 @@
         </div>
     </main>
 
-    <!-- NEW: Claim product modal -->
+    <!-- Claim product modal -->
     <div id="claim-modal" class="overlay hidden">
         <div class="modal-box">
             <div class="modal-header">
@@ -264,5 +285,6 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/home.js"></script>
     <script src="/static/js/product.js"></script>
+    <script src="/static/js/nav-auth.js"></script>
 </body>
 </html>

@@ -29,6 +29,10 @@
                 <a href="/submit">Submit Tool</a>
                 <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/contact">Contact</a>
+                <div class="nav-auth-mobile">
+                    <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
+                    <a href="/signup" class="mobile-auth-pill mobile-auth-accent auth-signup-slot">Sign up</a>
+                </div>
             </nav>
 
             <div class="nav-actions">
@@ -39,8 +43,8 @@
                 <a href="/explore" class="icon-btn" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </a>
-                <a href="/login" class="btn-text">Login</a>
-                <a href="/signup" class="btn-primary">Sign up</a>
+                <a href="/login" class="btn-text auth-login-slot">Login</a>
+                <a href="/signup" class="btn-primary auth-signup-slot">Sign up</a>
                 <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
@@ -298,5 +302,6 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/home.js"></script>
     <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/nav-auth.js"></script>
 </body>
 </html>
