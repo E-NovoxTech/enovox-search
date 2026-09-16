@@ -41,7 +41,7 @@ class Product(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)
     contact_email = Column(String, nullable=True)
-    company= Column(String, nullable=True)
+    company_name = Column(String, nullable=True)
     twitter_url = Column(String, nullable=True)
     instagram_url = Column(String, nullable=True)
     facebook_url = Column(String, nullable=True)
@@ -99,3 +99,17 @@ class SearchUsage(Base):
     identifier = Column(String, index=True, nullable=False)  
     date = Column(Date, default=date.today, index=True)
     count = Column(Integer, default=0)
+
+class ClaimRequest(Base):
+    __tablename__ = "claim_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    developer_id = Column(Integer, ForeignKey("developers.id"), nullable=False)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+    social_url = Column(String, nullable=True)
+    status = Column(String, default="pending")  # pending | approved | rejected
+    rejection_reason = Column(String, nullable=True)
+    created_at = Column(Date, default=date.today)
