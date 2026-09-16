@@ -41,7 +41,7 @@ class Product(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)
     contact_email = Column(String, nullable=True)
-    company_name = Column(String, nullable=True)
+    company= Column(String, nullable=True)
     twitter_url = Column(String, nullable=True)
     instagram_url = Column(String, nullable=True)
     facebook_url = Column(String, nullable=True)
