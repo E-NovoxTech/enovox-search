@@ -7,6 +7,7 @@
     // Configuration
     const API_URL = "";
     const TOKEN_KEY = 'enovox_dev_token';
+    const SUBMIT_TIMEOUT_MS = 15000; // fail loudly instead of hanging forever
 
     document.addEventListener('DOMContentLoaded', () => {
         // Dynamically populate the Category dropdown from config
@@ -22,6 +23,7 @@
 
         checkAuthAndInit();
         setupEventListeners();
+        setupPricingDetailsLogic();
     });
 
     /* ==========================================================================
@@ -31,20 +33,16 @@
         const token = localStorage.getItem(TOKEN_KEY);
         const authWall = document.getElementById('auth-wall-view');
         const authView = document.getElementById('authenticated-view');
-        const navAuthBtns = document.getElementById('nav-auth-buttons'); // Login/Signup in header
+        const navAuthBtns = document.getElementById('nav-auth-buttons');
 
         if (!token) {
-            // User is NOT logged in: Show auth wall, hide form
             authWall.style.display = 'flex';
             authView.style.display = 'none';
             if (navAuthBtns) navAuthBtns.style.display = 'flex';
         } else {
-            // User IS logged in: Show dashboard, hide auth wall
             authWall.style.display = 'none';
-            authView.style.display = 'grid'; // Matches the dashboard-layout grid
-            if (navAuthBtns) navAuthBtns.style.display = 'none'; // Hide header login buttons
-            
-            // Fetch their products for the sidebar
+            authView.style.display = 'grid';
+            if (navAuthBtns) navAuthBtns.style.display = 'none';
             loadDashboard(token);
         }
     }
@@ -53,20 +51,58 @@
        2. Event Listeners
        ========================================================================== */
     function setupEventListeners() {
-        // Form Submission
         const form = document.getElementById('submit-tool-form');
         if (form) {
             form.addEventListener('submit', handleFormSubmit);
         }
 
-        // Logout Button
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
                 localStorage.removeItem(TOKEN_KEY);
-                window.location.reload(); // Reload triggers the auth wall
+                window.location.reload();
             });
         }
+    }
+
+    /* ==========================================================================
+       2b. Pricing Details — conditional required logic
+       ========================================================================== */
+    function setupPricingDetailsLogic() {
+        const pricingSelect = document.getElementById('pricing');
+        if (!pricingSelect) return;
+
+        pricingSelect.addEventListener('change', updatePricingDetailsRequirement);
+        updatePricingDetailsRequirement();
+    }
+
+    function updatePricingDetailsRequirement() {
+        const pricingSelect = document.getElementById('pricing');
+        const detailsInput = document.getElementById('pricing_details');
+        const detailsLabel = document.getElementById('pricing-details-label');
+        if (!pricingSelect || !detailsInput || !detailsLabel) return;
+
+        const isPaid = pricingSelect.value === 'Paid';
+        detailsInput.required = isPaid;
+        detailsLabel.textContent = isPaid ? 'Pricing Details *' : 'Pricing Details';
+
+        if (!isPaid || detailsInput.value.trim() !== '') {
+            clearPricingDetailsError();
+        }
+    }
+
+    function showPricingDetailsError(message) {
+        const group = document.getElementById('pricing-details-group');
+        const errorEl = document.getElementById('pricing-details-error');
+        if (group) group.classList.add('has-error');
+        if (errorEl) errorEl.textContent = message;
+    }
+
+    function clearPricingDetailsError() {
+        const group = document.getElementById('pricing-details-group');
+        const errorEl = document.getElementById('pricing-details-error');
+        if (group) group.classList.remove('has-error');
+        if (errorEl) errorEl.textContent = '';
     }
 
     /* ==========================================================================
@@ -74,19 +110,33 @@
        ========================================================================== */
     async function handleFormSubmit(e) {
         e.preventDefault();
-        
+
         const token = localStorage.getItem(TOKEN_KEY);
         if (!token) return handleSessionExpired();
 
         const form = e.target;
         const submitBtn = document.getElementById('submit-btn');
-        
-        // Setup loading state
+
+        hideAlert();
+        clearPricingDetailsError();
+
+        // Defensive: don't let a missing/renamed field silently kill the
+        // handler before the button state is even set. If pricing_details
+        // isn't in the DOM (e.g. HTML not deployed yet), fall back to ''
+        // instead of throwing on `.value` of undefined.
+        const pricingValue = form.pricing ? form.pricing.value : '';
+        const pricingDetailsField = form.pricing_details;
+        const pricingDetailsValue = pricingDetailsField ? pricingDetailsField.value.trim() : '';
+
+        if (pricingValue === 'Paid' && pricingDetailsValue === '') {
+            showPricingDetailsError('Please specify pricing details for paid products');
+            if (pricingDetailsField) pricingDetailsField.focus();
+            return;
+        }
+
         submitBtn.textContent = 'Submitting...';
         submitBtn.disabled = true;
-        hideAlert();
 
-        // Build Payload (Matching backend requirements perfectly)
         const payload = {
             name: form.name.value.trim(),
             founder: form.founder.value.trim(),
@@ -95,6 +145,7 @@
             product_type: form.product_type.value,
             website: form.website.value.trim(),
             pricing: form.pricing.value,
+            pricing_details: pricingDetailsValue,
             logo_url: form.logo_url.value.trim(),
             appstore_url: form.appstore_url.value.trim() || null,
             playstore_url: form.playstore_url.value.trim() || null,
@@ -104,21 +155,14 @@
             linkedin_url: form.linkedin_url.value.trim(),
             instagram_url: form.instagram_url.value.trim(),
             facebook_url: form.facebook_url.value.trim(),
-            // NEW fields — keywords is the hidden, comma-separated input that
-            // submit-tags.js keeps in sync as chips are added/removed.
             keywords: form.keywords.value.trim(),
             contact_email: form.contact_email.value.trim(),
             github_url: form.github_url.value.trim() || null
         };
 
         const optionalFields = [
-            'appstore_url',
-            'playstore_url',
-            'company_name',
-            'twitter_url',
-            'linkedin_url',
-            'instagram_url',
-            'facebook_url'
+            'appstore_url', 'playstore_url', 'company_name',
+            'twitter_url', 'linkedin_url', 'instagram_url', 'facebook_url'
         ];
 
         optionalFields.forEach(field => {
@@ -127,38 +171,42 @@
             }
         });
 
+        // Hard timeout: if the request doesn't settle in time, abort it and
+        // treat it as a failure rather than leaving the button stuck forever.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+
         try {
             const response = await fetch(`${API_URL}/submissions/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Injects the JWT
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
 
-            // Handle Unauthorized
             if (response.status === 401) {
                 return handleSessionExpired();
             }
 
-            // Handle Bad Requests / Validation Errors (422/400)
             if (!response.ok) {
-                const errorData = await response.json();
-                // If FastAPI sends a validation error array, grab the first message, otherwise use detail
-                const errorMsg = Array.isArray(errorData.detail) 
-                    ? errorData.detail[0].msg 
-                    : (errorData.detail || 'Submission failed. Please check your fields.');
+                let errorMsg = 'Submission failed. Please check your fields.';
+                try {
+                    const errorData = await response.json();
+                    if (Array.isArray(errorData.detail) && errorData.detail[0] && errorData.detail[0].msg) {
+                        errorMsg = errorData.detail[0].msg;
+                    } else if (errorData.detail) {
+                        errorMsg = errorData.detail;
+                    }
+                } catch (parseErr) {
+                    // Body wasn't JSON (e.g. a 500 HTML error page) — keep the generic message.
+                    console.error('Could not parse error response:', parseErr);
+                }
                 throw new Error(errorMsg);
             }
 
-            // Success! Show a brief confirmation, then send them to the
-            // dashboard rather than staying on this page.
-            // NOTE: the current MVP dashboard only lists APPROVED products —
-            // it has no "pending" section — so this freshly-submitted item
-            // won't actually be visible there until an admin approves it.
-            // Worth adding a "pending" section to /dashboard later so this
-            // redirect doesn't feel like the submission vanished.
             showAlert('success', "Thanks! Your product is under review. Taking you to your dashboard...");
             submitBtn.textContent = 'Redirecting...';
             setTimeout(() => {
@@ -168,9 +216,14 @@
 
         } catch (error) {
             console.error('Submission Error:', error);
-            showAlert('error', error.message);
+            const message = error.name === 'AbortError'
+                ? 'The request timed out. Please check your connection and try again.'
+                : error.message;
+            showAlert('error', message);
             submitBtn.textContent = 'Submit Product';
             submitBtn.disabled = false;
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 
@@ -182,21 +235,19 @@
         const pendingContainer = document.getElementById('pending-products-list');
 
         try {
-            // 1. Fetch Live Products
             const liveRes = await fetch(`${API_URL}/developers/me/products`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (liveRes.status === 401) return handleSessionExpired();
-            
+
             const liveProducts = await liveRes.json();
             renderProducts(liveContainer, liveProducts, 'live');
 
-            // 2. Fetch Pending Submissions
             const pendingRes = await fetch(`${API_URL}/submissions/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (pendingRes.status === 401) return handleSessionExpired();
-            
+
             const pendingProducts = await pendingRes.json();
             renderProducts(pendingContainer, pendingProducts, 'pending');
 
@@ -213,21 +264,19 @@
             return;
         }
 
-        container.innerHTML = ''; // Clear loading state
-        
+        container.innerHTML = '';
+
         products.forEach(product => {
-            // Live products are clickable links to the product page. Pending are just div rows.
             const item = document.createElement(type === 'live' ? 'a' : 'div');
             item.className = 'dev-product-item';
-            
+
             if (type === 'live') {
                 item.href = `/product/${product.slug}`;
                 item.title = "View product page";
             }
 
-            // REPLACED THE LIVE BADGE HERE
-            const badge = type === 'live' 
-                ? `<span class="badge live"><span class="glow-dot"></span> Live</span>` 
+            const badge = type === 'live'
+                ? `<span class="badge live"><span class="glow-dot"></span> Live</span>`
                 : `<span class="badge pending">Under Review</span>`;
 
             item.innerHTML = `
@@ -252,14 +301,14 @@
         if (!alertBox) return;
         alertBox.textContent = message;
         alertBox.className = `alert ${type}`;
-        alertBox.style.display = 'block'; // Failsafe for display
+        alertBox.style.display = 'block';
     }
 
     function hideAlert() {
         const alertBox = document.getElementById('form-alert');
         if (alertBox) {
             alertBox.className = 'alert hidden';
-            alertBox.style.display = ''; 
+            alertBox.style.display = '';
         }
     }
 
