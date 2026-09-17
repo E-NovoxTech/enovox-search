@@ -1092,3 +1092,36 @@ footer {
     background-color: #00683e;
     transform: none;
 }}
+.logo-dark { display: none; }
+.dark-mode .logo-light { display: none; }
+.dark-mode .logo-dark { display: block; }
+
+/* Fix: keep the horizontal-scroll prevention, but stop it from silently
+   breaking position:sticky on descendants like .navbar */
+html, body {
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+/* Already present in style.css — confirming the values that matter */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+}
+
+/* Fixed removes the header from normal document flow, so the page content
+   right below it would otherwise jump up underneath it. This pushes
+   everything down by the header's own height to compensate — 73px matches
+   the value your own CSS already uses elsewhere (.nav-links top: 73px on
+   mobile), so it should line up with your real header height. */
+body {
+    padding-top: 73px;
+}
