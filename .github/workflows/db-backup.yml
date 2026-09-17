@@ -1,0 +1,54 @@
+name: Supabase Database Backup
+
+on:
+  schedule:
+    - cron: '0 1 * * 1,4'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client 17
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+
+          echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          db_url="$(printf '%s' "$SUPABASE_DB_URL" | tr -d '\r\n')"
+          /usr/lib/postgresql/17/bin/pg_dump --version
+          /usr/lib/postgresql/17/bin/pg_dump \
+            --dbname="$db_url" \
+            --no-owner \
+            --no-privileges \
+            > backup.sql
+
+      - name: Checkout backup repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.BACKUP_REPO }}
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backup-repo
+
+      - name: Copy and commit backup
+        run: |
+          mkdir -p backup-repo/backups
+          cp backup.sql "backup-repo/backups/backup-$(date +'%Y-%m-%d').sql"
+          cd backup-repo
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Automated backup - $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
