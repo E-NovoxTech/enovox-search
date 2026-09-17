@@ -1,0 +1,35 @@
+name: Supabase Database Backup
+
+on:
+  schedule:
+    - cron: '0 1 * * 1,4'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Dump database
+        run: |
+          pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup.sql
+
+      - name: Checkout backup repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.BACKUP_REPO }}
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backup-repo
+
+      - name: Copy and commit backup
+        run: |
+          mkdir -p backup-repo/backups
+          cp backup.sql "backup-repo/backups/backup-$(date +'%Y-%m-%d').sql"
+          cd backup-repo
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Automated backup - $(date +'%Y-%m-%d')" || echo "No changes to commit"
+          git push
