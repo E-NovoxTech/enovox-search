@@ -6,6 +6,8 @@ import os
 from urllib.parse import urlparse
 from fastapi import BackgroundTasks
 from ..utils import send_claim_alert
+from fastapi import UploadFile, File
+from ..bulk_upload_utils import parse_csv_to_rows
 
 
 from app.routers.developers import get_current_developer
@@ -355,3 +357,65 @@ def claim_product(
             role=data.role
         )
         return {"message": "Claim submitted for review. We'll verify ownership and get back to you.", "auto_verified": False}
+
+@router.post("/admin/bulk-preview")
+async def bulk_preview(admin_key: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    contents = await file.read()
+    rows = parse_csv_to_rows(contents)
+
+    for row in rows:
+        existing = db.query(models.Product).filter(models.Product.name == row["name"]).first()
+        row["is_duplicate"] = existing is not None
+
+    return {"total_rows": len(rows), "products": rows}
+
+
+@router.post("/admin/bulk-publish")
+def bulk_publish(admin_key: str, data: schemas.BulkPublishRequest, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    created = 0
+    skipped = []
+
+    for item in data.products:
+        existing = db.query(models.Product).filter(models.Product.name == item.name).first()
+        if existing:
+            skipped.append({"name": item.name, "reason": "duplicate — product with this name already exists"})
+            continue
+
+        new_product = models.Product(
+            slug=generate_slug(item.name, db),
+            name=item.name,
+            description=item.description,
+            category=item.category,
+            pricing=item.pricing,
+            pricing_details=item.pricing_details,
+            website=item.website,
+            product_type=item.product_type,
+            founder=item.founder,
+            company_name=item.company,
+            logo_url=item.logo_url,
+            keywords=item.keywords,
+            contact_email=item.contact_email,
+            github_url=item.github_url,
+            appstore_url=item.appstore_url,
+            playstore_url=item.playstore_url,
+            user_count_range=item.user_count_range,
+            twitter_url=item.twitter_url,
+            instagram_url=item.instagram_url,
+            facebook_url=item.facebook_url,
+            linkedin_url=item.linkedin_url,
+            developer_id=None,
+            status=True,
+        )
+        db.add(new_product)
+        db.commit()
+        db.refresh(new_product)
+        submit_to_indexnow(f"/product/{new_product.slug}")
+        created += 1
+
+    return {"total_submitted": len(data.products), "created": created, "skipped_count": len(skipped), "skipped_details": skipped}

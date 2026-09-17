@@ -123,8 +123,70 @@
                 <section id="products-tab" class="tab-content active">
                     <div class="section-header">
                         <h2>All Products</h2>
-                        <button id="open-create-modal-btn" class="btn-primary">+ Add Product Manually</button>
+                        <div class="section-header-actions">
+                            <button id="open-bulk-upload-btn" class="btn-secondary">Bulk Upload</button>
+                            <button id="open-create-modal-btn" class="btn-primary">+ Add Product Manually</button>
+                        </div>
                     </div>
+
+                    <!-- Hidden native CSV picker — triggered by the Bulk Upload button above -->
+                    <input type="file" id="bulk-csv-input" accept=".csv" class="hidden">
+
+                    <!-- ============================================================
+                         BULK CSV UPLOAD (hidden until the admin picks a CSV file)
+                         1. Preview step: editable table (desktop) / stacked cards (mobile)
+                         2. Publish step: nothing is saved until "Publish All" is clicked
+                         ============================================================ -->
+                    <section id="bulk-upload-panel" class="bulk-upload-panel hidden">
+                        <div class="bulk-panel-header">
+                            <div class="bulk-panel-heading">
+                                <h3>Bulk Upload Preview</h3>
+                                <p id="bulk-upload-status" class="bulk-upload-status text-muted"></p>
+                            </div>
+                            <button id="bulk-cancel-btn" class="btn-secondary btn-small">Cancel Upload</button>
+                        </div>
+
+                        <!-- Choose a different CSV (re-upload) — file picker stays on this page -->
+                        <div class="bulk-upload-toolbar">
+                            <label for="bulk-upload-csv-input" class="btn-secondary btn-small bulk-upload-label">Choose Another CSV</label>
+                            <input type="file" id="bulk-upload-csv-input" accept=".csv" class="hidden">
+                            <span id="bulk-upload-filename" class="bulk-upload-filename text-muted"></span>
+                        </div>
+
+                        <!-- Loading / error / summary live here -->
+                        <div id="bulk-upload-loading" class="bulk-upload-loading hidden">
+                            <span class="bulk-spinner"></span>
+                            <span class="bulk-loading-text">Processing CSV, checking for duplicates…</span>
+                        </div>
+                        <div id="bulk-upload-error" class="alert error hidden"></div>
+                        <div id="bulk-upload-summary" class="bulk-upload-summary hidden"></div>
+
+                        <!-- Edit grid: table on desktop, stacked cards on mobile (same data) -->
+                        <div id="bulk-preview-wrapper" class="hidden">
+                            <div id="bulk-preview-table-container" class="bulk-grid-container">
+                                <table class="admin-table bulk-table">
+                                    <thead>
+                                        <tr id="bulk-table-head-row">
+                                            <!-- Column headers injected by JS from BULK_FIELDS -->
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bulk-table-body">
+                                        <!-- Injected via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="bulk-preview-cards" class="bulk-cards">
+                                <!-- Injected via JS (mobile card view) -->
+                            </div>
+                        </div>
+
+                        <div id="bulk-publish-bar" class="bulk-publish-bar hidden">
+                            <span id="bulk-publish-count" class="bulk-publish-count"></span>
+                            <button id="bulk-publish-btn" class="btn-primary">Publish All</button>
+                        </div>
+                    </section>
+
                     <div class="toolbar">
                         <input type="text" id="products-search" placeholder="Search by name...">
                         <select id="products-category-filter">
@@ -391,5 +453,5 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
     <script src="/static/js/submit-tags.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3c93a270e70655f',t:'MTc4OTY1OTgxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

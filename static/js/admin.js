@@ -67,6 +67,25 @@
     const productForm = document.getElementById('admin-product-form');
     const submissionDetailModal = document.getElementById('submission-detail-modal');
     const submissionDetailBody = document.getElementById('submission-detail-body');
+
+    // Bulk CSV upload (Products tab) — file pickers, preview grid, publish bar
+    const bulkUploadBtn = document.getElementById('open-bulk-upload-btn');
+    const bulkCsvInput = document.getElementById('bulk-csv-input');
+    const bulkPanelInput = document.getElementById('bulk-upload-csv-input');
+    const bulkUploadPanel = document.getElementById('bulk-upload-panel');
+    const bulkUploadStatus = document.getElementById('bulk-upload-status');
+    const bulkUploadFilename = document.getElementById('bulk-upload-filename');
+    const bulkLoadingEl = document.getElementById('bulk-upload-loading');
+    const bulkErrorEl = document.getElementById('bulk-upload-error');
+    const bulkSummaryEl = document.getElementById('bulk-upload-summary');
+    const bulkPreviewWrapper = document.getElementById('bulk-preview-wrapper');
+    const bulkTableHeadRow = document.getElementById('bulk-table-head-row');
+    const bulkTableBody = document.getElementById('bulk-table-body');
+    const bulkCardsEl = document.getElementById('bulk-preview-cards');
+    const bulkPublishBar = document.getElementById('bulk-publish-bar');
+    const bulkPublishCountEl = document.getElementById('bulk-publish-count');
+    const bulkPublishBtn = document.getElementById('bulk-publish-btn');
+    const bulkCancelBtn = document.getElementById('bulk-cancel-btn');
     const rejectReasonModal = document.getElementById('reject-reason-modal');
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -121,7 +140,6 @@
             });
         }
 
-        initAuth();
         setupNavigation();
         setupEventListeners();
         setupToolbars();
@@ -129,33 +147,108 @@
         setupRejectReasonModal();
         setupKeywordsTagInput();
         setupPricingDetailsLogic();
+        setupBulkUpload();
+        setupPricingDetailsLogic();
         initNotifications();
+        initAuth(); // async — kicked off last, verifies any stored key itself
     });
 
     /* ==========================================================================
        Authentication
        ========================================================================== */
-    function initAuth() {
+
+    // Hits a real protected admin endpoint with the given key.
+    // Returns true only on an actual 200 OK response — a 403, any other
+    // error status, or a network failure are all treated as an invalid key.
+    async function verifyAdminKey(key) {
+        try {
+            const res = await fetch(`${API_URL}/developers/admin/all?admin_key=${encodeURIComponent(key)}`);
+            return res.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function showLoginError(message) {
+        const errEl = document.getElementById('login-error');
+        if (errEl) {
+            errEl.textContent = message;
+            errEl.classList.remove('hidden');
+        }
+    }
+
+    function clearLoginError() {
+        const errEl = document.getElementById('login-error');
+        if (errEl) {
+            errEl.textContent = '';
+            errEl.classList.add('hidden');
+        }
+    }
+
+    // Wipes any stored/invalid key and forces the user back to the login
+    // screen with an explanatory message. Never leaves the dashboard visible.
+    function rejectLogin(message) {
+        localStorage.removeItem('enovox_admin_key');
+        adminKey = null;
+        dashboardLayout.classList.add('hidden');
+        loginOverlay.classList.remove('hidden');
+        showLoginError(message);
+    }
+
+    // On page load: the dashboard is NEVER unhidden until a stored key has
+    // been re-verified against the backend. No key, or a key that fails
+    // verification, both land (or stay) on the login screen.
+    async function initAuth() {
         if (!adminKey) {
             loginOverlay.classList.remove('hidden');
-        } else {
-            loginOverlay.classList.add('hidden');
-            dashboardLayout.classList.remove('hidden');
-            loadAllData();
+            return;
         }
+
+        const isValid = await verifyAdminKey(adminKey);
+        if (!isValid) {
+            rejectLogin('Your session key is no longer valid. Please log in again.');
+            return;
+        }
+
+        loginOverlay.classList.add('hidden');
+        dashboardLayout.classList.remove('hidden');
+        loadAllData();
     }
 
     // Event listeners for login / logout
     function setupEventListeners() {
         const saveKeyBtn = document.getElementById('save-key-btn');
         if (saveKeyBtn) {
-            saveKeyBtn.addEventListener('click', () => {
+            saveKeyBtn.addEventListener('click', async () => {
                 const input = document.getElementById('admin-key-input').value.trim();
-                if (input) {
-                    localStorage.setItem('enovox_admin_key', input);
-                    adminKey = input;
-                    initAuth();
+                if (!input) {
+                    showLoginError('Please enter an admin key.');
+                    return;
                 }
+
+                clearLoginError();
+                saveKeyBtn.disabled = true;
+                saveKeyBtn.textContent = 'Verifying...';
+
+                const isValid = await verifyAdminKey(input);
+
+                saveKeyBtn.disabled = false;
+                saveKeyBtn.textContent = 'Enter Dashboard';
+
+                if (!isValid) {
+                    // Wrong key: do NOT store it, do NOT touch the dashboard.
+                    // Stay on the login screen with an inline error.
+                    showLoginError('Invalid admin key.');
+                    return;
+                }
+
+                // Only store the key + proceed once the backend has
+                // actually confirmed it's valid.
+                localStorage.setItem('enovox_admin_key', input);
+                adminKey = input;
+                loginOverlay.classList.add('hidden');
+                dashboardLayout.classList.remove('hidden');
+                loadAllData();
             });
         }
 
@@ -774,6 +867,634 @@
             showAlert('error', error.message);
         }
     };
+
+    /* ==========================================================================
+       BULK CSV UPLOAD (Products tab)
+       --------------------------------------------------------------------------
+       Two-step flow, both steps staying on this admin page:
+         1. "Bulk Upload" opens a native file picker -> POST
+            /products/admin/bulk-preview (multipart) -> the returned rows are
+            rendered as an inline-editable grid (table on desktop, stacked
+            collapsible cards on mobile). NOTHING is written to the database yet.
+         2. "Publish All" -> POST /products/admin/bulk-publish with the current
+            (possibly edited, possibly row-deleted) set -> summary of created
+            vs skipped rows -> the batch is cleared so another CSV can be loaded.
+       ========================================================================== */
+
+    // Every column of the preview grid, in expected-CSV-header order.
+    // `key` is the field name used by the API, `header` mirrors the CSV header.
+    const BULK_FIELDS = [
+        { key: 'name', header: 'Product Name' },
+        { key: 'description', header: 'Description' },
+        { key: 'category', header: 'Category' },
+        { key: 'pricing', header: 'Pricing' },
+        { key: 'pricing_details', header: 'Price Details' },
+        { key: 'website', header: 'Website' },
+        { key: 'product_type', header: 'Product Type' },
+        { key: 'founder', header: 'Founder' },
+        { key: 'company', header: 'Company' },
+        { key: 'logo_url', header: 'Logo URL' },
+        { key: 'keywords', header: 'Keywords' },
+        { key: 'contact_email', header: 'Contact Email' },
+        { key: 'github_url', header: 'GitHub URL' },
+        { key: 'appstore_url', header: 'App Store URL' },
+        { key: 'playstore_url', header: 'Play Store URL' },
+        { key: 'user_count_range', header: 'User Count Range' },
+        { key: 'twitter_url', header: 'Twitter URL' },
+        { key: 'instagram_url', header: 'Instagram URL' },
+        { key: 'facebook_url', header: 'Facebook URL' },
+        { key: 'linkedin_url', header: 'LinkedIn URL' }
+    ];
+
+    const BULK_CHEVRON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+    const BULK_TRASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>';
+
+    // Working set for the pending batch: [{ id, values: { field: string }, extra: {}, isDuplicate }].
+    // `values` is the single source of truth; the inputs mirror into it as the admin types.
+    let bulkRows = [];
+    let bulkRowSeq = 0;
+    let bulkSourceFileName = '';
+
+    function setupBulkUpload() {
+        if (bulkUploadBtn) bulkUploadBtn.addEventListener('click', () => bulkCsvInput.click());
+        if (bulkCsvInput) bulkCsvInput.addEventListener('change', handleBulkFileSelected);
+        if (bulkPanelInput) bulkPanelInput.addEventListener('change', handleBulkFileSelected);
+        if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', resetBulkUpload);
+        if (bulkPublishBtn) bulkPublishBtn.addEventListener('click', publishBulkProducts);
+        if (bulkUploadPanel) {
+            bulkUploadPanel.addEventListener('input', onBulkPreviewInput);
+            bulkUploadPanel.addEventListener('click', onBulkPreviewClick);
+        }
+        renderBulkTableHeaders();
+    }
+
+    function renderBulkTableHeaders() {
+        if (!bulkTableHeadRow) return;
+        bulkTableHeadRow.innerHTML =
+            '<th class="bulk-col-index" scope="col">#</th>' +
+            '<th class="bulk-col-actions" scope="col">Remove</th>' +
+            BULK_FIELDS.map(f => `<th scope="col">${escapeHTML(f.header)}</th>`).join('');
+    }
+
+    /* ---------------------------------------------------------------- upload */
+
+    async function handleBulkFileSelected(event) {
+        const input = event && event.target ? event.target : null;
+        const file = input && input.files && input.files[0] ? input.files[0] : null;
+        if (input) input.value = ''; // so picking the same file again still fires
+        if (!file) return;
+
+        openBulkPanel();
+        hideBulkError();
+
+        if (!/\.csv$/i.test(file.name)) {
+            showBulkError(`"${escapeHTML(file.name)}" is not a CSV file. Please choose a file ending in .csv.`);
+            return;
+        }
+
+        resetBulkBatch(); // clear any previous preview/summary (keeps the panel open)
+        bulkSourceFileName = file.name;
+        if (bulkUploadFilename) bulkUploadFilename.textContent = file.name;
+        setBulkLoading(true, `Uploading ${file.name} and checking for duplicates…`);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file, file.name);
+
+            const res = await fetch(`${API_URL}/products/admin/bulk-preview?admin_key=${encodeURIComponent(adminKey || '')}`, {
+                method: 'POST',
+                body: formData
+                // No Content-Type header on purpose: the browser sets the
+                // multipart boundary itself.
+            });
+
+            const data = await parseApiResponse(res);
+            if (!res.ok) throw new Error(bulkApiError(res, data, 'Could not process that CSV'));
+
+            if (!data || !Array.isArray(data.products)) {
+                throw new Error('The server did not return a product list. Check that the CSV headers match the expected columns exactly.');
+            }
+            if (data.products.length === 0) {
+                throw new Error('No product rows were found in that CSV. Check that it has the header row plus at least one product.');
+            }
+
+            bulkRows = data.products.map(toBulkRow);
+            renderBulkPreview();
+
+            const dupes = countBulkDuplicates();
+            let status = `${bulkRows.length} row${bulkRows.length === 1 ? '' : 's'} loaded from ${file.name}`;
+            status += dupes > 0
+                ? ` · ${dupes} flagged as duplicate (rename it or leave it — the server will skip it)`
+                : ' · edit any cell in place, then publish.';
+            if (bulkUploadStatus) bulkUploadStatus.textContent = status;
+        } catch (error) {
+            bulkRows = [];
+            renderBulkPreview();
+            if (bulkUploadStatus) bulkUploadStatus.textContent = 'Nothing was saved — fix the CSV and try again.';
+            showBulkError(error && error.message ? error.message : 'Could not process that CSV.');
+        } finally {
+            setBulkLoading(false);
+        }
+    }
+
+    // Normalises one row of the preview response into working state.
+    // Blank/null fields become '' so they render as empty editable inputs.
+    function toBulkRow(product) {
+        const values = {};
+        const extra = {};
+        const source = product && typeof product === 'object' ? product : {};
+
+        BULK_FIELDS.forEach(f => {
+            const raw = source[f.key];
+            values[f.key] = (raw === null || raw === undefined) ? '' : String(raw);
+        });
+
+        // Preserve any additional keys the API returned so the payload we
+        // publish is a faithful round-trip (minus is_duplicate).
+        Object.keys(source).forEach(k => {
+            if (k === 'is_duplicate') return;
+            if (BULK_FIELDS.some(f => f.key === k)) return;
+            extra[k] = source[k];
+        });
+
+        bulkRowSeq += 1;
+        return {
+            id: bulkRowSeq,
+            values: values,
+            extra: extra,
+            isDuplicate: !!source.is_duplicate
+        };
+    }
+
+    function findBulkRow(rowId) {
+        return bulkRows.find(r => String(r.id) === String(rowId)) || null;
+    }
+
+    function countBulkDuplicates() {
+        return bulkRows.filter(r => r.isDuplicate).length;
+    }
+
+    /* ------------------------------------------------------------- rendering */
+
+    function renderBulkPreview() {
+        if (bulkTableBody) {
+            bulkTableBody.innerHTML = '';
+            bulkRows.forEach((row, index) => bulkTableBody.appendChild(buildBulkTableRow(row, index)));
+        }
+        if (bulkCardsEl) {
+            bulkCardsEl.innerHTML = '';
+            bulkRows.forEach((row, index) => bulkCardsEl.appendChild(buildBulkCard(row, index)));
+        }
+        if (bulkPreviewWrapper) bulkPreviewWrapper.classList.toggle('hidden', bulkRows.length === 0);
+        updateBulkPublishBar();
+    }
+
+    function buildBulkTableRow(row, index) {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-row-id', row.id);
+        if (row.isDuplicate) tr.classList.add('bulk-row-duplicate');
+
+        const cellsHTML = BULK_FIELDS.map(field => {
+            const inputHTML = bulkInputHTML(row, field, index, 'bulk-cell-input');
+            if (field.key !== 'name') return `<td>${inputHTML}</td>`;
+            return `
+                <td class="bulk-col-name">
+                    <div class="bulk-name-cell">
+                        ${inputHTML}
+                        ${row.isDuplicate
+                            ? '<span class="badge duplicate" title="A product with this exact name already exists. Publishing will skip this row unless you rename it.">Duplicate</span>'
+                            : ''}
+                    </div>
+                </td>
+            `;
+        }).join('');
+
+        tr.innerHTML = `
+            <td class="bulk-col-index">${index + 1}</td>
+            <td class="bulk-col-actions">${bulkDeleteButtonHTML(row.id)}</td>
+            ${cellsHTML}
+        `;
+        return tr;
+    }
+
+    function buildBulkCard(row, index) {
+        const card = document.createElement('div');
+        card.className = 'bulk-card' + (row.isDuplicate ? ' duplicate' : '');
+        card.setAttribute('data-card-id', row.id);
+
+        const fieldsHTML = BULK_FIELDS.map(field => {
+            const id = `bulk_${row.id}_${field.key}`;
+            const attrs = `id="${id}" data-row-id="${row.id}" data-field="${field.key}" autocomplete="off" spellcheck="false"`;
+            const control = field.key === 'description'
+                ? `<textarea rows="3" class="bulk-cell-input bulk-card-input" ${attrs}>${escapeHTML(row.values[field.key])}</textarea>`
+                : `<input type="text" class="bulk-cell-input bulk-card-input" ${attrs} value="${escapeHTML(row.values[field.key])}">`;
+            return `<div class="bulk-card-field"><label for="${id}">${escapeHTML(field.header)}</label>${control}</div>`;
+        }).join('');
+
+        const displayName = row.values.name && row.values.name.trim() !== '' ? row.values.name : 'Untitled product';
+
+        card.innerHTML = `
+            <div class="bulk-card-header">
+                <button type="button" class="bulk-card-toggle" data-bulk-toggle="${row.id}" aria-expanded="false">
+                    <span class="bulk-card-chevron">${BULK_CHEVRON_SVG}</span>
+                    <span class="bulk-card-title">
+                        <span class="bulk-card-name">${escapeHTML(displayName)}</span>
+                        <span class="bulk-card-sub text-muted">Row ${index + 1} · tap to edit</span>
+                    </span>
+                    ${row.isDuplicate ? '<span class="badge duplicate">Duplicate</span>' : ''}
+                </button>
+                ${bulkDeleteButtonHTML(row.id)}
+            </div>
+            <div class="bulk-card-body">
+                ${fieldsHTML}
+            </div>
+        `;
+        return card;
+    }
+
+    // One shared builder so the table cell and the card field always stay in sync.
+    function bulkInputHTML(row, field, index, inputClass) {
+        return `<input type="text" class="${inputClass}" data-row-id="${row.id}" data-field="${field.key}"
+                    value="${escapeHTML(row.values[field.key])}" autocomplete="off" spellcheck="false"
+                    aria-label="${escapeHTML(field.header)}, row ${index + 1}">`;
+    }
+
+    function bulkDeleteButtonHTML(rowId) {
+        return `<button type="button" class="bulk-delete-btn" data-bulk-delete="${rowId}"
+                    title="Remove this row — it will not be published" aria-label="Remove this row">${BULK_TRASH_SVG}</button>`;
+    }
+
+    function updateBulkPublishBar() {
+        const total = bulkRows.length;
+        const dupes = countBulkDuplicates();
+        if (bulkPublishBar) bulkPublishBar.classList.toggle('hidden', total === 0);
+        if (bulkPublishCountEl) {
+            bulkPublishCountEl.textContent = total === 0
+                ? ''
+                : `${total} product${total === 1 ? '' : 's'} ready to publish` +
+                  (dupes > 0 ? ` · ${dupes} flagged as duplicate` : '');
+        }
+    }
+
+    /* ------------------------------------------------- edit / delete / expand */
+
+    // Live edits are written straight into `bulkRows` and mirrored into the
+    // other view (table <-> card) so both stay identical.
+    function onBulkPreviewInput(event) {
+        const target = event.target;
+        if (!target || !target.matches || !target.matches('[data-row-id][data-field]')) return;
+
+        const rowId = target.getAttribute('data-row-id');
+        const field = target.getAttribute('data-field');
+        const row = findBulkRow(rowId);
+        if (!row) return;
+
+        row.values[field] = target.value;
+
+        if (bulkPreviewWrapper) {
+            bulkPreviewWrapper.querySelectorAll(`[data-row-id="${rowId}"][data-field="${field}"]`).forEach(peer => {
+                if (peer !== target && peer.value !== target.value) peer.value = target.value;
+            });
+        }
+
+        if (field === 'name') {
+            updateBulkCardName(row);
+            if (target.value.trim() !== '') clearBulkRowNameError(rowId);
+        }
+    }
+
+    function updateBulkCardName(row) {
+        if (!bulkCardsEl) return;
+        const card = bulkCardsEl.querySelector(`.bulk-card[data-card-id="${row.id}"]`);
+        if (!card) return;
+        const nameEl = card.querySelector('.bulk-card-name');
+        if (nameEl) {
+            nameEl.textContent = (row.values.name && row.values.name.trim() !== '') ? row.values.name : 'Untitled product';
+        }
+    }
+
+    function onBulkPreviewClick(event) {
+        if (!event.target || !event.target.closest) return;
+
+        const delBtn = event.target.closest('[data-bulk-delete]');
+        if (delBtn) {
+            removeBulkRow(delBtn.getAttribute('data-bulk-delete'));
+            return;
+        }
+
+        const toggle = event.target.closest('[data-bulk-toggle]');
+        if (toggle) {
+            const card = toggle.closest('.bulk-card');
+            if (card) {
+                const isOpen = card.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            }
+            return;
+        }
+
+        if (event.target.closest('[data-bulk-dismiss]')) hideBulkSummary();
+    }
+
+    function removeBulkRow(rowId) {
+        const row = findBulkRow(rowId);
+        if (!row) return;
+
+        const label = row.values.name && row.values.name.trim() !== '' ? row.values.name : 'this row';
+        if (!confirm(`Remove "${label}" from this batch? It will not be published.`)) return;
+
+        bulkRows = bulkRows.filter(r => String(r.id) !== String(rowId));
+        renderBulkPreview();
+
+        const dupes = countBulkDuplicates();
+        if (bulkUploadStatus) {
+            bulkUploadStatus.textContent = bulkRows.length === 0
+                ? 'No rows left in this batch — upload another CSV, or cancel.'
+                : `${bulkRows.length} row${bulkRows.length === 1 ? '' : 's'} ready${dupes > 0 ? ` · ${dupes} flagged as duplicate` : ''}.`;
+        }
+    }
+
+    /* --------------------------------------------------------------- publish */
+
+    async function publishBulkProducts() {
+        const products = collectBulkPayload();
+        if (products.length === 0) {
+            showBulkError('There is nothing to publish — upload a CSV first.');
+            return;
+        }
+
+        // Every row must have a name or the backend would reject/mis-create it.
+        if (products.some(p => !p.name)) {
+            const firstInvalidId = flagBulkNameErrors();
+            showBulkError('Every product needs a Product Name before publishing. Rows with a missing name are highlighted below — fix the name or remove the row.');
+            if (firstInvalidId !== null) scrollBulkRowIntoView(firstInvalidId);
+            return;
+        }
+
+        const dupes = countBulkDuplicates();
+        if (dupes > 0) {
+            const proceed = confirm(
+                `${dupes} row${dupes === 1 ? ' is' : 's are'} flagged as a duplicate of a product that already exists. ` +
+                'The server will skip those rows. Publish the rest now?'
+            );
+            if (!proceed) return;
+        }
+
+        setBulkLoading(true, `Publishing ${products.length} product${products.length === 1 ? '' : 's'}…`);
+        hideBulkError();
+        hideBulkSummary();
+        if (bulkPublishBtn) {
+            bulkPublishBtn.disabled = true;
+            bulkPublishBtn.textContent = 'Publishing…';
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/products/admin/bulk-publish?admin_key=${encodeURIComponent(adminKey || '')}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ products: products })
+            });
+
+            const data = await parseApiResponse(res);
+            if (!res.ok) throw new Error(bulkApiError(res, data, 'Publish failed'));
+
+            showBulkPublishSummary(data, products.length);
+
+            // Successful publish -> clear the batch so another CSV can be loaded.
+            bulkRows = [];
+            bulkRowSeq = 0;
+            bulkSourceFileName = '';
+            if (bulkUploadFilename) bulkUploadFilename.textContent = '';
+            renderBulkPreview();
+            if (bulkUploadStatus) bulkUploadStatus.textContent = 'Batch published. Upload another CSV, or cancel to close this panel.';
+
+            await refreshProducts(); // "All Products" table + stats now include the new rows
+        } catch (error) {
+            showBulkError(error && error.message ? error.message : 'Publish failed.');
+            if (bulkUploadStatus) bulkUploadStatus.textContent = 'Nothing was published — your edits are still here, try again.';
+        } finally {
+            setBulkLoading(false);
+            if (bulkPublishBtn) {
+                bulkPublishBtn.disabled = false;
+                bulkPublishBtn.textContent = 'Publish All';
+            }
+        }
+    }
+
+    // Reads the CURRENT (possibly edited) state of every row into the payload
+    // shape the bulk-publish endpoint expects. Empty cells are sent as null.
+    function collectBulkPayload() {
+        syncBulkRowsFromDOM();
+
+        return bulkRows.map(row => {
+            const payload = {};
+            BULK_FIELDS.forEach(f => {
+                const raw = row.values[f.key];
+                const value = (raw === null || raw === undefined) ? '' : String(raw).trim();
+                payload[f.key] = value === '' ? null : value;
+            });
+            Object.keys(row.extra).forEach(k => {
+                if (!(k in payload)) payload[k] = row.extra[k];
+            });
+            return payload;
+        });
+    }
+
+    // Safety net: the state is already kept up to date on every keystroke,
+    // but this guarantees the DOM is the final word before we publish.
+    function syncBulkRowsFromDOM() {
+        if (!bulkPreviewWrapper) return;
+        const nodes = isBulkCardViewActive()
+            ? bulkCardsEl.querySelectorAll('[data-row-id][data-field]')
+            : bulkTableBody.querySelectorAll('[data-row-id][data-field]');
+
+        nodes.forEach(node => {
+            const row = findBulkRow(node.getAttribute('data-row-id'));
+            const field = node.getAttribute('data-field');
+            if (row && field && Object.prototype.hasOwnProperty.call(row.values, field)) {
+                row.values[field] = node.value;
+            }
+        });
+    }
+
+    // True when the CSS breakpoint has swapped the table for the card view.
+    function isBulkCardViewActive() {
+        return !!(bulkCardsEl && bulkCardsEl.offsetParent !== null);
+    }
+
+    function flagBulkNameErrors() {
+        let firstInvalidId = null;
+
+        bulkRows.forEach(row => {
+            const invalid = String(row.values.name || '').trim() === '';
+            const tr = bulkTableBody ? bulkTableBody.querySelector(`tr[data-row-id="${row.id}"]`) : null;
+            const card = bulkCardsEl ? bulkCardsEl.querySelector(`.bulk-card[data-card-id="${row.id}"]`) : null;
+
+            if (tr) tr.classList.toggle('bulk-row-invalid', invalid);
+            if (card) {
+                card.classList.toggle('invalid', invalid);
+                if (invalid) {
+                    // Open the card so the admin can see (and fix) the name field.
+                    card.classList.add('open');
+                    const toggle = card.querySelector('[data-bulk-toggle]');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                }
+            }
+            if (invalid && firstInvalidId === null) firstInvalidId = row.id;
+        });
+
+        return firstInvalidId;
+    }
+
+    function clearBulkRowNameError(rowId) {
+        const tr = bulkTableBody ? bulkTableBody.querySelector(`tr[data-row-id="${rowId}"]`) : null;
+        const card = bulkCardsEl ? bulkCardsEl.querySelector(`.bulk-card[data-card-id="${rowId}"]`) : null;
+        if (tr) tr.classList.remove('bulk-row-invalid');
+        if (card) card.classList.remove('invalid');
+        if (bulkErrorEl) hideBulkError();
+    }
+
+    function scrollBulkRowIntoView(rowId) {
+        const el = isBulkCardViewActive()
+            ? (bulkCardsEl ? bulkCardsEl.querySelector(`.bulk-card[data-card-id="${rowId}"]`) : null)
+            : (bulkTableBody ? bulkTableBody.querySelector(`tr[data-row-id="${rowId}"]`) : null);
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // "46 of 50 products created. 4 skipped:" + skipped names/reasons.
+    function showBulkPublishSummary(data, submittedCount) {
+        if (!bulkSummaryEl) return;
+
+        const created = (data && typeof data.created === 'number') ? data.created : null;
+        const total = (data && typeof data.total_submitted === 'number') ? data.total_submitted : submittedCount;
+        const skipped = (data && Array.isArray(data.skipped_details)) ? data.skipped_details : [];
+        const skippedCount = (data && typeof data.skipped_count === 'number') ? data.skipped_count : skipped.length;
+
+        let heading;
+        if (created === null) {
+            heading = `${total} product${total === 1 ? '' : 's'} submitted.`;
+        } else {
+            heading = `${created} of ${total} product${total === 1 ? '' : 's'} created.`;
+        }
+        if (skippedCount > 0) heading += ` ${skippedCount} skipped:`;
+
+        const skippedHTML = skipped.length
+            ? `<ul class="bulk-skipped-list">${skipped.map(item => {
+                    const name = item && item.name ? item.name : 'Unnamed product';
+                    const reason = item && item.reason ? item.reason : 'skipped by the server';
+                    return `<li><strong>${escapeHTML(name)}</strong> — ${escapeHTML(reason)}</li>`;
+                }).join('')}</ul>`
+            : (skippedCount > 0
+                ? `<p style="margin-top: 0.4rem; font-size: 0.82rem;">${skippedCount} row(s) were skipped but the server returned no details.</p>`
+                : '');
+
+        bulkSummaryEl.className = 'bulk-upload-summary' + (skippedCount > 0 ? ' warn' : ' success');
+        bulkSummaryEl.innerHTML = `
+            <div class="bulk-summary-head">
+                <div><strong>${escapeHTML(heading)}</strong>${skippedHTML}</div>
+                <button type="button" class="btn-secondary btn-small" data-bulk-dismiss="1">Dismiss</button>
+            </div>
+        `;
+        bulkSummaryEl.classList.remove('hidden');
+    }
+
+    /* ------------------------------------------------------- state / helpers */
+
+    function openBulkPanel() {
+        if (bulkUploadPanel) bulkUploadPanel.classList.remove('hidden');
+    }
+
+    // Clears the pending batch. `options.keepSummary` leaves the last publish
+    // report on screen (it is re-rendered only when a new CSV is uploaded).
+    function resetBulkBatch(options) {
+        const keepSummary = !!(options && options.keepSummary);
+
+        bulkRows = [];
+        bulkRowSeq = 0;
+        bulkSourceFileName = '';
+
+        if (bulkUploadFilename) bulkUploadFilename.textContent = '';
+        hideBulkError();
+        if (!keepSummary) hideBulkSummary();
+        renderBulkPreview();
+        if (bulkUploadStatus) bulkUploadStatus.textContent = '';
+    }
+
+    // "Cancel Upload" — full reset, closes the panel and returns the page to normal.
+    function resetBulkUpload() {
+        resetBulkBatch();
+        setBulkLoading(false);
+        if (bulkUploadPanel) bulkUploadPanel.classList.add('hidden');
+        if (bulkCsvInput) bulkCsvInput.value = '';
+        if (bulkPanelInput) bulkPanelInput.value = '';
+        if (bulkPublishBtn) {
+            bulkPublishBtn.disabled = false;
+            bulkPublishBtn.textContent = 'Publish All';
+        }
+    }
+
+    function setBulkLoading(isLoading, message) {
+        if (!bulkLoadingEl) return;
+        if (isLoading && message) {
+            const label = bulkLoadingEl.querySelector('.bulk-loading-text');
+            if (label) label.textContent = message;
+        }
+        bulkLoadingEl.classList.toggle('hidden', !isLoading);
+    }
+
+    function showBulkError(message) {
+        if (!bulkErrorEl) return;
+        bulkErrorEl.textContent = message;
+        bulkErrorEl.classList.remove('hidden');
+        if (bulkErrorEl.scrollIntoView) bulkErrorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideBulkError() {
+        if (bulkErrorEl) {
+            bulkErrorEl.textContent = '';
+            bulkErrorEl.classList.add('hidden');
+        }
+    }
+
+    function hideBulkSummary() {
+        if (bulkSummaryEl) {
+            bulkSummaryEl.classList.add('hidden');
+            bulkSummaryEl.innerHTML = '';
+        }
+    }
+
+    // Reads a fetch Response as JSON without throwing on non-JSON error bodies
+    // (a proxy/HTML error page would otherwise look like a silent failure).
+    async function parseApiResponse(res) {
+        let text = '';
+        try {
+            text = await res.text();
+        } catch (e) {
+            return null;
+        }
+        if (!text) return null;
+
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            const cleaned = text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            return { detail: cleaned.length > 300 ? cleaned.slice(0, 300) + '…' : cleaned };
+        }
+    }
+
+    function bulkApiError(res, data, fallback) {
+        if (data && data.detail) {
+            const detail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+            if (detail) return detail;
+        }
+        if (data && data.message) return data.message;
+
+        const status = res ? res.status : 0;
+        if (status === 400) return `${fallback} — the server rejected the request (400). Check that the CSV header row matches the expected columns exactly.`;
+        if (status === 401 || status === 403) return 'Admin key rejected. Clear the admin key and log in again.';
+        if (status === 413) return 'That CSV is too large for the server to accept. Split it into smaller files.';
+        if (status >= 500) return `${fallback} — the server hit an error (${status}). Please try again.`;
+        return `${fallback}${status ? ` (HTTP ${status})` : ' — network error.'}`;
+    }
 
     /* ==========================================================================
        Render: Submissions

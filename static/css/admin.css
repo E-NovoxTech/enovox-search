@@ -531,3 +531,261 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .form-group.has-error .tag-input-wrapper {
     border-color: #be123c;
 }
+
+/* ==========================================================================
+   BULK CSV UPLOAD (Products tab)
+   Two-step flow that never leaves the admin page:
+     1. "Bulk Upload" -> native file picker -> editable preview grid
+     2. "Publish All" -> summary of created vs skipped rows
+   Desktop (>= 601px): full "Excel-like" editable table (scrolls both ways,
+     with the # and Remove columns pinned while scrolling sideways).
+   Mobile  (<= 600px): one collapsible card per product instead of the table.
+   ========================================================================== */
+
+/* Header action cluster on the Products section ("Bulk Upload" + "Add Product Manually") */
+.section-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Panel wrapper — hidden until a CSV has been chosen */
+.bulk-upload-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+.bulk-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+}
+.bulk-panel-heading h3 { font-size: 1.05rem; }
+.bulk-upload-status { font-size: 0.82rem; margin-top: 0.2rem; }
+
+.bulk-upload-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+.bulk-upload-label { display: inline-flex; align-items: center; cursor: pointer; }
+.bulk-upload-filename { font-size: 0.8rem; word-break: break-all; }
+
+/* Loading state (upload / publish in flight) */
+.bulk-upload-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    font-weight: 500;
+    font-size: 0.85rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+.bulk-spinner {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border: 2px solid #bfdbfe;
+    border-top-color: var(--color-blue);
+    border-radius: 50%;
+    animation: bulk-spin 0.7s linear infinite;
+}
+@keyframes bulk-spin { to { transform: rotate(360deg); } }
+
+/* Post-publish summary */
+.bulk-upload-summary {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-main);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.88rem;
+}
+.bulk-upload-summary.success { background: #dcfce7; border-color: #bbf7d0; color: #166534; }
+.bulk-upload-summary.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.bulk-summary-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; }
+.bulk-skipped-list { margin: 0.5rem 0 0 1.1rem; font-size: 0.82rem; }
+.bulk-skipped-list li { margin-bottom: 0.25rem; }
+
+/* --------------------------------------------------------------------------
+   DESKTOP: editable preview table
+   -------------------------------------------------------------------------- */
+.bulk-grid-container {
+    max-height: 65vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+}
+
+.admin-table.bulk-table { border-collapse: separate; border-spacing: 0; }
+.bulk-table th,
+.bulk-table td {
+    padding: 0.4rem 0.45rem;
+    min-width: 130px;
+    vertical-align: middle;
+    border-right: 1px solid var(--border-color);
+}
+.bulk-table th { font-size: 0.78rem; white-space: nowrap; position: sticky; top: 0; z-index: 3; }
+.bulk-table th:last-child,
+.bulk-table td:last-child { border-right: none; }
+
+/* "#" and Remove columns stay pinned while the grid scrolls sideways */
+.bulk-table .bulk-col-index { left: 0; width: 42px; min-width: 42px; text-align: center; }
+.bulk-table .bulk-col-actions { left: 42px; width: 62px; min-width: 62px; text-align: center; }
+.bulk-table td.bulk-col-index,
+.bulk-table td.bulk-col-actions { position: sticky; z-index: 2; background: var(--bg-card); }
+.bulk-table th.bulk-col-index,
+.bulk-table th.bulk-col-actions { z-index: 4; }
+.bulk-table td.bulk-col-index { color: var(--text-muted); font-size: 0.78rem; }
+.bulk-table td.bulk-col-actions { border-right: 1px solid var(--border-color); }
+.bulk-table th.bulk-col-name,
+.bulk-table td.bulk-col-name { min-width: 210px; }
+
+.bulk-table tbody tr:hover td.bulk-col-index,
+.bulk-table tbody tr:hover td.bulk-col-actions { background: #f8fafc; }
+
+/* Duplicate rows: amber tint + amber left bar on the pinned index cell */
+.bulk-table tbody tr.bulk-row-duplicate td { background: #fffbeb; }
+.bulk-table tbody tr.bulk-row-duplicate td.bulk-col-index { box-shadow: inset 3px 0 0 #f59e0b; }
+
+/* Rows blocked from publishing (no Product Name) */
+.bulk-table tbody tr.bulk-row-invalid td { background: #fef2f2; }
+.bulk-table tbody tr.bulk-row-invalid td.bulk-col-index { box-shadow: inset 3px 0 0 var(--color-red); }
+
+/* Inline (in-place) editable cells */
+.bulk-cell-input {
+    width: 100%;
+    min-width: 110px;
+    padding: 0.4rem 0.45rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+.bulk-cell-input:hover { border-color: var(--border-color); }
+.bulk-cell-input:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.bulk-name-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+.bulk-row-invalid .bulk-cell-input[data-field="name"] { border-color: var(--color-red); background: #fff; }
+
+.badge.duplicate { background: #fef3c7; color: #92400e; }
+
+/* Row delete icon */
+.bulk-delete-btn {
+    background: none;
+    border: none;
+    color: var(--color-red);
+    padding: 0.3rem 0.4rem;
+    border-radius: 6px;
+    line-height: 0;
+}
+.bulk-delete-btn:hover { background: #fee2e2; }
+
+/* --------------------------------------------------------------------------
+   MOBILE: one collapsible card per product (hidden on desktop, see media query)
+   -------------------------------------------------------------------------- */
+.bulk-cards { display: none; }
+
+.bulk-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid transparent;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+.bulk-card.duplicate { border-left-color: #f59e0b; background: #fffdf5; }
+.bulk-card.invalid { border-left-color: var(--color-red); }
+.bulk-card-header { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.75rem; }
+.bulk-card-toggle {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    color: inherit;
+}
+.bulk-card-chevron { display: inline-flex; color: var(--text-muted); transition: transform 0.2s ease; }
+.bulk-card.open .bulk-card-chevron { transform: rotate(90deg); }
+.bulk-card-title { display: flex; flex-direction: column; min-width: 0; }
+.bulk-card-name { font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bulk-card-sub { font-size: 0.72rem; }
+.bulk-card-body { display: none; padding: 0.75rem; border-top: 1px solid var(--border-color); }
+.bulk-card.open .bulk-card-body { display: block; }
+.bulk-card-field { display: flex; flex-direction: column; margin-bottom: 0.7rem; }
+.bulk-card-field label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.25rem;
+}
+.bulk-card-input {
+    min-width: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    font-size: 16px; /* >=16px so mobile Safari doesn't zoom on focus */
+}
+.bulk-card-field textarea {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 16px;
+    resize: vertical;
+}
+
+/* Publish bar under the grid */
+.bulk-publish-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+.bulk-publish-count { font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+
+@media (max-width: 600px) {
+    /* Swap the wide grid for the stacked cards */
+    .bulk-grid-container { display: none; }
+    .bulk-cards { display: block; }
+
+    .bulk-upload-panel { padding: 0.85rem; }
+    .bulk-panel-heading h3 { font-size: 1rem; }
+    .bulk-publish-bar {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background: var(--bg-card);
+        padding-bottom: 0.5rem;
+    }
+    .bulk-publish-bar .btn-primary { flex: 1; }
+}
