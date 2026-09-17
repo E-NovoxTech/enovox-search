@@ -13,8 +13,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Dump database
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          pg_dump "${{ secrets.SUPABASE_DB_URL }}" > backup.sql
+          set -euo pipefail
+          db_url="$(printf '%s' "$SUPABASE_DB_URL" | tr -d '\r\n')"
+          pg_dump --dbname="$db_url" --no-owner --no-privileges > backup.sql
 
       - name: Checkout backup repo
         uses: actions/checkout@v4
