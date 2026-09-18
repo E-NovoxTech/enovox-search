@@ -328,3 +328,55 @@ function initMobileMenu() {
         });
     }
 }
+/* ==========================================================================
+   Animated Stats Counters
+   Counts each .stat-number up from 0 to its data-target once, the first
+   time the stats section scrolls into view. Never re-triggers, never loops.
+   ========================================================================== */
+(function () {
+    const statNumbers = document.querySelectorAll('.stat-number');
+    if (!statNumbers.length) return;
+
+    const DURATION = 1600; // ms — tweak between 1000-2000 as desired
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function animateCounter(el) {
+        const target = parseInt(el.getAttribute('data-target'), 10) || 0;
+        const suffix = el.getAttribute('data-suffix') || '';
+
+        if (prefersReducedMotion) {
+            el.textContent = target + suffix;
+            return;
+        }
+
+        const startTime = performance.now();
+
+        function tick(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / DURATION, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            const current = Math.round(eased * target);
+
+            el.textContent = current + suffix;
+
+            if (progress < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                el.textContent = target + suffix; // lock in the exact final value
+            }
+        }
+
+        requestAnimationFrame(tick);
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target); // fires once, never again
+            }
+        });
+    }, { threshold: 0.4 });
+
+    statNumbers.forEach(el => observer.observe(el));
+})();
