@@ -126,7 +126,6 @@
 
             <!-- Pricing Details dropdown — only rendered for paid products.
                  Free products skip this entirely; there's nothing to expand. -->
-            {% if product.pricing | lower != 'free' %}
             <div class="pricing-dropdown-wrap">
                 <button type="button" id="pricing-details-toggle" class="pricing-toggle-btn" aria-expanded="false" aria-controls="pricing-details-panel">
                     Pricing Details
@@ -140,7 +139,7 @@
                     {% endif %}
                 </div>
             </div>
-            {% endif %}
+            
 
             <a id="visit-website-btn" href="{{ product.website }}" target="_blank" rel="noopener noreferrer" class="visit-website-box">
                 Visit Website <i class="fa-solid fa-arrow-up-right-from-square"></i>
