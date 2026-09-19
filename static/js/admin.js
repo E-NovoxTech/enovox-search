@@ -149,6 +149,8 @@
         setupPricingDetailsLogic();
         setupBulkUpload();
         setupPricingDetailsLogic();
+        setupNewsletter();
+        setupClaims();
         initNotifications();
         initAuth(); // async — kicked off last, verifies any stored key itself
     });
@@ -537,6 +539,12 @@
         if (tabId === 'products-tab') renderProducts();
         if (tabId === 'submissions-tab') renderSubmissions();
         if (tabId === 'developers-tab') renderDevelopers();
+        if (tabId === 'newsletter-tab') {
+            renderNewsletterPicker();
+            // Fetch the subscriber list once per session, not on every render.
+            if (subscribersCache === null) fetchNewsletterSubscribers();
+        }
+        if (tabId === 'claims-tab') fetchClaims();
     }
 
     function getActiveTabId() {
@@ -2038,4 +2046,465 @@
         setInterval(pollNewSubmissions, 60000);
     }
 
+
+    /* ==========================================================================
+       NEWSLETTER SENDING — two modes (Product Update / Custom HTML)
+       Confirmed endpoints:
+         POST /products/admin/newsletter/send-product-update?admin_key=...
+              body { title, intro, product_ids: [..] }
+         POST /products/admin/newsletter/send-custom?admin_key=...
+              body { subject, html_body }
+       Both respond { message, sent, failed: [...] }.
+       The product picker reuses state.products (already cached by
+       fetchProductsData) — no extra fetches are made here.
+       ========================================================================== */
+    const nlSelectedProductIds = new Set();
+    let nlPickerFilter = '';
+
+    function setupNewsletter() {
+        const productModeBtn = document.getElementById('nl-mode-product-btn');
+        const customModeBtn = document.getElementById('nl-mode-custom-btn');
+        const productPanel = document.getElementById('nl-product-panel');
+        const customPanel = document.getElementById('nl-custom-panel');
+        if (productModeBtn && customModeBtn && productPanel && customPanel) {
+            productModeBtn.addEventListener('click', () => {
+                productModeBtn.classList.add('active');
+                customModeBtn.classList.remove('active');
+                productPanel.classList.remove('hidden');
+                customPanel.classList.add('hidden');
+            });
+            customModeBtn.addEventListener('click', () => {
+                customModeBtn.classList.add('active');
+                productModeBtn.classList.remove('active');
+                customPanel.classList.remove('hidden');
+                productPanel.classList.add('hidden');
+            });
+        }
+
+        const pickerSearch = document.getElementById('nl-product-search');
+        if (pickerSearch) pickerSearch.addEventListener('input', () => {
+            nlPickerFilter = pickerSearch.value;
+            renderNewsletterPicker();
+        });
+
+        // One delegated change listener on the picker wrapper survives re-renders.
+        const picker = document.getElementById('nl-product-picker');
+        if (picker) picker.addEventListener('change', (e) => {
+            const box = e.target && e.target.closest ? e.target.closest('input[data-nl-product-id]') : null;
+            if (!box) return;
+            const id = parseInt(box.getAttribute('data-nl-product-id'), 10);
+            if (box.checked) nlSelectedProductIds.add(id);
+            else nlSelectedProductIds.delete(id);
+            updateNewsletterPickerHint();
+        });
+
+        // --- Subscribers reference view wiring ---
+        const subsToggle = document.getElementById('nl-subs-toggle-btn');
+        if (subsToggle) subsToggle.addEventListener('click', () => {
+            const body = document.getElementById('nl-subs-body');
+            if (!body) return;
+            const nowHidden = body.classList.toggle('hidden');
+            subsToggle.textContent = nowHidden ? 'Show list ▾' : 'Hide list ▴';
+        });
+        const subsRefresh = document.getElementById('nl-subs-refresh-btn');
+        if (subsRefresh) subsRefresh.addEventListener('click', () => fetchNewsletterSubscribers());
+        const subsPrev = document.getElementById('nl-subs-prev-btn');
+        if (subsPrev) subsPrev.addEventListener('click', () => {
+            if (subscribersPage > 1) { subscribersPage--; renderSubscribersView(); }
+        });
+        const subsNext = document.getElementById('nl-subs-next-btn');
+        if (subsNext) subsNext.addEventListener('click', () => {
+            subscribersPage++;
+            renderSubscribersView();
+        });
+
+        const sendProductBtn = document.getElementById('nl-send-product-btn');
+        if (sendProductBtn) sendProductBtn.addEventListener('click', sendProductUpdateNewsletter);
+        const sendCustomBtn = document.getElementById('nl-send-custom-btn');
+        if (sendCustomBtn) sendCustomBtn.addEventListener('click', sendCustomNewsletter);
+    }
+
+    function renderNewsletterPicker() {
+        const wrap = document.getElementById('nl-product-picker');
+        if (!wrap) return;
+        const q = (nlPickerFilter || '').trim().toLowerCase();
+        const items = state.products.filter(p => !q || String(p.name || '').toLowerCase().includes(q));
+
+        if (items.length === 0) {
+            wrap.innerHTML = '<p class="text-muted" style="padding:0.75rem;">No products match your filter.</p>';
+            updateNewsletterPickerHint();
+            return;
+        }
+
+        wrap.innerHTML = '';
+        items.forEach(p => {
+            const row = document.createElement('label');
+            row.className = 'nl-product-row';
+            const statusBadge = p.status
+                ? '<span class="badge active">Active</span>'
+                : '<span class="badge deactivated">Deactivated</span>';
+            row.innerHTML = `
+                <input type="checkbox" data-nl-product-id="${p.id}" ${nlSelectedProductIds.has(p.id) ? 'checked' : ''}>
+                <span class="nl-product-name">${escapeHTML(p.name)}</span>
+                ${statusBadge}
+            `;
+            wrap.appendChild(row);
+        });
+        updateNewsletterPickerHint();
+    }
+
+    function updateNewsletterPickerHint() {
+        const hint = document.getElementById('nl-picker-hint');
+        if (hint) hint.textContent = `${nlSelectedProductIds.size} product(s) selected`;
+    }
+
+    function showNewsletterAlert(type, message) {
+        const el = document.getElementById('newsletter-alert');
+        if (!el) return;
+        el.textContent = message;
+        el.className = `alert ${type}`;
+    }
+
+    function hideNewsletterAlert() {
+        const el = document.getElementById('newsletter-alert');
+        if (el) { el.textContent = ''; el.className = 'alert hidden'; }
+        renderNewsletterFailed(null);
+    }
+
+    function renderNewsletterFailed(failed) {
+        const el = document.getElementById('newsletter-failed');
+        if (!el) return;
+        if (!failed || !failed.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+        el.classList.remove('hidden');
+        el.innerHTML = `<span class="failed-title">Could not reach ${failed.length} recipient(s):</span> ` +
+            failed.map(f => escapeHTML(String(f))).join(', ');
+    }
+
+    function setNewsletterSending(btn, sending, originalText) {
+        btn.disabled = sending;
+        btn.textContent = sending ? 'Sending...' : originalText;
+    }
+
+    async function sendProductUpdateNewsletter() {
+        const btn = document.getElementById('nl-send-product-btn');
+        if (!btn) return;
+        hideNewsletterAlert();
+        const title = (document.getElementById('nl-title').value || '').trim();
+        const intro = (document.getElementById('nl-intro').value || '').trim();
+        // Validation errors never touch the form, so nothing typed is lost.
+        if (!title) { showNewsletterAlert('error', 'Please enter a title for the product update.'); return; }
+        if (nlSelectedProductIds.size === 0) { showNewsletterAlert('error', 'Select at least one product to include in the newsletter.'); return; }
+        if (!window.confirm('Send this product update to all opted-in subscribers?\n\nThis reaches real inboxes and cannot be undone.')) return;
+
+        const originalText = btn.textContent;
+        setNewsletterSending(btn, true, originalText);
+        try {
+            const res = await fetch(`${API_URL}/products/admin/newsletter/send-product-update?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, intro, product_ids: Array.from(nlSelectedProductIds) })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || data.message || `Send failed (status ${res.status}).`);
+            showNewsletterAlert('success', data.message || `Newsletter sent to ${data.sent || 0} recipients.`);
+            renderNewsletterFailed(data.failed);
+        } catch (error) {
+            showNewsletterAlert('error', error.message);
+        } finally {
+            setNewsletterSending(btn, false, originalText);
+        }
+    }
+
+    async function sendCustomNewsletter() {
+        const btn = document.getElementById('nl-send-custom-btn');
+        if (!btn) return;
+        hideNewsletterAlert();
+        const subject = (document.getElementById('nl-subject').value || '').trim();
+        const htmlBody = (document.getElementById('nl-html-body').value || '').trim();
+        if (!subject) { showNewsletterAlert('error', 'Please enter a subject line.'); return; }
+        if (!htmlBody) { showNewsletterAlert('error', 'Please enter the email content (HTML).'); return; }
+        if (!window.confirm('Send this custom newsletter to all opted-in subscribers?\n\nThis reaches real inboxes and cannot be undone.')) return;
+
+        const originalText = btn.textContent;
+        setNewsletterSending(btn, true, originalText);
+        try {
+            const res = await fetch(`${API_URL}/products/admin/newsletter/send-custom?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject, html_body: htmlBody })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || data.message || `Send failed (status ${res.status}).`);
+            showNewsletterAlert('success', data.message || `Newsletter sent to ${data.sent || 0} recipients.`);
+            renderNewsletterFailed(data.failed);
+        } catch (error) {
+            showNewsletterAlert('error', error.message);
+        } finally {
+            setNewsletterSending(btn, false, originalText);
+        }
+    }
+
+    /* ==========================================================================
+       CLAIMS REVIEW — pending product-ownership claims
+       Confirmed endpoints:
+         GET  /products/admin/claims?admin_key=...
+         POST /products/admin/claims/{id}/approve?admin_key=...
+         POST /products/admin/claims/{id}/reject?admin_key=...  body { reason }
+       Product name/logo are cross-referenced from the cached state.products
+       (same list that powers the Products tab) — no extra fetch.
+       ========================================================================== */
+    let claimsCache = [];
+
+    function setupClaims() {
+        const refreshBtn = document.getElementById('claims-refresh-btn');
+        if (refreshBtn) refreshBtn.addEventListener('click', () => fetchClaims());
+
+        const list = document.getElementById('claims-list');
+        if (list) list.addEventListener('click', onClaimsListClick);
+    }
+
+    async function fetchClaims() {
+        const loadingEl = document.getElementById('claims-loading');
+        const errorEl = document.getElementById('claims-error');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (errorEl) errorEl.classList.add('hidden');
+        try {
+            const res = await fetch(`${API_URL}/products/admin/claims?admin_key=${encodeURIComponent(adminKey)}`);
+            if (!res.ok) throw new Error('Could not load pending claims.');
+            const claims = await res.json();
+            claimsCache = Array.isArray(claims) ? claims : [];
+            renderClaims();
+        } catch (error) {
+            claimsCache = [];
+            renderClaims();
+            if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove('hidden'); }
+        } finally {
+            if (loadingEl) loadingEl.classList.add('hidden');
+        }
+    }
+
+    function findClaimProduct(claim) {
+        return state.products.find(p => p.id === claim.product_id) || null;
+    }
+
+    function formatClaimDate(raw) {
+        if (!raw) return '';
+        const d = new Date(raw);
+        return isNaN(d.getTime()) ? String(raw) : d.toLocaleDateString();
+    }
+
+    function renderClaims() {
+        const list = document.getElementById('claims-list');
+        const emptyEl = document.getElementById('claims-empty');
+        if (!list || !emptyEl) return;
+        list.innerHTML = '';
+        if (claimsCache.length === 0) {
+            emptyEl.classList.remove('hidden');
+            return;
+        }
+        emptyEl.classList.add('hidden');
+        claimsCache.forEach(claim => list.appendChild(buildClaimCard(claim)));
+    }
+
+    function buildClaimCard(claim) {
+        const card = document.createElement('div');
+        card.className = 'claim-card';
+        card.setAttribute('data-claim-id', claim.id);
+
+        const product = findClaimProduct(claim);
+        const productName = product ? product.name : `Product #${claim.product_id}`;
+        const logoHtml = product && product.logo_url
+            ? `<img src="${escapeHTML(product.logo_url)}" alt="" class="claim-product-logo" onerror="this.style.display='none'">`
+            : '';
+        const socialHtml = claim.social_url
+            ? `<a href="${escapeHTML(claim.social_url)}" target="_blank" rel="noopener">${escapeHTML(claim.social_url)}</a>`
+            : '<span class="text-muted">—</span>';
+
+        card.innerHTML = `
+            <div class="claim-card-head">
+                <div class="claim-product">${logoHtml}<strong>${escapeHTML(productName)}</strong><span class="badge new">Pending</span></div>
+                <span class="text-muted claim-date">Submitted ${escapeHTML(formatClaimDate(claim.created_at))}</span>
+            </div>
+            <div class="claim-card-body">
+                <div><span class="claim-label">Claimant</span>${escapeHTML(claim.name || '—')}</div>
+                <div><span class="claim-label">Email</span>${escapeHTML(claim.email || '—')}</div>
+                <div><span class="claim-label">Role</span>${escapeHTML(claim.role || '—')}</div>
+                <div><span class="claim-label">Social / LinkedIn</span>${socialHtml}</div>
+            </div>
+            <div class="claim-card-actions">
+                <button type="button" class="btn-success" data-claim-action="approve" data-claim-id="${claim.id}">Approve</button>
+                <button type="button" class="btn-danger" data-claim-action="reject" data-claim-id="${claim.id}">Reject</button>
+            </div>
+            <div class="claim-reject-row hidden">
+                <input type="text" class="claim-reject-input" placeholder="Reason for rejection (required)">
+                <button type="button" class="btn-danger btn-small" data-claim-action="reject-confirm" data-claim-id="${claim.id}">Confirm Reject</button>
+                <button type="button" class="btn-secondary btn-small" data-claim-action="reject-cancel" data-claim-id="${claim.id}">Cancel</button>
+                <div class="error-text hidden claim-reject-error">A reason is required to reject a claim.</div>
+            </div>
+        `;
+        return card;
+    }
+
+    function onClaimsListClick(e) {
+        const btn = e.target && e.target.closest ? e.target.closest('button[data-claim-action]') : null;
+        if (!btn) return;
+        const claimId = parseInt(btn.getAttribute('data-claim-id'), 10);
+        const card = btn.closest('.claim-card');
+        const action = btn.getAttribute('data-claim-action');
+
+        if (action === 'approve') { approveClaim(claimId, card); return; }
+        if (action === 'reject') {
+            const row = card ? card.querySelector('.claim-reject-row') : null;
+            if (row) row.classList.remove('hidden');
+            return;
+        }
+        if (action === 'reject-cancel') {
+            const row = card ? card.querySelector('.claim-reject-row') : null;
+            if (row) {
+                row.classList.add('hidden');
+                const input = row.querySelector('.claim-reject-input');
+                const err = row.querySelector('.claim-reject-error');
+                if (input) input.value = '';
+                if (err) err.classList.add('hidden');
+            }
+            return;
+        }
+        if (action === 'reject-confirm') { rejectClaim(claimId, card); return; }
+    }
+
+    function setClaimCardBusy(card, busy) {
+        if (!card || !card.querySelectorAll) return;
+        card.querySelectorAll('button').forEach(b => { b.disabled = busy; });
+    }
+
+    async function approveClaim(claimId, card) {
+        const claim = claimsCache.find(c => c.id === claimId);
+        if (!claim) return;
+        const product = findClaimProduct(claim);
+        const productName = product ? product.name : `Product #${claim.product_id}`;
+        if (!window.confirm(`Approve this claim?\n\nThis will transfer ownership of "${productName}" to ${claim.name || claim.email}.`)) return;
+
+        setClaimCardBusy(card, true);
+        try {
+            const res = await fetch(`${API_URL}/products/admin/claims/${claimId}/approve?admin_key=${encodeURIComponent(adminKey)}`, { method: 'POST' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || data.message || 'Could not approve this claim.');
+            claimsCache = claimsCache.filter(c => c.id !== claimId);
+            renderClaims();
+            showAlert('success', data.message || 'Claim approved.');
+        } catch (error) {
+            showAlert('error', error.message);
+            setClaimCardBusy(card, false);
+        }
+    }
+
+    async function rejectClaim(claimId, card) {
+        const row = card ? card.querySelector('.claim-reject-row') : null;
+        const input = row ? row.querySelector('.claim-reject-input') : null;
+        const errEl = row ? row.querySelector('.claim-reject-error') : null;
+        const reason = input ? input.value.trim() : '';
+        if (!reason) {
+            if (errEl) errEl.classList.remove('hidden');
+            if (input) input.focus();
+            return;
+        }
+        if (errEl) errEl.classList.add('hidden');
+
+        setClaimCardBusy(card, true);
+        try {
+            const res = await fetch(`${API_URL}/products/admin/claims/${claimId}/reject?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || data.message || 'Could not reject this claim.');
+            claimsCache = claimsCache.filter(c => c.id !== claimId);
+            renderClaims();
+            showAlert('success', data.message || 'Claim rejected.');
+        } catch (error) {
+            showAlert('error', error.message);
+            setClaimCardBusy(card, false);
+        }
+    }
+
+    /* ==========================================================================
+       NEWSLETTER SUBSCRIBERS VIEW (reference/visibility only)
+       Confirmed endpoint:
+         GET /products/admin/newsletter/subscribers?admin_key=...
+         -> { total, developers:[{email,source}], users:[...],
+              standalone_subscribers:[{email, subscribed_at, source}] }
+       Fetched once when the Newsletter tab is first opened (plus Refresh).
+       Merged list paginates 10 per page with Prev/Next.
+       ========================================================================== */
+    let subscribersCache = null; // null = not fetched yet
+    let subscribersPage = 1;
+    const SUBS_PAGE_SIZE = 10;
+
+    async function fetchNewsletterSubscribers() {
+        const errorEl = document.getElementById('nl-subs-error');
+        const summaryEl = document.getElementById('nl-subs-summary');
+        if (errorEl) errorEl.classList.add('hidden');
+        if (summaryEl && subscribersCache === null) summaryEl.textContent = 'Loading subscribers…';
+        try {
+            const res = await fetch(`${API_URL}/products/admin/newsletter/subscribers?admin_key=${encodeURIComponent(adminKey)}`);
+            if (!res.ok) throw new Error('Could not load the subscriber list.');
+            subscribersCache = await res.json();
+            subscribersPage = 1;
+            renderSubscribersView();
+        } catch (error) {
+            if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove('hidden'); }
+            if (summaryEl) summaryEl.textContent = 'Subscribers unavailable';
+        }
+    }
+
+    function buildMergedSubscribers() {
+        if (!subscribersCache) return [];
+        const merged = [];
+        (subscribersCache.developers || []).forEach(e => merged.push({ email: e.email, source: 'Developer', date: null }));
+        (subscribersCache.users || []).forEach(e => merged.push({ email: e.email, source: 'User', date: null }));
+        (subscribersCache.standalone_subscribers || []).forEach(e => merged.push({ email: e.email, source: 'Standalone', date: e.subscribed_at || null }));
+        return merged;
+    }
+
+    function renderSubscribersView() {
+        const summaryEl = document.getElementById('nl-subs-summary');
+        const breakdownEl = document.getElementById('nl-subs-breakdown');
+        const listEl = document.getElementById('nl-subs-list');
+        const pageLabel = document.getElementById('nl-subs-page-label');
+        const prevBtn = document.getElementById('nl-subs-prev-btn');
+        const nextBtn = document.getElementById('nl-subs-next-btn');
+        if (!summaryEl || !listEl || !subscribersCache) return;
+
+        const dev = (subscribersCache.developers || []).length;
+        const usr = (subscribersCache.users || []).length;
+        const stand = (subscribersCache.standalone_subscribers || []).length;
+        const total = typeof subscribersCache.total === 'number' ? subscribersCache.total : dev + usr + stand;
+
+        summaryEl.textContent = `${total} total subscriber${total === 1 ? '' : 's'}`;
+        if (breakdownEl) breakdownEl.textContent = `${dev} Developers · ${usr} Users · ${stand} Standalone`;
+
+        const merged = buildMergedSubscribers();
+        const totalPages = Math.max(1, Math.ceil(merged.length / SUBS_PAGE_SIZE));
+        if (subscribersPage < 1) subscribersPage = 1;
+        if (subscribersPage > totalPages) subscribersPage = totalPages;
+        const slice = merged.slice((subscribersPage - 1) * SUBS_PAGE_SIZE, subscribersPage * SUBS_PAGE_SIZE);
+
+        if (merged.length === 0) {
+            listEl.innerHTML = '<p class="text-muted" style="padding:0.75rem;">No subscribers yet.</p>';
+        } else {
+            listEl.innerHTML = slice.map(entry => {
+                const badgeClass = entry.source === 'Developer' ? 'developer'
+                    : entry.source === 'User' ? 'user' : 'standalone';
+                const dateHtml = entry.date
+                    ? `<span class="nl-subs-date">${escapeHTML(formatClaimDate(entry.date))}</span>`
+                    : '';
+                return `<div class="nl-subs-row"><span class="nl-subs-email">${escapeHTML(entry.email || '')}</span>${dateHtml}<span class="badge ${badgeClass}">${entry.source}</span></div>`;
+            }).join('');
+        }
+
+        if (pageLabel) pageLabel.textContent = `Page ${subscribersPage} of ${totalPages}`;
+        if (prevBtn) prevBtn.disabled = subscribersPage <= 1;
+        if (nextBtn) nextBtn.disabled = subscribersPage >= totalPages;
+    }
 })();

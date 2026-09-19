@@ -221,3 +221,15 @@ class ClaimSubmit(BaseModel):
     email: str
     role: str
     social_url: Optional[str] = None
+    
+class NewsletterSubscribe(BaseModel):
+    email: str
+
+class NewsletterProductSend(BaseModel):
+    title: str
+    intro: Optional[str] = None
+    product_ids: List[int]
+
+class NewsletterCustomSend(BaseModel):
+    subject: str
+    html_body: str

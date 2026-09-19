@@ -60,7 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroRotation();
     initThemeToggle();
     initMobileMenu();
-    initAuthState();
+    initFooterSubscribe();
+    initSubscribeHeaderButton();
     
     if (document.getElementById('newly-launched-list')) {
         loadGridData();
@@ -137,55 +138,13 @@ function initThemeToggle() {
 }
 
 /* ==========================================================================
-   Global Logged-In Nav State
-   Reads "enovox_dev_token" / "enovox_account_type" (set by auth.js on
-   successful login/signup) and swaps the Login / Sign up links for a
-   logged-in state, on every page that loads this file:
-     - developer -> "Dashboard" link + "Logout"
-     - user      -> plain "Signed in" text (no link -- users don't have a
-                    dashboard) + "Logout"
-   Reuses the existing .btn-text / .btn-primary classes rather than adding
-   new markup or CSS, so it follows your real light/dark mode automatically.
+   Global Logged-In Nav State -- MOVED to nav-auth.js
+   nav-auth.js is slot-based (.auth-login-slot / .auth-signup-slot) and
+   covers BOTH the desktop .nav-actions links and the mobile slider pills,
+   on every page. The old initAuthState() that lived here duplicated it
+   (desktop only) and double-bound the Logout click handler, so it was
+   removed. Every page that loads home.js also loads nav-auth.js.
    ========================================================================== */
-function initAuthState() {
-    const TOKEN_KEY = 'enovox_dev_token';
-    const ACCOUNT_TYPE_KEY = 'enovox_account_type';
-    const DASHBOARD_URL = '/dashboard';
-
-    const navActions = document.querySelector('.nav-actions');
-    if (!navActions) return;
-
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return; // not logged in -- leave Login / Sign up exactly as they are
-
-    // Scoped to .nav-actions specifically so this never touches unrelated
-    // links elsewhere on the page (e.g. the "New here? Sign up" link inside
-    // the login card itself).
-    const loginLink = navActions.querySelector('a.btn-text[href="/login"]');
-    const signupLink = navActions.querySelector('a.btn-primary[href="/signup"]');
-    if (!loginLink || !signupLink) return; // markup doesn't match, or already swapped
-
-    const isDeveloper = localStorage.getItem(ACCOUNT_TYPE_KEY) === 'developer';
-
-    if (isDeveloper) {
-        loginLink.textContent = 'Dashboard';
-        loginLink.setAttribute('href', DASHBOARD_URL);
-    } else {
-        loginLink.textContent = 'Signed in';
-        loginLink.removeAttribute('href');
-        loginLink.style.cursor = 'default';
-    }
-
-    signupLink.textContent = 'Logout';
-    signupLink.removeAttribute('href');
-    signupLink.style.cursor = 'pointer';
-    signupLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(ACCOUNT_TYPE_KEY);
-        window.location.href = '/';
-    });
-}
 
 /* ==========================================================================
    Backend Data Fetching & Card Generation
@@ -328,6 +287,86 @@ function initMobileMenu() {
         });
     }
 }
+/* ==========================================================================
+   Footer Newsletter Subscribe
+   Wires #footer-subscribe-form (email input + Subscribe button) to
+   POST /products/newsletter/subscribe -- confirmed backend contract:
+     body:     {"email": "..."}
+     response: {"message": "Subscribed successfully."}
+               or {"message": "You're already subscribed."}
+   Shows the returned message inline and clears the input on success.
+   Inert on pages without the markup (e.g. the admin panel).
+   ========================================================================== */
+function initFooterSubscribe() {
+    const form = document.getElementById('footer-subscribe-form');
+    if (!form) return;
+    const input = document.getElementById('footer-subscribe-email');
+    const msgEl = document.getElementById('footer-subscribe-msg');
+    const btn = form.querySelector('button[type="submit"]');
+    if (!input || !btn) return;
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // same pattern auth.js uses
+
+    function showMsg(text, kind) {
+        if (!msgEl) return;
+        msgEl.textContent = text;
+        msgEl.className = kind ? `footer-subscribe-msg ${kind}` : 'footer-subscribe-msg';
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = input.value.trim();
+        if (!EMAIL_RE.test(email)) {
+            showMsg('Please enter a valid email address.', 'error');
+            return;
+        }
+
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Subscribing...';
+        showMsg('', '');
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/products/newsletter/subscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                let detail = data.message || data.detail || '';
+                if (Array.isArray(detail) && detail[0] && detail[0].msg) detail = detail[0].msg; // FastAPI 422
+                throw new Error(detail || 'Could not subscribe right now. Please try again.');
+            }
+            showMsg(data.message || 'Subscribed successfully.', 'success');
+            input.value = '';
+        } catch (err) {
+            showMsg(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    });
+}
+
+/* ==========================================================================
+   Header "Subscribe" pill -- smooth-scrolls down to the footer subscribe
+   box and focuses the email input. Inert on pages without the form (the
+   native #footer-subscribe-form anchor remains as a fallback).
+   ========================================================================== */
+function initSubscribeHeaderButton() {
+    document.querySelectorAll('.nav-subscribe-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const form = document.getElementById('footer-subscribe-form');
+            if (!form) return;
+            e.preventDefault();
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const input = document.getElementById('footer-subscribe-email');
+            if (input) setTimeout(() => input.focus({ preventScroll: true }), 400);
+        });
+    });
+}
+
 /* ==========================================================================
    Animated Stats Counters
    Counts each .stat-number up from 0 to its data-target once, the first

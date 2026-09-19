@@ -15,9 +15,33 @@
     let resendCooldownActive = false;
     let pendingGoogleCredential = null;
 
+    /* ==========================================================================
+       URL params: /login?type=developer&redirect=/product/some-slug
+       Sent by the Claim-product button in product.js when the visitor isn't
+       logged in as a developer. `type` preselects the account-type tab;
+       `redirect` sends them back to the page they came from after ANY
+       successful auth (login, signup+verify, or Google) -- it wins over the
+       default developer/user destinations in redirectAfterAuth().
+       `redirect` is validated to be a same-origin relative path only.
+       ========================================================================== */
+    const urlParams = new URLSearchParams(window.location.search);
+
+    function getSafeRedirect() {
+        const raw = (urlParams.get('redirect') || '').trim();
+        // Same-origin relative paths only: must start with a single '/'.
+        // Blocks '//evil.com', 'https://evil.com' and '/\\evil.com' tricks.
+        if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return null;
+        return raw;
+    }
+
+    const requestedRedirect = getSafeRedirect();
+    const requestedAccountType = urlParams.get('type') === 'developer' ? 'developer'
+        : (urlParams.get('type') === 'user' ? 'user' : null);
+
     document.addEventListener('DOMContentLoaded', () => {
         setupAccountTypeToggle();
         setupGoogleModal();
+        applyUrlParams();
 
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
@@ -65,6 +89,29 @@
                     if (text) subtitle.textContent = text;
                 }
             });
+        });
+    }
+
+    /* Applies ?type= / ?redirect= to the page:
+       - preselects the matching account-type tab by triggering the tab's own
+         existing click handler, so the hidden input, title and subtitle all
+         stay in sync exactly as if the user had clicked it;
+       - carries the same query string onto the login<->signup cross-links so
+         the params survive switching between the two pages.
+       Scoped to .auth-footer .auth-link only -- the header nav slots belong
+       to nav-auth.js and must not be touched here. */
+    function applyUrlParams() {
+        if (!requestedRedirect && !requestedAccountType) return;
+
+        if (requestedAccountType) {
+            const tab = document.querySelector(`.account-type-toggle .account-type-btn[data-type="${requestedAccountType}"]`);
+            if (tab && !tab.classList.contains('active')) tab.click();
+        }
+
+        const qs = window.location.search;
+        if (!qs) return;
+        document.querySelectorAll('.auth-footer a.auth-link[href="/signup"], .auth-footer a.auth-link[href="/login"]').forEach(link => {
+            link.setAttribute('href', link.getAttribute('href') + qs);
         });
     }
 
@@ -191,8 +238,19 @@
         }
         if (hasError) return;
 
+        // Terms gate — frontend-only (the backend has no field for it).
+        const termsBox = document.getElementById('signup-terms');
+        if (termsBox && !termsBox.checked) {
+            showAlert('error', 'Please accept the Terms & Conditions and Privacy Policy to create an account.', 'auth-alert');
+            return;
+        }
+
         const accountType = getAccountType();
         const endpoint = accountType === 'developer' ? '/developers/signup' : '/users/signup';
+
+        // Optional newsletter opt-in — sent as a boolean, per the confirmed
+        // backend contract for /developers/signup and /users/signup.
+        const newsletterBox = document.getElementById('signup-newsletter');
 
         setLoading(btn, true, 'Creating Account...');
 
@@ -200,7 +258,11 @@
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({
+                    email,
+                    password,
+                    newsletter_opt_in: !!(newsletterBox && newsletterBox.checked)
+                })
             });
 
             if (!response.ok) {
@@ -218,7 +280,7 @@
             if (/already registered/i.test(error.message)) {
                 const alertBox = document.getElementById('auth-alert');
                 if (alertBox) {
-                    alertBox.innerHTML = `${escapeHTML(error.message)} <a href="/login" style="text-decoration: underline; font-weight: bold;">Log in here</a>.`;
+                    alertBox.innerHTML = `${escapeHTML(error.message)} <a href="/login${escapeHTML(window.location.search)}" style="text-decoration: underline; font-weight: bold;">Log in here</a>.`;
                 }
             }
         } finally {
@@ -376,6 +438,13 @@
         if (!modal) return;
         const errorEl = document.getElementById('gsi-modal-error');
         if (errorEl) { errorEl.className = 'alert hidden'; errorEl.textContent = ''; }
+
+        // Fresh state each time the modal opens.
+        const gsiTerms = document.getElementById('gsi-terms');
+        const gsiNewsletter = document.getElementById('gsi-newsletter');
+        if (gsiTerms) gsiTerms.checked = false;
+        if (gsiNewsletter) gsiNewsletter.checked = false;
+
         modal.classList.remove('hidden');
     }
 
@@ -390,11 +459,29 @@
         const errorEl = document.getElementById('gsi-modal-error');
         if (errorEl) { errorEl.className = 'alert hidden'; errorEl.textContent = ''; }
 
+        // Terms gate — frontend-only; keeps pendingGoogleCredential intact so
+        // the user can tick the box and choose an account type again.
+        const gsiTerms = document.getElementById('gsi-terms');
+        if (gsiTerms && !gsiTerms.checked) {
+            if (errorEl) {
+                errorEl.textContent = 'Please accept the Terms & Conditions and Privacy Policy to continue.';
+                errorEl.className = 'alert error';
+            }
+            return;
+        }
+
         try {
             const res = await fetch(`${API_URL}/auth/google`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ credential: pendingGoogleCredential, account_type: accountType })
+                body: JSON.stringify({
+                    credential: pendingGoogleCredential,
+                    account_type: accountType,
+                    // Confirmed contract: the NEW-account /auth/google call
+                    // accepts newsletter_opt_in alongside account_type.
+                    newsletter_opt_in: !!(document.getElementById('gsi-newsletter') &&
+                                          document.getElementById('gsi-newsletter').checked)
+                })
             });
 
             if (!res.ok) {
@@ -484,9 +571,16 @@
 
     /* ==========================================================================
        Redirect after successful login/signup-verification/Google sign-in.
-       Developer -> /dashboard. User -> always / (home) — no referrer logic.
+       An explicit ?redirect= path (validated same-origin, e.g. from the
+       product page's Claim button) wins; otherwise the defaults apply:
+       Developer -> /dashboard. User -> always / (home). Still no referrer
+       logic — the redirect comes from an explicit, validated URL param.
        ========================================================================== */
     function redirectAfterAuth(accountType) {
+        if (requestedRedirect) {
+            window.location.href = requestedRedirect;
+            return;
+        }
         if (accountType === 'developer') {
             window.location.href = '/dashboard';
             return;

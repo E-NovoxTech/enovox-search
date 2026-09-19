@@ -8,6 +8,7 @@ from fastapi import BackgroundTasks
 from ..utils import send_claim_alert
 from fastapi import UploadFile, File
 from ..bulk_upload_utils import parse_csv_to_rows
+from ..newsletter_utils import get_all_recipients, build_product_update_html, wrap_in_template, send_newsletter
 
 
 from app.routers.developers import get_current_developer
@@ -419,3 +420,86 @@ def bulk_publish(admin_key: str, data: schemas.BulkPublishRequest, db: Session =
         created += 1
 
     return {"total_submitted": len(data.products), "created": created, "skipped_count": len(skipped), "skipped_details": skipped}
+
+@router.post("/admin/newsletter/send-product-update")
+def send_product_update(admin_key: str, data: schemas.NewsletterProductSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    products = db.query(models.Product).filter(models.Product.id.in_(data.product_ids)).all()
+    if not products:
+        raise HTTPException(status_code=400, detail="No matching products found")
+
+    html_body = build_product_update_html(data.title, data.intro, products)
+    recipients = get_all_recipients(db)
+
+    if not recipients:
+        return {"message": "No recipients to send to.", "sent": 0}
+
+    results = send_newsletter(recipients, data.title, html_body)
+    return {"message": f"Newsletter sent to {results['sent']} recipients.", **results}
+
+
+@router.post("/admin/newsletter/send-custom")
+def send_custom_newsletter(admin_key: str, data: schemas.NewsletterCustomSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    html_body = wrap_in_template(data.subject, data.html_body)
+    recipients = get_all_recipients(db)
+
+    if not recipients:
+        return {"message": "No recipients to send to.", "sent": 0}
+
+    results = send_newsletter(recipients, data.subject, html_body)
+    return {"message": f"Newsletter sent to {results['sent']} recipients.", **results}
+
+
+@router.post("/newsletter/subscribe")
+def subscribe_newsletter(data: schemas.NewsletterSubscribe, db: Session = Depends(get_db)):
+    existing = db.query(models.NewsletterSubscriber).filter(models.NewsletterSubscriber.email == data.email).first()
+    if existing:
+        return {"message": "You're already subscribed."}
+
+    new_sub = models.NewsletterSubscriber(email=data.email)
+    db.add(new_sub)
+    db.commit()
+    return {"message": "Subscribed successfully."}
+
+@router.get("/admin/newsletter/subscribers")
+def list_newsletter_subscribers(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    developers = db.query(models.Developer.email, models.Developer.newsletter_opt_in).filter(
+        models.Developer.newsletter_opt_in == True
+    ).all()
+
+    users = db.query(models.User.email, models.User.newsletter_opt_in).filter(
+        models.User.newsletter_opt_in == True
+    ).all()
+
+    standalone = db.query(models.NewsletterSubscriber.email, models.NewsletterSubscriber.created_at).all()
+
+    return {
+        "total": len(developers) + len(users) + len(standalone),
+        "developers": [{"email": e, "source": "developer"} for e, _ in developers],
+        "users": [{"email": e, "source": "user"} for e, _ in users],
+        "standalone_subscribers": [{"email": e, "subscribed_at": c, "source": "standalone"} for e, c in standalone]
+    }
+
+
+@router.get("/unsubscribe")
+def unsubscribe(email: str, db: Session = Depends(get_db)):
+    db.query(models.NewsletterSubscriber).filter(models.NewsletterSubscriber.email == email).delete()
+
+    dev = db.query(models.Developer).filter(models.Developer.email == email).first()
+    if dev:
+        dev.newsletter_opt_in = False
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if user:
+        user.newsletter_opt_in = False
+
+    db.commit()
+    return {"message": "You've been unsubscribed."}

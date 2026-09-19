@@ -14,7 +14,8 @@ class Developer(Base):
     verification_code = Column(String, nullable=True)
     verification_code_expires = Column(DateTime, nullable=True)
     auth_provider = Column(String, default="password", nullable=True)
-
+    newsletter_opt_in = Column(Boolean, default=False)
+    
 class Product(Base):
     __tablename__ = "products"
 
@@ -90,7 +91,7 @@ class User(Base):
     verification_code = Column(String, nullable=True)
     verification_code_expires = Column(DateTime, nullable=True)
     auth_provider = Column(String, default="password", nullable=True)
-
+    newsletter_opt_in = Column(Boolean, default=False)
 
 class SearchUsage(Base):
     __tablename__ = "search_usage"
@@ -112,4 +113,11 @@ class ClaimRequest(Base):
     social_url = Column(String, nullable=True)
     status = Column(String, default="pending")  # pending | approved | rejected
     rejection_reason = Column(String, nullable=True)
+    created_at = Column(Date, default=date.today)
+    
+    
+class NewsletterSubscriber(Base):
+    __tablename__ = "newsletter_subscribers"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False)
     created_at = Column(Date, default=date.today)

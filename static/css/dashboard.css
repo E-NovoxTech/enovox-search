@@ -363,3 +363,9 @@
         text-align: center;
     }
 }
+.fa-bell{
+    color: #000;
+}
+.dark-mode .fa-bell{
+    color: #fff;
+}

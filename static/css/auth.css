@@ -289,3 +289,53 @@ button.full-width {
         font-size: 1.3rem;
     }
 }
+
+
+/* ==========================================================================
+   Terms + newsletter checkbox rows (signup form and Google account-type
+   modal). Mirrors the .agreement-check pattern from submit.css -- same
+   look, no new visual language. The .checkbox-group / .gsi-modal-checks
+   prefixes keep specificity above the generic .form-group label/input rules.
+   ========================================================================== */
+.checkbox-group {
+    margin-bottom: 1rem;
+}
+
+.checkbox-group .checkbox-label,
+.gsi-modal-checks .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.4;
+    cursor: pointer;
+    color: var(--text-main);
+    text-align: left;
+}
+
+.checkbox-group .checkbox-label input[type="checkbox"],
+.gsi-modal-checks .checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 3px 0 0 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.checkbox-group .checkbox-label a,
+.gsi-modal-checks .checkbox-label a {
+    color: var(--color-blue, #2563eb);
+    text-decoration: none;
+}
+
+.checkbox-group .checkbox-label a:hover,
+.gsi-modal-checks .checkbox-label a:hover {
+    text-decoration: underline;
+}
+
+.gsi-modal-checks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 1.25rem;
+}

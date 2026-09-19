@@ -41,7 +41,7 @@
             <!-- Notification Bell Instance #1 (mobile header) -->
             <div class="admin-notifications-wrapper">
                 <button class="notification-bell-btn" aria-label="Notifications">
-                    🔔
+                    <i class="fa-solid fa-bell"></i>
                     <span class="notification-badge badge popular">0</span>
                 </button>
                 <div class="notification-dropdown hidden">
@@ -69,7 +69,7 @@
                     <!-- Notification Bell Instance #2 (desktop, lives in sidebar) -->
                     <div class="admin-notifications-wrapper sidebar-notifications-wrapper">
                         <button class="notification-bell-btn" aria-label="Notifications">
-                            🔔
+                            <i class="fa-solid fa-bell"></i>
                             <span class="notification-badge badge popular">0</span>
                         </button>
                         <div class="notification-dropdown hidden">
@@ -87,6 +87,8 @@
                     <button class="nav-tab active" data-target="products-tab">Products</button>
                     <button class="nav-tab" data-target="submissions-tab">Submissions</button>
                     <button class="nav-tab" data-target="developers-tab">Developers</button>
+                    <button class="nav-tab" data-target="claims-tab">Claims</button>
+                    <button class="nav-tab" data-target="newsletter-tab">Newsletter</button>
                     <a href="/" class="nav-tab" style="font-weight: bold; text-decoration: none;">Home</a>
                 </nav>
                 <div class="sidebar-footer">
@@ -283,6 +285,92 @@
                     </div>
                     <div class="pagination-bar" id="developers-pagination"></div>
                 </section>
+                <!-- CLAIMS TAB -->
+                <section id="claims-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Claim Requests</h2>
+                        <div class="section-header-actions">
+                            <button id="claims-refresh-btn" class="btn-secondary">Refresh</button>
+                        </div>
+                    </div>
+                    <div id="claims-loading" class="text-muted" style="margin-bottom: 1rem;">Loading pending claims…</div>
+                    <div id="claims-error" class="alert error hidden"></div>
+                    <div id="claims-empty" class="claims-empty hidden">No pending claims</div>
+                    <div id="claims-list" class="claims-list"></div>
+                </section>
+
+                <!-- NEWSLETTER TAB -->
+                <section id="newsletter-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Newsletter</h2>
+                    </div>
+                    <div id="newsletter-alert" class="alert hidden"></div>
+                    <div id="newsletter-failed" class="nl-failed hidden"></div>
+
+                    <!-- Subscribers reference view (collapsed by default) -->
+                    <div class="nl-subs-box">
+                        <div class="nl-subs-head">
+                            <div>
+                                <div id="nl-subs-summary" class="nl-subs-summary">–</div>
+                                <div id="nl-subs-breakdown" class="text-muted nl-subs-breakdown"></div>
+                            </div>
+                            <div class="nl-subs-head-actions">
+                                <button type="button" id="nl-subs-refresh-btn" class="btn-secondary btn-small">Refresh</button>
+                                <button type="button" id="nl-subs-toggle-btn" class="btn-secondary btn-small">Show list ▾</button>
+                            </div>
+                        </div>
+                        <div id="nl-subs-error" class="alert error hidden"></div>
+                        <div id="nl-subs-body" class="hidden">
+                            <div id="nl-subs-list" class="nl-subs-list"></div>
+                            <div class="nl-subs-pager">
+                                <button type="button" id="nl-subs-prev-btn" class="btn-secondary btn-small">&laquo; Prev</button>
+                                <span id="nl-subs-page-label" class="text-muted"></span>
+                                <button type="button" id="nl-subs-next-btn" class="btn-secondary btn-small">Next &raquo;</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nl-mode-bar">
+                        <button type="button" id="nl-mode-product-btn" class="nl-mode-btn active">Product Update</button>
+                        <button type="button" id="nl-mode-custom-btn" class="nl-mode-btn">Custom HTML</button>
+                    </div>
+
+                    <!-- MODE 1: Product Update -->
+                    <div id="nl-product-panel" class="nl-panel">
+                        <div class="form-group">
+                            <label>Title *</label>
+                            <input type="text" id="nl-title" placeholder="e.g. New on Enovox Search this month">
+                        </div>
+                        <div class="form-group">
+                            <label>Intro (optional)</label>
+                            <textarea id="nl-intro" rows="3" placeholder="A short intro shown above the product cards..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Products to include *</label>
+                            <input type="text" id="nl-product-search" placeholder="Filter products by name...">
+                            <div id="nl-product-picker" class="nl-product-picker"></div>
+                            <div id="nl-picker-hint" class="nl-picker-hint text-muted">0 product(s) selected</div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="nl-send-product-btn" class="btn-primary">Send Newsletter</button>
+                        </div>
+                    </div>
+
+                    <!-- MODE 2: Custom HTML -->
+                    <div id="nl-custom-panel" class="nl-panel hidden">
+                        <div class="form-group">
+                            <label>Subject *</label>
+                            <input type="text" id="nl-subject" placeholder="Email subject line">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Content (HTML) *</label>
+                            <textarea id="nl-html-body" rows="12" placeholder="<h2>Announcement</h2>&#10;<p>Write your announcement here...</p>"></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="nl-send-custom-btn" class="btn-primary">Send Newsletter</button>
+                        </div>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
@@ -452,5 +540,5 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
     <script src="/static/js/submit-tags.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3c93a270e70655f',t:'MTc4OTY1OTgxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>

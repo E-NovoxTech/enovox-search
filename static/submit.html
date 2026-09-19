@@ -49,6 +49,7 @@
                 <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/contact">Contact</a>
                 <div class="nav-auth-mobile">
+                    <a href="#footer-subscribe-form" class="nav-subscribe-btn nav-subscribe-mobile" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
                     <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
                     <a href="/signup" class="mobile-auth-pill mobile-auth-accent auth-signup-slot">Sign up</a>
                 </div>
@@ -68,6 +69,7 @@
 
                 <!-- Auth Buttons (JS will alter these if logged in) -->
                 <div id="nav-auth-buttons" style="display: flex; gap: inherit; align-items: center;">
+                    <a href="#footer-subscribe-form" class="nav-subscribe-btn" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
                     <a href="/login" class="btn-text auth-login-slot">Login</a>
                 <a href="/signup" class="btn-primary auth-signup-slot">Sign up</a>
                 </div>
@@ -304,6 +306,17 @@
                 <div class="footer-social">
                     <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
                     <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div class="footer-subscribe">
+                    <h4 class="footer-subscribe-title">Discover more. Stay updated.</h4>
+                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, updates, and news from Enovox Search.</p>
+                    <form id="footer-subscribe-form" class="footer-subscribe-form" novalidate>
+                        <div class="footer-subscribe-row">
+                            <input type="email" id="footer-subscribe-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+                            <button type="submit" class="footer-subscribe-btn">Subscribe</button>
+                        </div>
+                        <p class="footer-subscribe-msg" id="footer-subscribe-msg" role="status" aria-live="polite"></p>
+                    </form>
                 </div>
             </div>
             <div class="footer-col">

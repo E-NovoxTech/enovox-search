@@ -32,6 +32,7 @@
                 <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/contact">Contact</a>
                 <div class="nav-auth-mobile">
+                    <a href="#footer-subscribe-form" class="nav-subscribe-btn nav-subscribe-mobile" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
                     <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
                     <a href="/signup" class="mobile-auth-pill mobile-auth-accent auth-signup-slot">Sign up</a>
                 </div>
@@ -45,6 +46,7 @@
                 <a href="/explore" class="icon-btn" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </a>
+                <a href="#footer-subscribe-form" class="nav-subscribe-btn" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
                 <a href="/login" class="btn-text auth-login-slot">Login</a>
                 <a href="/signup" class="btn-primary auth-signup-slot">Sign up</a>
                 <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
@@ -92,6 +94,18 @@
                     <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Repeat your password">
                     <span class="field-error" id="confirm_password-error"></span>
                 </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label" for="signup-terms">
+                        <input type="checkbox" id="signup-terms" name="signup_terms">
+                        <span>I have read and agree to the <a href="/term" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+                    </label>
+                </div>
+                <div class="form-group checkbox-group">
+                    <label class="checkbox-label" for="signup-newsletter">
+                        <input type="checkbox" id="signup-newsletter" name="newsletter_opt_in">
+                        <span>Send me updates about new tools</span>
+                    </label>
+                </div>
                 <button type="submit" id="signup-btn" class="btn-primary full-width">Create Account</button>
             </form>
 
@@ -121,6 +135,16 @@
                             Developer
                             <span class="account-type-sub">I want to list my product</span>
                         </button>
+                    </div>
+                    <div class="gsi-modal-checks">
+                        <label class="checkbox-label" for="gsi-terms">
+                            <input type="checkbox" id="gsi-terms">
+                            <span>I have read and agree to the <a href="/term" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
+                        </label>
+                        <label class="checkbox-label" for="gsi-newsletter">
+                            <input type="checkbox" id="gsi-newsletter">
+                            <span>Send me updates about new tools</span>
+                        </label>
                     </div>
                     <div id="gsi-modal-error" class="alert hidden" style="margin-top:1rem;"></div>
                 </div>
@@ -161,6 +185,17 @@
                 <div class="footer-social">
                     <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
                     <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div class="footer-subscribe">
+                    <h4 class="footer-subscribe-title">Discover more. Stay updated.</h4>
+                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, updates, and news from Enovox Search.</p>
+                    <form id="footer-subscribe-form" class="footer-subscribe-form" novalidate>
+                        <div class="footer-subscribe-row">
+                            <input type="email" id="footer-subscribe-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+                            <button type="submit" class="footer-subscribe-btn">Subscribe</button>
+                        </div>
+                        <p class="footer-subscribe-msg" id="footer-subscribe-msg" role="status" aria-live="polite"></p>
+                    </form>
                 </div>
             </div>
             <div class="footer-col">

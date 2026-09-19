@@ -113,21 +113,62 @@
                     return;
                 }
                 const submissions = await res.json();
-                const seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}');
+                if (!Array.isArray(submissions)) {
+                    console.error('[dev notifications] GET /submissions/me did not return a list:', submissions);
+                    return;
+                }
 
-                (submissions || []).forEach(s => {
-                    const prev = seen[s.id];
-                    if (prev && prev !== s.status && (s.status === 'approved' || s.status === 'rejected')) {
+                // SEEN_KEY persists across sessions, so a status change that
+                // happens while the developer is away still notifies them on
+                // their next dashboard visit. Entries are {status, name};
+                // bare status strings from the old format are still accepted.
+                const seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}');
+                const prevStatusOf = (entry) => (entry && typeof entry === 'object') ? entry.status : entry;
+                const prevNameOf = (entry) => (entry && typeof entry === 'object') ? (entry.name || '') : '';
+
+                let changed = false;
+                const currentIds = new Set();
+
+                submissions.forEach(s => {
+                    currentIds.add(String(s.id));
+                    const prevStatus = prevStatusOf(seen[s.id]);
+                    if (prevStatus && prevStatus !== s.status && (s.status === 'approved' || s.status === 'rejected')) {
                         notifications.unshift({
                             title: s.status === 'approved' ? 'Submission approved!' : 'Submission rejected',
                             message: `"${s.name}" is now ${s.status}.`
                         });
+                        changed = true;
                     }
-                    seen[s.id] = s.status;
+                    seen[s.id] = { status: s.status, name: s.name || prevNameOf(seen[s.id]) };
                 });
 
+                // Approved submissions typically DISAPPEAR from /submissions/me
+                // (they become live products), so the status flip above can't
+                // always observe an approval. If an id last seen as 'pending'
+                // is no longer listed, treat that as approved. Rejected items
+                // stay listed (the Under Review section renders them), so
+                // rejections always arrive via the flip branch.
+                Object.keys(seen).forEach(id => {
+                    if (currentIds.has(String(id))) return;
+                    const entry = seen[id];
+                    if (prevStatusOf(entry) === 'pending') {
+                        const name = prevNameOf(entry);
+                        notifications.unshift({
+                            title: 'Submission approved!',
+                            message: `"${name || 'Your submission'}" is now approved.`
+                        });
+                        changed = true;
+                    }
+                    delete seen[id]; // never notify twice for the same id
+                });
+
+                if (notifications.length > 30) {
+                    notifications.length = 30; // cap the tray
+                    changed = true;
+                }
+
                 localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
-                save();
+                if (changed) save();
             } catch (e) {
                 console.error('[dev notifications] poll failed:', e);
             }
@@ -337,8 +378,12 @@
     let editingKind = null; // 'product' | 'submission'
     let editingOriginal = null;
 
-    // Full editable field list — matches submit.html and the confirmed
-    // backend body shape exactly (note: "company", not "company_name").
+    // Full editable field list — matches submit.html. Company-field note:
+    // the form/DOM field is "company", but the WIRE key differs per endpoint
+    // (confirmed): PUT /submissions/{id}/edit (pending submission) expects
+    // "company"; PUT /products/me/{id}/edit (live product) expects
+    // "company_name". handleEditSubmit() renames the key for product edits,
+    // and openEditModal() reads either shape when populating.
     const EDIT_FIELDS = [
         'name', 'description', 'category', 'pricing', 'pricing_details',
         'website', 'product_type', 'logo_url', 'appstore_url', 'playstore_url',
@@ -470,7 +515,14 @@
         // note flagged in chat.
         editingOriginal = {};
         EDIT_FIELDS.forEach(f => {
-            editingOriginal[f] = item[f] != null ? String(item[f]) : '';
+            let raw = item[f];
+            // Live products (products table) carry the value as "company_name";
+            // submissions carry it as "company". The form field is a single
+            // #edit_company, so accept either shape when populating.
+            if (f === 'company' && raw == null && item.company_name != null) {
+                raw = item.company_name;
+            }
+            editingOriginal[f] = raw != null ? String(raw) : '';
             const el = document.getElementById(`edit_${f}`);
             if (el) el.value = editingOriginal[f];
         });
@@ -533,6 +585,14 @@
         if (Object.keys(payload).length === 0) {
             closeEditModal();
             return;
+        }
+
+        // Wire-key mapping (confirmed): the products table column is
+        // "company_name", the submissions table column is "company".
+        // The form always sends "company"; rename it for product edits.
+        if (editingKind === 'product' && Object.prototype.hasOwnProperty.call(payload, 'company')) {
+            payload.company_name = payload.company;
+            delete payload.company;
         }
 
         // Confirmed endpoints — unchanged:

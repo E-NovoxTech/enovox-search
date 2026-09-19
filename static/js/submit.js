@@ -150,7 +150,9 @@
             appstore_url: form.appstore_url.value.trim() || null,
             playstore_url: form.playstore_url.value.trim() || null,
             user_count_range: form.user_count_range.value,
-            company_name: form.company_name.value.trim(),
+            // Submissions-table column is "company" (the PRODUCTS table uses
+            // "company_name" instead). The DOM field id stays company_name.
+            company: form.company_name.value.trim(),
             twitter_url: form.twitter_url.value.trim(),
             linkedin_url: form.linkedin_url.value.trim(),
             instagram_url: form.instagram_url.value.trim(),
@@ -161,7 +163,7 @@
         };
 
         const optionalFields = [
-            'appstore_url', 'playstore_url', 'company_name',
+            'appstore_url', 'playstore_url', 'company',
             'twitter_url', 'linkedin_url', 'instagram_url', 'facebook_url'
         ];
 
