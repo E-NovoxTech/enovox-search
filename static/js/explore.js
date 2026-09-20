@@ -86,6 +86,17 @@
             });
         }
 
+        // 2b. Clickable search icon (magnifier docked in the search field):
+        //     runs the search immediately instead of waiting for the debounce.
+        const searchBtn = document.getElementById('explore-search-btn');
+        if (searchBtn && searchInput) {
+            searchBtn.addEventListener('click', () => {
+                clearTimeout(searchTimeout);
+                currentPage = 1;
+                fetchAndRender();
+            });
+        }
+
         // 3. Listen for Clear All Button
         const clearBtn = document.getElementById('clear-filters');
         if (clearBtn) {

@@ -29,6 +29,7 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
             word_filters.append(models.Product.name.ilike(f"%{word}%"))
             word_filters.append(models.Product.description.ilike(f"%{word}%"))
             word_filters.append(models.Product.category.ilike(f"%{word}%"))
+            word_filters.append(models.Product.keywords.ilike(f"%{word}%"))
         q = q.filter(or_(*word_filters))
 
     if category:
@@ -54,6 +55,31 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
 
     return q
 
+
+def score_product_relevance(product, query: str) -> int:
+    if not query:
+        return 0
+
+    query_lower = query.lower()
+    words = query_lower.split()
+    score = 0
+
+    name_lower = (product.name or "").lower()
+    category_lower = (product.category or "").lower()
+    keywords_lower = (product.keywords or "").lower()
+    description_lower = (product.description or "").lower()
+
+    for word in words:
+        if word in category_lower or category_lower in word:
+            score += 10
+        if word in name_lower:
+            score += 7
+        if word in keywords_lower:
+            score += 5
+        if word in description_lower:
+            score += 1
+
+    return score
 
 @router.get("/categories/counts")
 def category_counts(db: Session = Depends(get_db)):
@@ -101,6 +127,14 @@ def search_products(
     q = db.query(models.Product).filter(models.Product.status == True)
     q = apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival)
 
+    if query and not sort:
+        # Relevance-based ranking when there's a search term and no explicit sort override
+        all_matches = q.all()
+        scored = [(score_product_relevance(p, query), p) for p in all_matches]
+        scored.sort(key=lambda x: x[0], reverse=True)
+        results = [p for score, p in scored]
+        return results[offset:offset + limit]
+
     if sort == "name_asc":
         q = q.order_by(models.Product.name.asc())
     elif sort == "name_desc":
@@ -109,7 +143,6 @@ def search_products(
         q = q.order_by(models.Product.created_at.desc())
 
     return q.offset(offset).limit(limit).all()
-
 
 @router.get("/admin/all")
 def list_all_products_admin(admin_key: str, db: Session = Depends(get_db)):
