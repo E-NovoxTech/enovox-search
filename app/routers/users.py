@@ -30,8 +30,9 @@ def get_current_user(authorization: Optional[str] = Header(None), db: Session = 
 
 @router.post("/signup")
 def signup(data: schemas.UserSignup, db: Session = Depends(get_db)):
-    existing = db.query(models.User).filter(models.User.email == data.email).first()
-    if existing:
+    existing_dev = db.query(models.Developer).filter(models.Developer.email == data.email).first()
+    existing_user = db.query(models.User).filter(models.User.email == data.email).first()
+    if existing_dev or existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     code = generate_verification_code()
@@ -40,7 +41,8 @@ def signup(data: schemas.UserSignup, db: Session = Depends(get_db)):
         hashed_password=hash_password(data.password),
         is_verified=False,
         verification_code=code,
-        verification_code_expires=datetime.utcnow() + timedelta(minutes=15)
+        verification_code_expires=datetime.utcnow() + timedelta(minutes=15),
+        newsletter_opt_in=data.newsletter_opt_in
     )
     db.add(new_user)
     db.commit()
@@ -54,7 +56,14 @@ def signup(data: schemas.UserSignup, db: Session = Depends(get_db)):
 @router.post("/login", response_model=schemas.TokenResponse)
 def login(data: schemas.UserLogin, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
-    if not user or not verify_password(data.password, user.hashed_password):
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    if user.auth_provider == "google" or not user.hashed_password:
+        raise HTTPException(status_code=400, detail="This account uses Google Sign-In. Please log in with the 'Continue with Google' button instead.")
+
+    if not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     if not user.is_verified:

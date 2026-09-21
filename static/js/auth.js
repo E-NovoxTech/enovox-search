@@ -14,6 +14,8 @@
 
     let resendCooldownActive = false;
     let pendingGoogleCredential = null;
+    let pendingGoogleType = null; // selected account type in the Google modal
+    let googleSignupInFlight = false; // true while the create-account POST is running
 
     /* ==========================================================================
        URL params: /login?type=developer&redirect=/product/some-slug
@@ -41,6 +43,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         setupAccountTypeToggle();
         setupGoogleModal();
+        initGoogleSignIn();
         applyUrlParams();
 
         const loginForm = document.getElementById('login-form');
@@ -415,6 +418,42 @@
     /* ==========================================================================
        Google Sign-In
        ========================================================================== */
+    /* ==========================================================================
+       Google Identity Services bootstrap — moved here from the inline
+       <script> blocks in login.html / signup.html so one file owns the whole
+       flow. Loads the GSI client only on pages that actually have the
+       #google-signin-button div, then initializes + renders the button.
+       window.handleGoogleResponse (defined below) stays the callback.
+       ========================================================================== */
+    const GSI_CLIENT_ID = '861554047183-72jmrbvpsjjnknu9d2adukth7un0bips.apps.googleusercontent.com';
+
+    function initGoogleSignIn() {
+        const btnEl = document.getElementById('google-signin-button');
+        if (!btnEl) return; // page has no Google button (e.g. dashboard, home)
+
+        const setup = () => {
+            if (!window.google || !window.google.accounts || !window.google.accounts.id) return false;
+            window.google.accounts.id.initialize({
+                client_id: GSI_CLIENT_ID,
+                callback: window.handleGoogleResponse
+            });
+            window.google.accounts.id.renderButton(
+                btnEl,
+                { theme: 'outline', size: 'large', width: '100%' }
+            );
+            return true;
+        };
+
+        if (setup()) return; // GSI client already loaded
+
+        const tag = document.createElement('script');
+        tag.src = 'https://accounts.google.com/gsi/client';
+        tag.async = true;
+        tag.defer = true;
+        tag.onload = () => setup();
+        document.head.appendChild(tag);
+    }
+
     function setupGoogleModal() {
         const modal = document.getElementById('google-account-type-modal');
         if (!modal) return;
@@ -427,9 +466,32 @@
             if (e.target === modal) closeAccountTypeModal();
         });
 
+        // Choice buttons only SELECT now — nothing is submitted until Continue.
         modal.querySelectorAll('.gsi-choice-btn').forEach(btn => {
-            btn.addEventListener('click', () => finishGoogleSignup(btn.getAttribute('data-type')));
+            btn.addEventListener('click', () => selectGoogleAccountType(btn.getAttribute('data-type')));
         });
+
+        const continueBtn = document.getElementById('gsi-continue-btn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => {
+                if (pendingGoogleType) finishGoogleSignup(pendingGoogleType);
+            });
+        }
+    }
+
+    /* Marks one account type as selected (single-select) and unlocks the
+       Continue button. Pure UI state — no API call happens here. */
+    function selectGoogleAccountType(type) {
+        pendingGoogleType = type;
+        const modal = document.getElementById('google-account-type-modal');
+        if (!modal) return;
+        modal.querySelectorAll('.gsi-choice-btn').forEach(btn => {
+            const on = btn.getAttribute('data-type') === type;
+            btn.classList.toggle('selected', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        const continueBtn = document.getElementById('gsi-continue-btn');
+        if (continueBtn) continueBtn.disabled = false;
     }
 
     function openAccountTypeModal(credential) {
@@ -439,7 +501,15 @@
         const errorEl = document.getElementById('gsi-modal-error');
         if (errorEl) { errorEl.className = 'alert hidden'; errorEl.textContent = ''; }
 
-        // Fresh state each time the modal opens.
+        // Fresh state each time the modal opens: no selection, Continue locked.
+        pendingGoogleType = null;
+        modal.querySelectorAll('.gsi-choice-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            btn.setAttribute('aria-pressed', 'false');
+        });
+        const gsiContinue = document.getElementById('gsi-continue-btn');
+        if (gsiContinue) gsiContinue.disabled = true;
+
         const gsiTerms = document.getElementById('gsi-terms');
         const gsiNewsletter = document.getElementById('gsi-newsletter');
         if (gsiTerms) gsiTerms.checked = false;
@@ -450,12 +520,16 @@
 
     function closeAccountTypeModal() {
         pendingGoogleCredential = null;
+        pendingGoogleType = null;
         const modal = document.getElementById('google-account-type-modal');
         if (modal) modal.classList.add('hidden');
     }
 
     async function finishGoogleSignup(accountType) {
         if (!pendingGoogleCredential) return;
+        if (!accountType) return; // Continue clicked with nothing selected (shouldn't happen: button stays disabled)
+        if (googleSignupInFlight) return; // ignore repeat Continue clicks while the first request is still running
+
         const errorEl = document.getElementById('gsi-modal-error');
         if (errorEl) { errorEl.className = 'alert hidden'; errorEl.textContent = ''; }
 
@@ -468,6 +542,17 @@
                 errorEl.className = 'alert error';
             }
             return;
+        }
+
+        // Lock the button for the duration of the request so a slow backend
+        // (e.g. Google cert fetch stalling) can't be hammered into duplicates.
+        googleSignupInFlight = true;
+        const continueBtn = document.getElementById('gsi-continue-btn');
+        if (continueBtn) {
+            continueBtn.disabled = true;
+            continueBtn.classList.add('loading');
+            // Animated dots (CSS .gsi-dots) give visible "working" feedback
+            continueBtn.innerHTML = 'Please wait<span class="gsi-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>';
         }
 
         try {
@@ -499,6 +584,13 @@
             if (errorEl) {
                 errorEl.textContent = error.message;
                 errorEl.className = 'alert error';
+            }
+        } finally {
+            googleSignupInFlight = false;
+            if (continueBtn) {
+                continueBtn.disabled = false;
+                continueBtn.classList.remove('loading');
+                continueBtn.textContent = 'Continue';
             }
         }
     }

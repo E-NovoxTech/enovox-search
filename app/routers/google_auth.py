@@ -11,16 +11,26 @@ from ..auth import create_token
 router = APIRouter(tags=["Google Auth"])
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+import time
 
 
 @router.post("/auth/google")
 def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
-    try:
-        idinfo = id_token.verify_oauth2_token(
-            data.credential, google_requests.Request(), GOOGLE_CLIENT_ID
-        )
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Google token")
+    idinfo = None
+
+    for attempt in range(3):
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                data.credential, google_requests.Request(), GOOGLE_CLIENT_ID
+            )
+            break
+        except ValueError:
+            raise HTTPException(status_code=401, detail="Invalid Google token")
+        except Exception:
+            time.sleep(1)
+
+    if idinfo is None:
+        raise HTTPException(status_code=503, detail="Could not verify with Google right now. Please try again.")
 
     email = idinfo.get("email")
     if not email:
@@ -46,7 +56,8 @@ def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
             email=email,
             hashed_password=None,
             is_verified=True,
-            auth_provider="google"
+            auth_provider="google",
+            newsletter_opt_in=data.newsletter_opt_in
         )
         db.add(new_developer)
         db.commit()
@@ -59,7 +70,8 @@ def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
             email=email,
             hashed_password=None,
             is_verified=True,
-            auth_provider="google"
+            auth_provider="google",
+            newsletter_opt_in=data.newsletter_opt_in
         )
         db.add(new_user)
         db.commit()

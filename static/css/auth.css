@@ -339,3 +339,83 @@ button.full-width {
     gap: 0.65rem;
     margin-top: 1.25rem;
 }
+
+/* ==========================================================================
+   Google modal: two-step account-type choice (select, then Continue)
+   Selected state reuses the signup toggle's filled-green language.
+   ========================================================================== */
+.gsi-choice-btn.selected,
+.gsi-choice-btn.selected:hover {
+    background-color: var(--color-green);
+    border-color: var(--color-green);
+    color: #ffffff;
+}
+
+.gsi-continue-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.7rem 1rem;
+    border: none;
+    border-radius: 9999px;
+    background-color: var(--color-green);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.gsi-continue-btn:not(:disabled):hover {
+    background-color: #00683e;
+}
+
+.gsi-continue-btn:disabled {
+    background-color: var(--text-muted);
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Continue button — loading dots while /auth/google is running.
+   JS adds .loading + inner dots markup; button stays green (not the grey
+   disabled look) so it reads as "working", with an animated … effect.
+   ========================================================================== */
+.gsi-continue-btn.loading:disabled {
+    background-color: var(--color-green);
+    opacity: 0.85;
+    cursor: progress;
+}
+
+.gsi-continue-btn:not(:disabled):active {
+    transform: scale(0.98);
+}
+
+.gsi-dots span {
+    opacity: 0;
+    animation: gsi-dot-blink 1.2s infinite;
+    font-weight: 700;
+}
+.gsi-dots span:nth-child(2) { animation-delay: 0.2s; }
+.gsi-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes gsi-dot-blink {
+    0%, 100% { opacity: 0; }
+    30%, 70% { opacity: 1; }
+}
+
+/* ==========================================================================
+   Dark mode: Terms/Privacy links inside checkboxes.
+   Default was var(--color-blue) #2563eb — too dark on the dark background.
+   Covers the signup page (.checkbox-group) and the Google modal
+   (.gsi-modal-checks) on login + signup.
+   ========================================================================== */
+.dark-mode .checkbox-group .checkbox-label a,
+.dark-mode .gsi-modal-checks .checkbox-label a {
+    color: #93c5fd;
+}
+
+.dark-mode .checkbox-group .checkbox-label a:hover,
+.dark-mode .gsi-modal-checks .checkbox-label a:hover {
+    color: #bfdbfe;
+    text-decoration: underline;
+}

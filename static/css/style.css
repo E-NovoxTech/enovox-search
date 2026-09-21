@@ -1746,3 +1746,63 @@ body {
         padding-right: 2.5rem;
     }
 }
+
+
+/* ==========================================================================
+   Floating "Report an issue" button (WhatsApp)
+   Injected by home.js — appears on every page that loads it, no per-page
+   HTML needed. Colour is WhatsApp's own brand green, deliberately not tied
+   to --color-green, so it reads correctly in both light and dark mode
+   without needing separate theme rules.
+   ========================================================================== */
+#report-issue-btn {
+    position: fixed;
+    left: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #25D366;
+    color: #ffffff;
+    padding: 0.65rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    opacity: 0.88;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    max-width: calc(100vw - 2.5rem);
+}
+
+#report-issue-btn:hover,
+#report-issue-btn:focus-visible {
+    opacity: 1;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+#report-issue-btn svg {
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    #report-issue-btn {
+        padding: 0.65rem;
+        left: 1rem;
+        bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+    #report-issue-btn .report-issue-text {
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        transition: max-width 0.3s ease, opacity 0.2s ease, margin-left 0.3s ease;
+    }
+    #report-issue-btn.expanded .report-issue-text {
+        max-width: 160px;
+        opacity: 1;
+        margin-left: 0.25rem;
+    }
+}

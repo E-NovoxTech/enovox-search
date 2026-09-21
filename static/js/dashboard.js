@@ -604,6 +604,7 @@
 
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
+        const startedAt = Date.now();
 
         try {
             const res = await fetch(endpoint, {
@@ -615,6 +616,11 @@
                 body: JSON.stringify(payload)
             });
 
+            // Keep the "Saving..." state on screen for a perceptible minimum
+            // even when the API answers instantly; a slow API simply runs past
+            // the minimum and the state lasts until it resolves.
+            await holdSavingState(startedAt);
+
             if (res.status === 401) {
                 handleExpiredToken();
                 return;
@@ -625,33 +631,72 @@
             }
 
             const data = await res.json().catch(() => ({}));
+            // closeEditModal() nulls editingKind, so capture it first —
+            // otherwise the product-specific confirmation never fires.
+            const kind = editingKind;
             closeEditModal();
 
             // Product edits don't apply immediately — the product gets
             // unpublished and a new pending review is created instead.
-            if (editingKind === 'product') {
-                showEditResultMessage(data.message || 'Edit submitted for review. Product is temporarily hidden until approved.');
+            if (kind === 'product') {
+                showToast('success', '✅ Edit submitted — awaiting admin approval. Your product is temporarily hidden until it\'s reviewed.');
+            } else {
+                showToast('success', data.message || 'Edit submitted for review.');
             }
 
             fetchApprovedProducts(token);
             fetchPendingSubmissions(token);
 
         } catch (err) {
+            // Network-level failures never reached the hold above.
+            await holdSavingState(startedAt);
             alertEl.textContent = err.message;
             alertEl.className = 'alert error';
+            showToast('error', err.message || 'Something went wrong — please try again.');
         } finally {
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save Changes';
         }
     }
 
-    function showEditResultMessage(message) {
-        const el = document.getElementById('dashboard-products-error');
-        if (!el) return;
-        el.textContent = message;
-        el.classList.remove('hidden', 'error');
-        el.classList.add('info');
-        setTimeout(() => el.classList.add('hidden'), 8000);
+    /* Minimum visible duration for the button's "Saving..." state (ms). */
+    const MIN_SAVING_MS = 900;
+
+    function holdSavingState(startedAt) {
+        const remaining = MIN_SAVING_MS - (Date.now() - startedAt);
+        return remaining > 0 ? new Promise(resolve => setTimeout(resolve, remaining)) : Promise.resolve();
+    }
+
+    /* ==========================================================================
+       Toast notifications — non-blocking slide-in card(s) in a fixed stack.
+       Reuses the dashboard's own tokens (bg-card / border / card-shadow /
+       green + red accents) so light & dark mode both follow automatically.
+       Auto-dismisses after ~4.5s with a slide-out.
+       ========================================================================== */
+    const TOAST_VISIBLE_MS = 4500;
+
+    function showToast(type, message) {
+        let stack = document.getElementById('dev-toast-stack');
+        if (!stack) {
+            stack = document.createElement('div');
+            stack.id = 'dev-toast-stack';
+            stack.className = 'dev-toast-stack';
+            document.body.appendChild(stack);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `dev-toast dev-toast--${type}`;
+        toast.setAttribute('role', 'status');
+        toast.textContent = message;
+        stack.appendChild(toast);
+
+        // next frame -> transition the slide-in
+        requestAnimationFrame(() => toast.classList.add('show'));
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, TOAST_VISIBLE_MS);
     }
 
     function getInitial(name) {

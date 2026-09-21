@@ -147,6 +147,7 @@
                             <span>Send me updates about new tools</span>
                         </label>
                     </div>
+                    <button type="button" id="gsi-continue-btn" class="gsi-continue-btn" disabled>Continue</button>
                     <div id="gsi-modal-error" class="alert hidden" style="margin-top:1rem;"></div>
                 </div>
             </div>
@@ -229,18 +230,5 @@
     <!-- Google Sign-In. client_id below is a placeholder — swap in the real
          one when you send it over. handleGoogleResponse is defined (and
          exposed on window) in auth.js. -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script>
-        window.onload = function () {
-            google.accounts.id.initialize({
-                client_id: "861554047183-72jmrbvpsjjnknu9d2adukth7un0bips.apps.googleusercontent.com",
-                callback: handleGoogleResponse
-            });
-            google.accounts.id.renderButton(
-                document.getElementById("google-signin-button"),
-                { theme: "outline", size: "large", width: "100%" }
-            );
-        };
-    </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e48ca5680765f3',t:'MTc4OTk0NjMwNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

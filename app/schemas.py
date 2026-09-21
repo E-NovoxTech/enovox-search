@@ -85,8 +85,14 @@ class SubmissionCreate(BaseModel):
     github_url: Optional[str] = None
     
 class DeveloperSignup(BaseModel):
-    email: EmailStr
-    password: str = Field(..., min_length=6)
+    email: str
+    password: str
+    newsletter_opt_in: Optional[bool] = False
+
+class UserSignup(BaseModel):
+    email: str
+    password: str
+    newsletter_opt_in: Optional[bool] = False
 
 
 class DeveloperLogin(BaseModel):
@@ -147,9 +153,6 @@ class SubmissionDetail(BaseModel):
 class RejectSubmission(BaseModel):
     reason: Optional[str] = None
 
-class UserSignup(BaseModel):
-    email: str
-    password: str
 
 class UserLogin(BaseModel):
     email: str
@@ -167,6 +170,7 @@ class ResendCode(BaseModel):
 class GoogleAuth(BaseModel):
     credential: str
     account_type: Optional[str] = None
+    newsletter_opt_in: Optional[bool] = False
     
 class SubmissionEdit(BaseModel):
     name: Optional[str] = None

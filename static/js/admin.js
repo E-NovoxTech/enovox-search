@@ -151,6 +151,7 @@
         setupPricingDetailsLogic();
         setupNewsletter();
         setupClaims();
+        setupAnalytics();
         initNotifications();
         initAuth(); // async — kicked off last, verifies any stored key itself
     });
@@ -527,7 +528,10 @@
 
                 const targetId = e.target.getAttribute('data-target');
                 e.target.classList.add('active');
-                document.getElementById(targetId).classList.remove('hidden');
+                // Guarded: a stale HTML/JS pair (section missing) must never
+                // throw here and leave the content area blank.
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) targetSection.classList.remove('hidden');
 
                 renderActiveTab(targetId);
             });
@@ -536,6 +540,10 @@
 
     function renderActiveTab(tabId) {
         hideAlert();
+        // Analytics is its own clean space: the global stats bar (which lives
+        // above the tab sections) hides there and returns on every other tab.
+        const statsBar = document.getElementById('stats-bar');
+        if (statsBar) statsBar.classList.toggle('hidden', tabId === 'analytics-tab');
         if (tabId === 'products-tab') renderProducts();
         if (tabId === 'submissions-tab') renderSubmissions();
         if (tabId === 'developers-tab') renderDevelopers();
@@ -545,6 +553,9 @@
             if (subscribersCache === null) fetchNewsletterSubscribers();
         }
         if (tabId === 'claims-tab') fetchClaims();
+        if (tabId === 'analytics-tab') {
+            fetchSearchAnalytics();
+        }
     }
 
     function getActiveTabId() {
@@ -2506,5 +2517,131 @@
         if (pageLabel) pageLabel.textContent = `Page ${subscribersPage} of ${totalPages}`;
         if (prevBtn) prevBtn.disabled = subscribersPage <= 1;
         if (nextBtn) nextBtn.disabled = subscribersPage >= totalPages;
+    }
+
+    /* ==========================================================================
+       SEARCH ANALYTICS — dedicated tab (room to grow: append cards to
+       .analytics-grid). Confirmed endpoint:
+         GET /products/admin/search-analytics?admin_key=...
+         -> { total_searches, top_searches:[{query,count}],
+              zero_result_searches:[{query,count}] }
+       Fetched each time the Analytics tab is selected, plus Refresh.
+       ========================================================================== */
+    // Build marker: check from devtools/view-source to confirm which admin.js is live.
+    console.info('[enovox admin] build 2026-09-20 analytics-v3');
+
+    function setupAnalytics() {
+        ensureAnalyticsSection();
+        const refreshBtn = document.getElementById('analytics-refresh-btn');
+        if (refreshBtn) refreshBtn.addEventListener('click', () => fetchSearchAnalytics());
+    }
+
+    /* ==========================================================================
+       Self-healing analytics view: if the host admin.html does not contain
+       the analytics section (hand-maintained copies, mixed deployments),
+       build it — markup identical to the shipped templates/admin.html — so
+       the tab can never render blank. Uses querySelector (not getElementById)
+       for the existence probe. No-ops when the section already exists.
+       ========================================================================== */
+    function ensureAnalyticsSection() {
+        if (document.querySelector('#analytics-tab')) return;
+
+        const section = document.createElement('section');
+        section.id = 'analytics-tab';
+        section.className = 'tab-content hidden';
+        section.innerHTML = `
+            <div class="section-header">
+                <h2>Analytics</h2>
+                <div class="section-header-actions">
+                    <button id="analytics-refresh-btn" class="btn-secondary">Refresh</button>
+                </div>
+            </div>
+            <div id="analytics-loading" class="text-muted" style="margin-bottom: 1rem;">Loading search analytics…</div>
+            <div id="analytics-error" class="alert error hidden"></div>
+
+            <div class="analytics-grid">
+                <div class="analytics-card analytics-card--total">
+                    <div id="analytics-total" class="analytics-total">–</div>
+                    <div class="analytics-total-label">Total Searches</div>
+                    <p id="analytics-empty" class="text-muted analytics-empty hidden">No searches logged yet.</p>
+                </div>
+
+                <div class="analytics-card">
+                    <h3 class="analytics-card-title">Top Searches</h3>
+                    <ol id="analytics-top-list" class="analytics-list"></ol>
+                </div>
+
+                <div class="analytics-card analytics-card--warning">
+                    <h3 class="analytics-card-title">⚠ Zero-Result Searches</h3>
+                    <ol id="analytics-zero-list" class="analytics-list analytics-list--warning"></ol>
+                    <p class="analytics-card-hint text-muted">Queries that returned nothing — catalog gaps worth acting on.</p>
+                </div>
+            </div>`;
+        const host = document.querySelector('main') || document.body;
+        host.appendChild(section);
+
+        // Nav entry too, if the host page lacks it.
+        if (!document.querySelector('.nav-tab[data-target="analytics-tab"]')) {
+            const anchor = document.querySelector('.nav-tab[data-target="newsletter-tab"]') || document.querySelector('.nav-tab');
+            const btn = document.createElement('button');
+            btn.className = 'nav-tab';
+            btn.setAttribute('data-target', 'analytics-tab');
+            btn.textContent = 'Analytics';
+            if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+        }
+    }
+
+    async function fetchSearchAnalytics() {
+        const loadingEl = document.getElementById('analytics-loading');
+        const errorEl = document.getElementById('analytics-error');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (errorEl) errorEl.classList.add('hidden');
+        try {
+            const res = await fetch(`${API_URL}/products/admin/search-analytics?admin_key=${encodeURIComponent(adminKey)}`);
+            if (!res.ok) throw new Error('Could not load search analytics.');
+            const data = await res.json();
+            renderAnalytics(data || {});
+        } catch (error) {
+            renderAnalytics(null);
+            if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove('hidden'); }
+        } finally {
+            if (loadingEl) loadingEl.classList.add('hidden');
+        }
+    }
+
+    function buildAnalyticsList(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            return '<li class="analytics-empty-row">No searches logged yet.</li>';
+        }
+        return items.map((row, i) => {
+            const count = row && typeof row.count === 'number' ? row.count : 0;
+            return `<li class="analytics-row">` +
+                `<span class="analytics-rank">${i + 1}</span>` +
+                `<span class="analytics-query">${escapeHTML(row.query || '')}</span>` +
+                `<span class="analytics-count">${count} search${count === 1 ? '' : 'es'}</span>` +
+                `</li>`;
+        }).join('');
+    }
+
+    function renderAnalytics(data) {
+        const totalEl = document.getElementById('analytics-total');
+        const emptyEl = document.getElementById('analytics-empty');
+        const topEl = document.getElementById('analytics-top-list');
+        const zeroEl = document.getElementById('analytics-zero-list');
+        if (!totalEl || !topEl || !zeroEl) return;
+
+        if (!data) {
+            totalEl.textContent = '–';
+            if (emptyEl) emptyEl.classList.add('hidden');
+            topEl.innerHTML = '';
+            zeroEl.innerHTML = '';
+            return;
+        }
+
+        const total = typeof data.total_searches === 'number' ? data.total_searches : 0;
+        totalEl.textContent = total.toLocaleString();
+        if (emptyEl) emptyEl.classList.toggle('hidden', total !== 0);
+        topEl.innerHTML = buildAnalyticsList(data.top_searches);
+        zeroEl.innerHTML = buildAnalyticsList(data.zero_result_searches);
     }
 })();

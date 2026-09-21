@@ -121,3 +121,11 @@ class NewsletterSubscriber(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False)
     created_at = Column(Date, default=date.today)
+    
+    
+class SearchLog(Base):
+    __tablename__ = "search_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    query = Column(String, nullable=False)
+    results_count = Column(Integer, default=0)
+    created_at = Column(Date, default=date.today)

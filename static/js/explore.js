@@ -141,7 +141,8 @@
         
         // Checkboxes (Categories, Pricing, Product Type)
         ['category', 'pricing', 'product_type'].forEach(paramName => {
-            const values = params.getAll(paramName);
+            // Tolerate legacy comma-joined links (?category=A,B) by splitting them.
+            const values = params.getAll(paramName).flatMap(v => v.split(',').map(x => x.trim())).filter(Boolean);
             document.querySelectorAll(`input[name="${paramName}"]`).forEach(cb => {
                 cb.checked = values.includes(cb.value);
             });
@@ -166,9 +167,15 @@
     function syncFormToUrl() {
         const params = new URLSearchParams();
         
-        // Append all checked checkboxes
+        // One `category=` param PER checked category checkbox (repeated key,
+        // never a comma-joined string): ?category=AI&category=Fintech&...
+        document.querySelectorAll('input[name="category"]:checked').forEach(cb => {
+            params.append('category', cb.value);
+        });
+
+        // Every other checkbox group (pricing, product_type, ...) likewise.
         document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-            params.append(cb.name, cb.value);
+            if (cb.name && cb.name !== 'category') params.append(cb.name, cb.value);
         });
         
         // Append sort if it's not the default

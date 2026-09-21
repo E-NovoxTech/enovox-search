@@ -978,3 +978,131 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .badge.developer { background: #dbeafe; color: #1e40af; }
 .badge.user { background: #dcfce7; color: #166534; }
 .badge.standalone { background: #f3e8ff; color: #6b21a8; }
+
+/* ==========================================================================
+   ANALYTICS — dedicated section. Grid accepts more cards over time.
+   ========================================================================== */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.analytics-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem 1.4rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.analytics-card--total {
+    text-align: center;
+    padding: 1.75rem 1.4rem;
+}
+
+.analytics-total {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--color-blue);
+}
+
+.analytics-total-label {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.analytics-empty {
+    margin-top: 0.6rem;
+    font-size: 0.85rem;
+}
+
+.analytics-card-title {
+    margin-bottom: 0.9rem;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.analytics-card--warning {
+    border-color: #f59e0b;
+}
+
+.analytics-card--warning .analytics-card-title {
+    color: #b45309;
+}
+
+.analytics-card-hint {
+    margin-top: 0.8rem;
+    font-size: 0.78rem;
+}
+
+.analytics-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.analytics-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    font-size: 0.85rem;
+}
+
+.analytics-rank {
+    flex: 0 0 1.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.4rem;
+    border-radius: 50%;
+    background-color: var(--color-blue);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.analytics-query {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.analytics-count {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.analytics-list--warning .analytics-rank {
+    background-color: #f59e0b;
+}
+
+.analytics-list--warning .analytics-count {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.analytics-empty-row {
+    padding: 0.5rem 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

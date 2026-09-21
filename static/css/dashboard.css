@@ -370,3 +370,62 @@
 .dark-mode .fa-bell {
   color: #fff;
 }
+/* ==========================================================================
+   Toast notifications (edit-save feedback) — fixed slide-in stack.
+   Same tokens as the rest of the dashboard (--bg-card, --border-color,
+   --card-shadow, --color-green) so light/dark mode follow for free.
+   ========================================================================== */
+.dev-toast-stack {
+    position: fixed;
+    top: 84px; /* clears the fixed navbar */
+    right: 1.25rem;
+    z-index: 400;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    pointer-events: none;
+}
+
+.dev-toast {
+    pointer-events: auto;
+    min-width: 250px;
+    max-width: 360px;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 14px; /* matches dashboard cards */
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    box-shadow: var(--card-shadow);
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.45;
+    opacity: 0;
+    transform: translateX(18px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dev-toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.dev-toast--success {
+    border-left: 4px solid var(--color-green);
+}
+
+.dev-toast--error {
+    border-left: 4px solid #ef4444;
+}
+
+@media (max-width: 600px) {
+    .dev-toast-stack {
+        left: 1rem;
+        right: 1rem;
+    }
+
+    .dev-toast {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+    }
+}

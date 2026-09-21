@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
 from typing import Optional, List
@@ -10,7 +10,7 @@ from fastapi import UploadFile, File
 from ..bulk_upload_utils import parse_csv_to_rows
 from ..newsletter_utils import get_all_recipients, build_product_update_html, wrap_in_template, send_newsletter
 
-
+from sqlalchemy import desc
 from app.routers.developers import get_current_developer
 
 from .. import models, schemas
@@ -19,7 +19,6 @@ from ..utils import generate_slug
 from ..indexnow_utils import submit_to_indexnow
 
 router = APIRouter(prefix="/products", tags=["Products"])
-
 
 def apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival):
     if query:
@@ -33,7 +32,8 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
         q = q.filter(or_(*word_filters))
 
     if category:
-        q = q.filter(models.Product.category.ilike(category))
+        category_filters = [models.Product.category.ilike(c) for c in category]
+        q = q.filter(or_(*category_filters))
 
     if pricing:
         q = q.filter(models.Product.pricing.ilike(pricing))
@@ -54,7 +54,6 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
         q = q.filter(models.Product.is_new_arrival == is_new_arrival)
 
     return q
-
 
 def score_product_relevance(product, query: str) -> int:
     if not query:
@@ -95,7 +94,7 @@ def category_counts(db: Session = Depends(get_db)):
 @router.get("/count")
 def count_products(
     query: Optional[str] = None,
-    category: Optional[str] = None,
+    category: Optional[List[str]] = Query(None),
     pricing: Optional[str] = None,
     product_type: Optional[str] = None,
     platform: Optional[str] = None,
@@ -112,7 +111,7 @@ def count_products(
 @router.get("/", response_model=List[schemas.ProductOut])
 def search_products(
     query: Optional[str] = None,
-    category: Optional[str] = None,
+    category: Optional[List[str]] = Query(None),
     pricing: Optional[str] = None,
     product_type: Optional[str] = None,
     platform: Optional[str] = None,
@@ -128,12 +127,17 @@ def search_products(
     q = apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival)
 
     if query and not sort:
-        # Relevance-based ranking when there's a search term and no explicit sort override
         all_matches = q.all()
         scored = [(score_product_relevance(p, query), p) for p in all_matches]
         scored.sort(key=lambda x: x[0], reverse=True)
         results = [p for score, p in scored]
-        return results[offset:offset + limit]
+        final_results = results[offset:offset + limit]
+
+        log_entry = models.SearchLog(query=query, results_count=len(all_matches))
+        db.add(log_entry)
+        db.commit()
+
+        return final_results
 
     if sort == "name_asc":
         q = q.order_by(models.Product.name.asc())
@@ -142,7 +146,14 @@ def search_products(
     elif sort == "newest":
         q = q.order_by(models.Product.created_at.desc())
 
-    return q.offset(offset).limit(limit).all()
+    final_results = q.offset(offset).limit(limit).all()
+
+    if query:
+        log_entry = models.SearchLog(query=query, results_count=q.count())
+        db.add(log_entry)
+        db.commit()
+
+    return final_results
 
 @router.get("/admin/all")
 def list_all_products_admin(admin_key: str, db: Session = Depends(get_db)):
@@ -310,21 +321,40 @@ def edit_my_product(
 
     update_data = data.dict(exclude_unset=True)
 
+    # Start with the product's CURRENT values, then overlay only what changed
     edit_submission = models.Submission(
-        **update_data,
+        name=update_data.get("name", product.name),
+        company=update_data.get("company", product.company_name),
+        founder=update_data.get("founder", product.founder),
+        description=update_data.get("description", product.description),
+        keywords=update_data.get("keywords", product.keywords),
+        category=update_data.get("category", product.category),
+        website=update_data.get("website", product.website),
+        pricing=update_data.get("pricing", product.pricing),
+        pricing_details=update_data.get("pricing_details", product.pricing_details),
+        product_type=update_data.get("product_type", product.product_type),
+        logo_url=update_data.get("logo_url", product.logo_url),
+        appstore_url=update_data.get("appstore_url", product.appstore_url),
+        playstore_url=update_data.get("playstore_url", product.playstore_url),
+        user_count_range=update_data.get("user_count_range", product.user_count_range),
+        twitter_url=update_data.get("twitter_url", product.twitter_url),
+        instagram_url=update_data.get("instagram_url", product.instagram_url),
+        facebook_url=update_data.get("facebook_url", product.facebook_url),
+        linkedin_url=update_data.get("linkedin_url", product.linkedin_url),
+        github_url=update_data.get("github_url", product.github_url),
+        contact_email=update_data.get("contact_email", product.contact_email),
         email=current_dev.email,
         developer_id=current_dev.id,
         status="pending",
         product_id=product.id
     )
-    db.add(edit_submission)
 
+    db.add(edit_submission)
     product.status = False  # unpublish while edit is under review
     db.commit()
     db.refresh(edit_submission)
 
     return {"message": "Edit submitted for review. Product is temporarily hidden until approved.", "submission_id": edit_submission.id}
-
 
 def extract_domain(url: str) -> str:
     if not url:
@@ -536,3 +566,35 @@ def unsubscribe(email: str, db: Session = Depends(get_db)):
 
     db.commit()
     return {"message": "You've been unsubscribed."}
+
+
+
+@router.get("/admin/search-analytics")
+def search_analytics(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    top_searches = (
+        db.query(models.SearchLog.query, func.count(models.SearchLog.id).label("count"))
+        .group_by(models.SearchLog.query)
+        .order_by(desc("count"))
+        .limit(15)
+        .all()
+    )
+
+    zero_result_searches = (
+        db.query(models.SearchLog.query, func.count(models.SearchLog.id).label("count"))
+        .filter(models.SearchLog.results_count == 0)
+        .group_by(models.SearchLog.query)
+        .order_by(desc("count"))
+        .limit(15)
+        .all()
+    )
+
+    total_searches = db.query(models.SearchLog).count()
+
+    return {
+        "total_searches": total_searches,
+        "top_searches": [{"query": q, "count": c} for q, c in top_searches],
+        "zero_result_searches": [{"query": q, "count": c} for q, c in zero_result_searches]
+    }

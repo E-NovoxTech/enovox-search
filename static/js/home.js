@@ -436,3 +436,58 @@ function initSubscribeHeaderButton() {
         });
     });
 })();
+/* ==========================================================================
+   Floating "Report an issue" button (WhatsApp)
+   Injected on every page that loads home.js — no per-page HTML needed.
+   ========================================================================== */
+function initReportIssueButton() {
+    // EDIT THIS: your WhatsApp number, international format, digits only —
+    // no "+", no spaces, no dashes. e.g. Nigerian number 0801 234 5678
+    // becomes "2348012345678".
+    const WHATSAPP_NUMBER = '2349025366010';
+
+    if (document.getElementById('report-issue-btn')) return; // avoid double-injection
+
+    const pageUrl = window.location.href;
+    const message = `Hi, I have an issue on your site.\nPage: ${pageUrl}\nProblem: `;
+    const waLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+    const btn = document.createElement('a');
+    btn.id = 'report-issue-btn';
+    btn.href = waLink;
+    btn.target = '_blank';
+    btn.rel = 'noopener';
+    btn.setAttribute('aria-label', 'Report an issue on WhatsApp');
+    btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.29-1.39a9.9 9.9 0 0 0 4.75 1.21h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.67c2.2 0 4.27.86 5.82 2.42a8.2 8.2 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.24 8.24a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.14.82.84-3.06-.2-.32a8.18 8.18 0 0 1-1.26-4.37c0-4.54 3.7-8.22 8.26-8.22zm-3.6 4.5c-.15 0-.4.06-.61.3-.21.24-.8.78-.8 1.9s.82 2.2.93 2.35c.12.15 1.6 2.5 3.9 3.4 1.9.75 2.29.6 2.7.56.42-.04 1.35-.55 1.54-1.08.19-.53.19-.98.13-1.08-.06-.1-.21-.15-.44-.27-.23-.12-1.35-.67-1.56-.74-.21-.08-.36-.12-.51.12-.15.23-.58.74-.71.9-.13.15-.26.17-.49.06-.23-.12-.96-.36-1.83-1.14-.68-.6-1.14-1.35-1.27-1.58-.13-.23-.01-.35.1-.47.1-.1.23-.26.35-.4.11-.13.15-.23.23-.38.08-.15.04-.29-.02-.4-.06-.12-.51-1.26-.71-1.72-.18-.44-.37-.38-.51-.39z"/></svg>
+        <span class="report-issue-text">Report an issue</span>
+    `;
+
+    document.body.appendChild(btn);
+    initReportIssueScrollExpand();
+}
+
+document.addEventListener('DOMContentLoaded', initReportIssueButton);
+function initReportIssueScrollExpand() {
+    const btn = document.getElementById('report-issue-btn');
+    if (!btn) return;
+
+    let lastScrollY = window.scrollY;
+    let collapseTimer = null;
+
+    window.addEventListener('scroll', () => {
+        if (window.innerWidth > 600) return; // desktop already reveals text on hover
+
+        const currentScrollY = window.scrollY;
+        const scrollingUp = currentScrollY < lastScrollY;
+        lastScrollY = currentScrollY;
+
+        if (scrollingUp) {
+            btn.classList.add('expanded');
+            clearTimeout(collapseTimer);
+            collapseTimer = setTimeout(() => {
+                btn.classList.remove('expanded');
+            }, 1500);
+        }
+    }, { passive: true });
+}

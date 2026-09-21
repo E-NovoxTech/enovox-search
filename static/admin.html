@@ -89,6 +89,7 @@
                     <button class="nav-tab" data-target="developers-tab">Developers</button>
                     <button class="nav-tab" data-target="claims-tab">Claims</button>
                     <button class="nav-tab" data-target="newsletter-tab">Newsletter</button>
+                    <button class="nav-tab" data-target="analytics-tab">Analytics</button>
                     <a href="/" class="nav-tab" style="font-weight: bold; text-decoration: none;">Home</a>
                 </nav>
                 <div class="sidebar-footer">
@@ -370,6 +371,37 @@
                             <button type="button" id="nl-send-custom-btn" class="btn-primary">Send Newsletter</button>
                         </div>
                     </div>
+                <!-- ANALYTICS TAB — dedicated space; add more cards to .analytics-grid over time -->
+                <section id="analytics-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Analytics</h2>
+                        <div class="section-header-actions">
+                            <button id="analytics-refresh-btn" class="btn-secondary">Refresh</button>
+                        </div>
+                    </div>
+                    <div id="analytics-loading" class="text-muted" style="margin-bottom: 1rem;">Loading search analytics…</div>
+                    <div id="analytics-error" class="alert error hidden"></div>
+
+                    <div class="analytics-grid">
+                        <div class="analytics-card analytics-card--total">
+                            <div id="analytics-total" class="analytics-total">–</div>
+                            <div class="analytics-total-label">Total Searches</div>
+                            <p id="analytics-empty" class="text-muted analytics-empty hidden">No searches logged yet.</p>
+                        </div>
+
+                        <div class="analytics-card">
+                            <h3 class="analytics-card-title">Top Searches</h3>
+                            <ol id="analytics-top-list" class="analytics-list"></ol>
+                        </div>
+
+                        <div class="analytics-card analytics-card--warning">
+                            <h3 class="analytics-card-title">⚠ Zero-Result Searches</h3>
+                            <ol id="analytics-zero-list" class="analytics-list analytics-list--warning"></ol>
+                            <p class="analytics-card-hint text-muted">Queries that returned nothing — catalog gaps worth acting on.</p>
+                        </div>
+                    </div>
+                </section>
+
                 </section>
             </main>
         </div>
@@ -540,5 +572,5 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
     <script src="/static/js/submit-tags.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e441a068fafe9a',t:'MTc4OTk0MzIzNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
