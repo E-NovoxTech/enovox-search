@@ -481,15 +481,15 @@
         detailsInput.addEventListener('input', () => clearEditFieldError('edit_pricing_details'));
     }
 
+   // Pricing Details is now ALWAYS required, regardless of pricing model
+// (matches submit.html's current validation — no longer conditional on
+// pricing === 'Paid').
     function updateEditPricingDetailsRequirement() {
-        const pricingSelect = document.getElementById('edit_pricing');
         const detailsInput = document.getElementById('edit_pricing_details');
         const label = document.getElementById('edit-pricing-details-label');
-        if (!pricingSelect || !detailsInput || !label) return;
-        const isPaid = pricingSelect.value === 'Paid';
-        detailsInput.required = isPaid;
-        label.textContent = isPaid ? 'Pricing Details *' : 'Pricing Details';
-        if (!isPaid) clearEditFieldError('edit_pricing_details');
+        if (!detailsInput || !label) return;
+        detailsInput.required = true;
+        label.textContent = 'Pricing Details *';
     }
 
     /* Keywords tag-input widget — same behavior as submit-tags.js, scoped to
@@ -618,7 +618,7 @@
 
         // Pricing Details required only when Pricing = Paid (same rule as submit.html)
         clearEditFieldError('edit_pricing_details');
-        if (form.pricing.value === 'Paid' && form.pricing_details.value.trim() === '') {
+        if (form.pricing_details.value.trim() === '') {
             setEditFieldError('edit_pricing_details', 'Please specify pricing details for paid products.');
             form.pricing_details.focus();
             return;
