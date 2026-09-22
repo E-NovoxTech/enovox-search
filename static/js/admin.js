@@ -31,7 +31,7 @@
     ];
     const SELECT_OPTIONS = {
         PRODUCT_TYPES: ['Software', 'App', 'Platform', 'Tool'],
-        PRICING: ['Free', 'Paid'],
+        PRICING: ['Free', 'Paid', 'Subscription', 'Freemium'],
         USER_COUNT: ['Just launched', '100+', '1,000+', '10,000+'],
         get CATEGORIES() { return (typeof ENOVOX_CONFIG !== 'undefined' && ENOVOX_CONFIG.CATEGORIES) || []; }
     };
@@ -429,15 +429,14 @@
     }
 
     function updatePricingDetailsRequirement() {
-        const pricingSelect = productForm ? productForm.querySelector('select[name="pricing"]') : null;
         const detailsInput = document.getElementById('pricing_details');
         const detailsLabel = document.getElementById('pricing-details-label');
-        if (!pricingSelect || !detailsInput || !detailsLabel) return;
+        if (!detailsInput || !detailsLabel) return;
 
-        const isPaid = pricingSelect.value === 'Paid';
-        detailsLabel.textContent = isPaid ? 'Pricing Details *' : 'Pricing Details';
+        detailsInput.required = true;
+        detailsLabel.textContent = 'Pricing Details *';
 
-        if (!isPaid || detailsInput.value.trim() !== '') {
+        if (detailsInput.value.trim() !== '') {
             clearFieldError('pricing-details-error');
         }
     }
@@ -484,8 +483,8 @@
         // Pricing details: required only when Pricing = Paid
         const pricingValue = productForm.pricing.value;
         const pricingDetailsValue = productForm.pricing_details.value.trim();
-        if (pricingValue === 'Paid' && pricingDetailsValue === '') {
-            showFieldError('pricing-details-error', 'Please specify pricing details for paid products.');
+        if (pricingDetailsValue === '') {
+            showFieldError('pricing-details-error', 'Please specify pricing details.');
             isValid = false;
         }
 
