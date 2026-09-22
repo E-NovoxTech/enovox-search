@@ -110,191 +110,246 @@
             <div class="form-container">
                 <div class="form-header">
                     <h2>Submit a Product</h2>
-                    <p>Share your Nigerian-built tool with our community.</p>
+                    <p>Share your Nigerian-built tool with our community. Help more people discover and support amazing local products.</p>
                 </div>
 
                 <div id="form-alert" class="alert hidden"></div>
 
-                <form id="submit-tool-form">
-                    <div class="form-group">
-                        <label for="name">Product Name *</label>
-                        <input type="text" id="name" name="name" required minlength="2" maxlength="100" placeholder="e.g. Paystack">
+                <!-- 2-step progress indicator (visual only) -->
+                <div class="submit-stepper" id="submit-stepper">
+                    <div class="step-indicator active" id="step-ind-1">
+                        <span class="step-circle">1</span>
+                        <span class="step-text">
+                            <strong>Product Information</strong>
+                            <small>Tell us about your product</small>
+                        </span>
+                    </div>
+                    <span class="step-line" aria-hidden="true"></span>
+                    <div class="step-indicator" id="step-ind-2">
+                        <span class="step-circle">2</span>
+                        <span class="step-text">
+                            <strong>Company Information</strong>
+                            <small>Founder, company &amp; contact details</small>
+                        </span>
+                    </div>
+                </div>
+
+                <form id="submit-tool-form" novalidate>
+                    <!-- ============ STEP 1: PRODUCT INFORMATION ============ -->
+                    <div class="form-step" id="step-1">
+                        <div class="form-group" id="name-group">
+                            <label for="name">Product Name *</label>
+                            <input type="text" id="name" name="name" required minlength="2" maxlength="100" placeholder="e.g. Paystack">
+                            <span class="field-error" id="name-error"></span>
+                        </div>
+
+                        <div class="form-group" id="description-group">
+                            <label for="description">Short Description *</label>
+                            <textarea id="description" name="description" required minlength="20" maxlength="1000" rows="3" placeholder="What does your tool do? (20&ndash;1000 characters)"></textarea>
+                            <span class="char-count" id="description-count">0/1000</span>
+                            <span class="field-error" id="description-error"></span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" id="category-group">
+                                <label for="category">Category *</label>
+                                <small class="field-subtext">Choose the most relevant category</small>
+                                <select id="category" name="category" required>
+                                    <option value="" disabled selected>Select a category</option>
+                                    <!-- Options will be injected dynamically by JS -->
+                                </select>
+                                <span class="field-error" id="category-error"></span>
+                            </div>
+
+                            <div class="form-group" id="product-type-group">
+                                <label for="product_type">Product Type *</label>
+                                <small class="field-subtext">Is it a web app, mobile app or software?</small>
+                                <select id="product_type" name="product_type" required>
+                                    <option value="" disabled selected>Select a type</option>
+                                    <option value="Software">Software</option>
+                                    <option value="App">App</option>
+                                    <option value="Platform">Platform</option>
+                                    <option value="Tool">Tool</option>
+                                </select>
+                                <span class="field-error" id="product-type-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" id="pricing-group">
+                                <label for="pricing">Pricing Model *<button type="button" class="help-trigger" id="pricing-help-btn" data-help="pricing" aria-expanded="false" aria-controls="pricing-help-pop" aria-label="Help: pricing model options">?</button></label>
+                                <small class="field-subtext">How is it priced?</small>
+                                <select id="pricing" name="pricing" required>
+                                    <option value="" disabled selected>Select pricing model</option>
+                                    <option value="Free">Free</option>
+                                    <option value="Paid">Paid</option>
+                                    <option value="Subscription">Subscription</option>
+                                    <option value="Freemium">Freemium</option>
+                                </select>
+                                <span class="field-error" id="pricing-error"></span>
+                                <div class="field-help-pop hidden" id="pricing-help-pop" role="tooltip">
+                                    <button type="button" class="field-help-close" id="pricing-help-close" aria-label="Close help">&times;</button>
+                                    <h5>Pricing Model</h5>
+                                    <p>How users pay to use your product:</p>
+                                    <ul>
+                                        <li><strong>Free</strong> &mdash; Free for everyone</li>
+                                        <li><strong>Paid</strong> &mdash; Includes paid features</li>
+                                        <li><strong>Subscription</strong> &mdash; Requires a subscription</li>
+                                        <li><strong>Freemium</strong> &mdash; Includes both free and paid features</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Pricing Details: ALWAYS required now (every pricing model).
+                                 Validation lives in submit.js (validateStep1 / handleFormSubmit). -->
+                            <div class="form-group" id="pricing-details-group">
+                                <label for="pricing_details" id="pricing-details-label">Pricing Details *<button type="button" class="help-trigger" id="pricing-details-help-btn" data-help="pricing-details" aria-expanded="false" aria-controls="pricing-details-help-pop" aria-label="Help: what to write in pricing details">?</button></label>
+                                <small class="field-subtext">e.g. Free, $9/month, one-time, etc.</small>
+                                <input type="text" id="pricing_details" name="pricing_details" required
+                                       placeholder="e.g. Free to use, no paid plans">
+                                <span class="field-error" id="pricing-details-error"></span>
+                                <div class="field-help-pop hidden" id="pricing-details-help-pop" role="tooltip">
+                                    <button type="button" class="field-help-close" id="pricing-details-help-close" aria-label="Close help">&times;</button>
+                                    <h5>Pricing Details</h5>
+                                    <p>Tell users how your product is priced. Examples:</p>
+                                    <ul>
+                                        <li><strong>Free:</strong> &ldquo;Free to use&rdquo;</li>
+                                        <li><strong>Paid:</strong> &ldquo;&#8358;5,000/per month&rdquo;</li>
+                                        <li><strong>Subscription:</strong> &ldquo;$9/month&rdquo; or one-time payment</li>
+                                        <li><strong>Freemium:</strong> &ldquo;Free tier + $10/mo Pro&rdquo;</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Website + Current User Count: paired in a row, same rhythm
+                             as the other two-column fields above. -->
+                        <div class="form-row">
+                            <div class="form-group" id="website-group">
+                                <label for="website">Website *</label>
+                                <input type="url" id="website" name="website" required placeholder="https://your-product.com">
+                                <span class="field-error" id="website-error"></span>
+                            </div>
+
+                            <!-- Current User Count: moved here from Company Information (Step 2)
+                                 per request — it's product info, not company info.
+                                 Validation moved to validateStep1() in submit.js. -->
+                            <div class="form-group" id="user-count-group">
+                                <label for="user_count_range">Current User Count *</label>
+                                <select id="user_count_range" name="user_count_range" required>
+                                    <option value="" disabled selected>Select user range</option>
+                                    <option value="Just launched">Just launched</option>
+                                    <option value="100+">100+</option>
+                                    <option value="1,000+">1,000+</option>
+                                    <option value="10,000+">10,000+</option>
+                                </select>
+                                <span class="field-error" id="user-count-error"></span>
+                            </div>
+                        </div>
+
+                        <!-- Logo Image URL: restored per request — direct link,
+                             validated in submit.js validateStep1, sent as logo_url. -->
+                        <div class="form-group" id="logo-group">
+                            <label for="logo_url">Logo Image URL *</label>
+                            <input type="url" id="logo_url" name="logo_url" required placeholder="https://.../logo.png">
+                            <small class="form-hint">Provide a direct link to your logo image.</small>
+                            <span class="field-error" id="logo-error"></span>
+                        </div>
+
+                        <!-- Keywords / Tags (required) — unchanged widget from submit-tags.js -->
+                        <div class="form-group" id="keywords-wrap-group">
+                            <label for="keyword-input">Keywords / Tags *</label>
+                            <div class="tag-input-wrap" id="keywords-wrap">
+                                <div class="tag-chips" id="keyword-chips"></div>
+                                <input type="text" id="keyword-input" placeholder="Type a keyword and press Enter">
+                            </div>
+                            <input type="hidden" id="keywords" name="keywords">
+                            <small class="form-hint">Add up to 10 keywords that describe your product (e.g. invoicing, POS, payments) &mdash; helps users find you through Ask AI and search.</small>
+                            <span class="field-error" id="keywords-error"></span>
+                        </div>
+
+                        <div class="step-actions">
+                            <span class="step-count">Step 1 of 2</span>
+                            <button type="button" id="next-step-btn" class="btn-primary step-btn">Next Step &rarr;</button>
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="description">Short Description *</label>
-                        <textarea id="description" name="description" required minlength="20" maxlength="1000" rows="3" placeholder="What does your tool do? (20-1000 characters)"></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="category">Category *</label>
-                            <select id="category" name="category" required>
-                                <option value="" disabled selected>Select a category</option>
-                                <!-- Options will be injected dynamically by JS -->
-                            </select>
+                    <!-- ============ STEP 2: COMPANY / FOUNDER INFORMATION ============ -->
+                    <div class="form-step hidden" id="step-2">
+                        <div class="form-group" id="founder-group">
+                            <label for="founder">Founder Name(s) *</label>
+                            <input type="text" id="founder" name="founder" required minlength="2" maxlength="100" placeholder="e.g., Jane Doe">
+                            <span class="field-error" id="founder-error"></span>
                         </div>
 
                         <div class="form-group">
-                            <label for="product_type">Product Type *</label>
-                            <select id="product_type" name="product_type" required>
-                                <option value="" disabled selected>Select a type</option>
-                                <option value="Software">Software</option>
-                                <option value="App">App</option>
-                                <option value="Platform">Platform</option>
-                                <option value="Tool">Tool</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- NEW: Keywords / Tags (required) -->
-                    <div class="form-group" id="keywords-wrap-group">
-                        <label for="keyword-input">Keywords / Tags *</label>
-                        <div class="tag-input-wrap" id="keywords-wrap">
-                            <div class="tag-chips" id="keyword-chips"></div>
-                            <input type="text" id="keyword-input" placeholder="Type a keyword and press Enter">
-                        </div>
-                        <input type="hidden" id="keywords" name="keywords">
-                        <small class="form-hint">Add up to 10 keywords that describe your product (e.g. invoicing, POS, payments) — helps users find you through Ask AI and search.</small>
-                        <span class="field-error" id="keywords-error"></span>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="website">Website URL *</label>
-                            <input type="url" id="website" name="website" required placeholder="https://...">
+                            <label for="company_name">Company Name (Optional)</label>
+                            <input type="text" id="company_name" name="company_name" placeholder="e.g., Paystack Payments Limited">
                         </div>
 
-                        <div class="form-group">
-                            <label for="pricing">Pricing Model *</label>
-                            <select id="pricing" name="pricing" required>
-                                <option value="" disabled selected>Select pricing</option>
-                                <option value="Free">Free</option>
-                                <option value="Paid">Paid</option>
-                            </select>
+                        <div class="form-row">
+                            <div class="form-group" id="contact-email-group">
+                                <label for="contact_email">Contact Email *</label>
+                                <input type="email" id="contact_email" name="contact_email" required placeholder="support@yourcompany.com">
+                                <small class="form-hint">A public email users can reach you at &mdash; separate from your login email, in case you'd rather share a support/business address.</small>
+                                <span class="field-error" id="contact-email-error"></span>
+                            </div>
+                            <div class="form-group">
+                                <label for="github_url">GitHub URL (Optional)</label>
+                                <input type="url" id="github_url" name="github_url" placeholder="https://github.com/yourusername or https://github.com/yourorg/repo">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="twitter_url">X / Twitter URL (Optional)</label>
+                                <input type="url" id="twitter_url" name="twitter_url" placeholder="https://x.com/yourhandle">
+                            </div>
+                            <div class="form-group">
+                                <label for="linkedin_url">LinkedIn URL (Optional)</label>
+                                <input type="url" id="linkedin_url" name="linkedin_url" placeholder="https://linkedin.com/company/yourcompany">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="instagram_url">Instagram URL (Optional)</label>
+                                <input type="url" id="instagram_url" name="instagram_url" placeholder="https://instagram.com/yourhandle">
+                            </div>
+                            <div class="form-group">
+                                <label for="facebook_url">Facebook URL (Optional)</label>
+                                <input type="url" id="facebook_url" name="facebook_url" placeholder="https://facebook.com/yourpage">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="appstore_url">App Store URL (Optional)</label>
+                                <input type="url" id="appstore_url" name="appstore_url" placeholder="https://apps.apple.com/...">
+                            </div>
+                            <div class="form-group">
+                                <label for="playstore_url">Play Store URL (Optional)</label>
+                                <input type="url" id="playstore_url" name="playstore_url" placeholder="https://play.google.com/...">
+                            </div>
+                        </div>
+
+                        <div class="form-group agreement-check" id="agree-group">
+                            <label>
+                                <input type="checkbox" id="agree-terms" name="agree_terms" required>
+                                <span>I have read and agree to the <a href="/term" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</span>
+                            </label>
+                            <span class="field-error" id="agree-error"></span>
+                        </div>
+
+                        <div class="step-actions">
+                            <button type="button" id="back-step-btn" class="btn-back">&larr; Back</button>
+                            <button type="submit" id="submit-btn" class="btn-primary">Submit Product</button>
                         </div>
                     </div>
-
-                    <!-- NEW: Pricing Details — required only when Pricing Model = Paid.
-                         Conditional required/optional logic + inline validation lives in submit.js
-                         (see setupPricingDetailsLogic / updatePricingDetailsRequirement). -->
-                    <div class="form-group" id="pricing-details-group">
-                        <label for="pricing_details" id="pricing-details-label">Pricing Details</label>
-                        <input type="text" id="pricing_details" name="pricing_details"
-                               placeholder="$5/mo, ₦5,000/month, Free tier + $10/mo Pro">
-                        <small class="form-hint">Give the actual pricing specifics. Required for paid products.</small>
-                        <span class="field-error" id="pricing-details-error"></span>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="logo_url">Logo Image URL *</label>
-                        <input type="url" id="logo_url" name="logo_url" required placeholder="https://.../logo.png">
-                        <small class="form-hint">Provide a direct link to your logo image.</small>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="appstore_url">App Store URL (Optional)</label>
-                            <input type="url" id="appstore_url" name="appstore_url" placeholder="https://apps.apple.com/...">
-                        </div>
-                        <div class="form-group">
-                            <label for="playstore_url">Play Store URL (Optional)</label>
-                            <input type="url" id="playstore_url" name="playstore_url" placeholder="https://play.google.com/...">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="user_count_range">Current User Count *</label>
-                        <select id="user_count_range" name="user_count_range" required>
-                            <option value="" disabled selected>Select user range</option>
-                            <option value="Just launched">Just launched</option>
-                            <option value="100+">100+</option>
-                            <option value="1,000+">1,000+</option>
-                            <option value="10,000+">10,000+</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" style="margin-top: 1rem;">
-                        <label for="founder">Founder Name(s) *</label>
-                        <input type="text" id="founder" name="founder" required minlength="2" maxlength="100" placeholder="e.g., Jane Doe">
-                    </div>
-
-                    <div class="form-group" style="margin-top: 1rem;">
-                        <label for="company_name">Company Name (Optional)</label>
-                        <input type="text" id="company_name" name="company_name" placeholder="e.g., Paystack Payments Limited">
-                    </div>
-
-                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                        <div class="form-group">
-                            <label for="twitter_url">X / Twitter URL (Optional)</label>
-                            <input type="url" id="twitter_url" name="twitter_url" placeholder="https://x.com/yourhandle">
-                        </div>
-                        <div class="form-group">
-                            <label for="linkedin_url">LinkedIn URL (Optional)</label>
-                            <input type="url" id="linkedin_url" name="linkedin_url" placeholder="https://linkedin.com/company/yourcompany">
-                        </div>
-                    </div>
-
-                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                        <div class="form-group">
-                            <label for="instagram_url">Instagram URL (Optional)</label>
-                            <input type="url" id="instagram_url" name="instagram_url" placeholder="https://instagram.com/yourhandle">
-                        </div>
-                        <div class="form-group">
-                            <label for="facebook_url">Facebook URL (Optional)</label>
-                            <input type="url" id="facebook_url" name="facebook_url" placeholder="https://facebook.com/yourpage">
-                        </div>
-                    </div>
-
-                    <!-- NEW: Contact Email (required) + GitHub URL (optional) -->
-                    <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                        <div class="form-group">
-                            <label for="contact_email">Contact Email *</label>
-                            <input type="email" id="contact_email" name="contact_email" required placeholder="support@yourcompany.com">
-                            <small class="form-hint">A public email users can reach you at — separate from your login email, in case you'd rather share a support/business address.</small>
-                        </div>
-                        <div class="form-group">
-                            <label for="github_url">GitHub URL (Optional)</label>
-                            <input type="url" id="github_url" name="github_url" placeholder="https://github.com/yourusername or https://github.com/yourorg/repo">
-                        </div>
-                    </div>
-
-                    <div class="form-group agreement-check">
-                        <label>
-                            <input type="checkbox" id="agree-terms" name="agree_terms" required>
-                            <span>I have read and agree to the <a href="/term" target="_blank">Terms & Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>.</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" id="submit-btn" class="btn-primary full-width">Submit Product</button>
                 </form>
             </div>
 
-            <!-- Right Column: My Products Dashboard -->
-            <div class="dashboard-sidebar">
-                <div class="sidebar-header">
-                    <h3>My Products</h3>
-                    <button id="logout-btn" class="modern-logout-btn">Log out</button>
-                </div>
-                
-                <div class="dashboard-section">
-                    <h4>Live Products</h4>
-                    <div id="live-products-list" class="dev-product-list">
-                        <!-- JS injects here -->
-                        <div class="loading-state-small">Checking live products...</div>
-                    </div>
-                </div>
-
-                <div class="dashboard-section">
-                    <h4>Under Review</h4>
-                    <div id="pending-products-list" class="dev-product-list">
-                        <!-- JS injects here -->
-                        <div class="loading-state-small">Checking pending submissions...</div>
-                    </div>
-                </div>
-            </div>
-
-        </section>
+            </section>
     </main>
 
     <!-- Footer (Identical) -->

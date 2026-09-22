@@ -63,13 +63,12 @@
    View 2: Authenticated Layout (Form + Dashboard)
    ========================================================================== */
 .dashboard-layout {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 2.5rem;
-    align-items: start;
+    display: block;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
-.form-container, .dashboard-sidebar {
+.form-container {
     background-color: var(--bg-card);
     padding: 2.5rem;
     border-radius: 16px;
@@ -203,122 +202,11 @@
 }
 
 /* ==========================================================================
-   Right Column: Dashboard Sidebar
-   ========================================================================== */
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.sidebar-header h3 {
-    font-size: 1.25rem;
-    color: var(--text-main);
-}
-
-.btn-text.small {
-    font-size: 0.8rem;
-    padding: 0;
-    color: #ef4444; /* Red color for log out */
-}
-
-.btn-text.small:hover {
-    color: #b91c1c;
-    text-decoration: underline;
-}
-
-.dashboard-section {
-    margin-bottom: 2rem;
-}
-
-.dashboard-section:last-child {
-    margin-bottom: 0;
-}
-
-.dashboard-section h4 {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 1rem;
-    font-weight: 700;
-}
-
-/* Individual Product Cards in Dashboard */
-.dev-product-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.dev-product-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--bg-main);
-    transition: transform 0.2s, border-color 0.2s;
-    text-decoration: none;
-}
-
-.dev-product-item:hover {
-    transform: translateY(-2px);
-    border-color: var(--color-blue);
-}
-
-.dev-product-name {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 180px;
-}
-
-/* Badges for status */
-.badge {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 9999px;
-    font-weight: 600;
-}
-
-.badge.live {
-    background-color: var(--pill-edu-bg);
-    color: var(--pill-edu-text);
-}
-
-.badge.pending {
-    background-color: var(--pill-ecom-bg);
-    color: var(--pill-ecom-text);
-}
-
-.loading-state-small {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    text-align: center;
-    padding: 1rem;
-    border: 1px dashed var(--border-color);
-    border-radius: 8px;
-}
-
-/* ==========================================================================
    Responsive Mobile Adjustments
    ========================================================================== */
 @media (max-width: 992px) {
     .dashboard-layout {
-        grid-template-columns: 1fr;
-    }
-    
-    /* On tablets/mobile, move the dashboard below the form */
-    .dashboard-sidebar {
-        order: 2;
+        max-width: 100%;
     }
 }
 
@@ -332,7 +220,7 @@
         flex-direction: column;
     }
     
-    .form-container, .dashboard-sidebar {
+    .form-container {
         padding: 1.5rem;
     }
 }
@@ -388,92 +276,481 @@
 }
 
 /* ==========================================================================
-   Modern Logout Button
+   Two-step flow: stepper, step sections, action rows
    ========================================================================== */
-.modern-logout-btn {
-    background-color: #fee2e2;
-    color: #dc2626;
-    border: none;
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: inherit;
+.submit-stepper {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0 0 2rem;
 }
 
-.modern-logout-btn:hover {
-    background-color: #fecaca;
-    color: #b91c1c;
+.step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-shrink: 0;
+}
+
+.step-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background-color: var(--hover-bg);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.step-indicator.active .step-circle {
+    background-color: var(--color-blue);
+    border-color: var(--color-blue);
+    color: #ffffff;
+}
+
+.step-indicator.done .step-circle {
+    background-color: var(--color-green);
+    border-color: var(--color-green);
+    color: #ffffff;
+}
+
+.step-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.step-text strong {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.step-indicator.active .step-text strong,
+.step-indicator.done .step-text strong {
+    color: var(--text-main);
+}
+
+.step-text small {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    display: none;
+}
+
+.step-indicator.active .step-text small {
+    display: block;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    border-radius: 2px;
+    background-color: var(--border-color);
+}
+
+.step-indicator.done + .step-line {
+    background-color: var(--color-blue);
+}
+
+.step-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.step-actions .step-count {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.step-btn {
+    min-width: 160px;
+}
+
+/* Next Step / Submit Product — scoped to .step-actions so the global
+   .btn-primary elsewhere on the site is untouched. Gives it a modern
+   outlined edge (a subtle lighter border on top of the fill) plus a
+   proper elevated shadow instead of looking flat/pasted-on. */
+.step-actions .btn-primary {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 0.75rem 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35), 0 1px 2px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.step-actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.42), 0 2px 4px rgba(0, 0, 0, 0.14);
+    filter: brightness(1.05);
+}
+
+.step-actions .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* Submit Product specifically sits on the green accent — thicker,
+   more visible shadow so it reads as elevated on light mode, where the
+   original shadow was nearly invisible against the white card. */
+#submit-btn {
+    box-shadow: 0 6px 18px rgba(21, 128, 61, 0.38), 0 2px 5px rgba(0, 0, 0, 0.16);
+}
+
+#submit-btn:hover {
+    box-shadow: 0 8px 22px rgba(21, 128, 61, 0.46), 0 3px 7px rgba(0, 0, 0, 0.18);
+}
+
+.dark-mode #submit-btn,
+.dark-mode .step-actions .btn-primary {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode #submit-btn:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 3px 8px rgba(0, 0, 0, 0.32);
+}
+
+.btn-back {
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    background: transparent;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.15s ease;
+}
+
+.btn-back:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--color-blue);
     transform: translateY(-1px);
 }
 
-.dark-mode .modern-logout-btn {
-    background-color: rgba(220, 38, 38, 0.15);
-    color: #fca5a5;
+.btn-back:active {
+    transform: translateY(0);
 }
 
-.dark-mode .modern-logout-btn:hover {
-    background-color: rgba(220, 38, 38, 0.25);
+.char-count {
+    align-self: flex-end;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 0.3rem;
 }
 
 /* ==========================================================================
-   Glowing Live Dot Indicator
+   Contextual help: ? trigger + compact popover (desktop & mobile)
    ========================================================================== */
-.status-badge.live {
+.form-group {
+    position: relative;
+}
+
+.help-trigger {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background-color: #dcfce7;
-    color: #166534;
-    padding: 0.35rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.8rem;
-    font-weight: 700;
-}
-
-.dark-mode .status-badge.live {
-    background-color: rgba(22, 101, 52, 0.3);
-    color: #86efac;
-}
-
-.glow-dot {
-    width: 8px;
-    height: 8px;
-    background-color: #22c55e;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-left: 0.45rem;
+    vertical-align: middle;
+    border: none;
     border-radius: 50%;
-    display: inline-block;
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-    animation: pulse-glow 2s infinite;
+    background-color: var(--color-blue);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.85;
 }
 
-@keyframes pulse-glow {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+.help-trigger:hover,
+.help-trigger:focus-visible {
+    opacity: 1;
+}
+
+.field-help-pop {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    padding: 1rem 1.1rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.field-help-pop h5 {
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
+    color: var(--text-main);
+}
+
+.field-help-pop p {
+    margin: 0 0 0.4rem;
+}
+
+.field-help-pop ul {
+    margin: 0;
+    padding-left: 1.15rem;
+}
+
+.field-help-pop li {
+    margin: 0.22rem 0;
+}
+
+.field-help-pop strong {
+    color: var(--text-main);
+}
+
+.field-help-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.15rem;
+}
+
+.field-help-close:hover {
+    color: var(--text-main);
+}
+
+/* Wide desktop: float the popover beside the field, outside the card,
+   like a context bubble — never a permanent sidebar. */
+@media (min-width: 1200px) {
+    .field-help-pop {
+        left: calc(100% + 20px);
+        right: auto;
+        top: -8px;
+        width: 320px;
+    }
+}
+
+/* ==========================================================================
+   Terms & Conditions agreement checkbox row
+   Previously unstyled — fell back to browser/global defaults, which
+   centered and stacked the checkbox above the label text on both mobile
+   and desktop. Fixed to sit inline: checkbox left, text beside it,
+   everything left-aligned.
+   ========================================================================== */
+.agreement-check {
+    margin-top: 0.5rem;
 }
 
 .agreement-check label {
     display: flex;
-    align-items: center; /* Aligns the checkbox with the text */
-    gap: 10px;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.65rem;
+    text-align: left;
+    font-weight: 400;
     font-size: 0.9rem;
-    font-weight: 400; /* Overrides the bold label style from other inputs */
+    color: var(--text-main);
     cursor: pointer;
+    line-height: 1.5;
 }
 
 .agreement-check input[type="checkbox"] {
-    width: auto; /* Overrides the 100% width rule */
-    margin: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    flex: 0 0 18px;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px;
+    min-height: 18px;
+    max-width: 18px;
+    max-height: 18px;
+    padding: 0;
+    margin: 0.1rem 0 0;
+    border: 1.5px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-main);
     cursor: pointer;
+    position: relative;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.agreement-check input[type="checkbox"]:hover {
+    border-color: var(--color-blue);
+}
+
+.agreement-check input[type="checkbox"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.agreement-check input[type="checkbox"]:checked {
+    background-color: var(--color-blue);
+    border-color: var(--color-blue);
+}
+
+.agreement-check input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.agreement-check span {
+    flex: 1;
 }
 
 .agreement-check a {
-    color: var(--color-blue, #2563eb);
+    color: var(--color-blue);
+    font-weight: 600;
     text-decoration: none;
 }
 
 .agreement-check a:hover {
     text-decoration: underline;
+}
+
+.agreement-check.has-error input[type="checkbox"] {
+    border-color: #be123c;
+}
+
+/* ==========================================================================
+   Mobile (<=600px) — proportions matched strictly to the mobile mockup:
+   taller touch targets, roomier rhythm, full-width primary action.
+   Sizes only shrink where the mockup itself is smaller.
+   ========================================================================== */
+@media (max-width: 600px) {
+    .form-container {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .form-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.25rem;
+    }
+
+    .form-header h2 {
+        font-size: 1.75rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.4rem;
+    }
+
+    .form-group label {
+        font-size: 0.95rem;
+    }
+
+    .field-subtext {
+        font-size: 0.8rem;
+    }
+
+    /* 48px touch targets + 16px text (also prevents iOS focus-zoom) */
+    .form-group input,
+    .form-group select {
+        min-height: 48px;
+        font-size: 1rem;
+        padding: 0.72rem 0.9rem;
+        border-radius: 10px;
+    }
+
+    .form-group textarea {
+        font-size: 1rem;
+        padding: 0.72rem 0.9rem;
+        border-radius: 10px;
+        min-height: 110px;
+    }
+
+    .submit-stepper {
+        gap: 0.75rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .step-circle {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .step-text strong {
+        font-size: 0.9rem;
+    }
+
+    .step-text small {
+        font-size: 0.75rem;
+    }
+
+    .help-trigger {
+        width: 22px;
+        height: 22px;
+        font-size: 0.75rem;
+    }
+
+    .step-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        margin-top: 1.75rem;
+    }
+
+    .step-actions .step-count {
+        display: none;
+    }
+
+    .step-btn,
+    .step-actions .btn-primary,
+    .step-actions .btn-back {
+        width: 100%;
+        min-height: 48px;
+        font-size: 1rem;
+        border-radius: 10px;
+    }
+
+    .field-help-pop {
+        font-size: 0.85rem;
+        padding: 1rem;
+    }
+
+    .agreement-check label {
+        font-size: 0.85rem;
+        gap: 0.55rem;
+    }
+
+    .agreement-check input[type="checkbox"] {
+        flex: 0 0 20px;
+        width: 20px !important;
+        height: 20px !important;
+        min-width: 20px;
+        min-height: 20px;
+        max-width: 20px;
+        max-height: 20px;
+    }
+
+    .agreement-check input[type="checkbox"]:checked::after {
+        left: 6px;
+        top: 2px;
+        width: 5px;
+        height: 11px;
+    }
 }

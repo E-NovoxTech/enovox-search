@@ -49,7 +49,6 @@ def list_submissions(admin_key: str, db: Session = Depends(get_db)):
 def my_submissions(current_dev: models.Developer = Depends(get_current_developer), db: Session = Depends(get_db)):
     return db.query(models.Submission).filter(
         models.Submission.developer_id == current_dev.id,
-        models.Submission.status == "pending"
     ).all()
 
 

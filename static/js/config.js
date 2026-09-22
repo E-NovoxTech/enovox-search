@@ -11,13 +11,18 @@ const ENOVOX_CONFIG = {
         "Business", 
         "Productivity",
         "E-commerce",
-        "Transportation", 
+        "Transportation & Logistics", 
         "Health & Wellness",
         "Entertainment & Media",
+        "Freelance & Gig Work",
         "Real Estate & Housing",
         "Agriculture",
         "Social & Community",
-        "Developer Tools", 
+        "Developer Tools",
+        "Legal & Compliance",
+        "Energy & Utilities",
+        "Travel & Tourism",
+        "Gaming & Esports",
         "Other"
     ]
 };

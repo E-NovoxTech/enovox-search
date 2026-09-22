@@ -9,6 +9,8 @@
  *   - The JWT itself only carries account_id/type/exp, so profile info
  *     comes from a real call to GET /developers/me (Bearer auth) instead
  *     of client-side decoding.
+ *   - GET /submissions/me now returns ALL submissions (pending, approved,
+ *     rejected) instead of only pending ones.
  */
 
 (function () {
@@ -40,14 +42,21 @@
     });
 
     /* ==========================================================================
-       Developer notification tray — polls GET /submissions/me — the same endpoint your existing submit.js already uses successfully,
-       diffs each submission's status against what we last saw (stored in
-       localStorage), and raises a notification when one flips to
-       approved/rejected. Notifications themselves also persist in
-       localStorage so they survive a refresh, same as the admin tray.
-       CONFIRMED: GET /submissions/me is already used successfully in submit.js.
-       returns objects with at least {id, name, status}. Confirm with
-       backend — if the path differs, only the fetch URL below changes.
+       Developer notification tray — polls GET /submissions/me, which now
+       returns the FULL set of submissions (pending, approved, rejected) —
+       not just pending ones. This function receives that full, unfiltered
+       response and diffs each submission's status against what we last saw
+       (stored in localStorage), raising a notification when one flips from
+       pending -> approved or pending -> rejected. Notifications themselves
+       also persist in localStorage so they survive a refresh, same as the
+       admin tray.
+
+       FIX: previously, /submissions/me only returned pending submissions,
+       so an approval could only be inferred by an id DISAPPEARING from the
+       list. Now that the endpoint returns every submission regardless of
+       status, that inference is gone — we detect approval/rejection
+       directly from the real status value on each submission, exactly like
+       any other status flip. The disappeared-id branch is removed entirely.
        ========================================================================== */
     function initDevNotifications(token) {
         const NOTIF_KEY = 'enovox_dev_notifications';
@@ -55,11 +64,9 @@
         const wrapper = document.querySelector('.dev-notif-wrapper');
         if (!wrapper) return;
 
-        const bellBtn = wrapper.querySelector('.dev-bell-btn');
         const dropdown = wrapper.querySelector('.dev-notif-dropdown');
         const badge = wrapper.querySelector('.dev-notif-badge');
         const list = wrapper.querySelector('.notification-list');
-        const clearBtn = wrapper.querySelector('.clear-all-notifications');
 
         let notifications = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]');
 
@@ -112,6 +119,11 @@
                     console.error(`[dev notifications] GET /submissions/me returned ${res.status} — check this endpoint exists on the backend.`);
                     return;
                 }
+                // IMPORTANT: this is the full, unfiltered response — pending,
+                // approved, AND rejected submissions. Do not filter it before
+                // running the notification diff below; the pending-only view
+                // used elsewhere on the dashboard filters its own copy
+                // separately (see fetchPendingSubmissions).
                 const submissions = await res.json();
                 if (!Array.isArray(submissions)) {
                     console.error('[dev notifications] GET /submissions/me did not return a list:', submissions);
@@ -125,41 +137,63 @@
                 const seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}');
                 const prevStatusOf = (entry) => (entry && typeof entry === 'object') ? entry.status : entry;
                 const prevNameOf = (entry) => (entry && typeof entry === 'object') ? (entry.name || '') : '';
+                function buildStatusNotification(status, name, reason) {
+                    const label = name || 'Your submission';
 
+                    if (status === 'approved') {
+                        return {
+                            title: 'Submission approved!',
+                            message: `"${label}" was approved!`
+                        };
+                    }
+
+                    if (status === 'rejected') {
+                        return {
+                            title: 'Submission rejected',
+                            message: reason
+                                ? `"${label}" was rejected: ${reason}`
+                                : `"${label}" was rejected.`
+                        };
+                    }
+
+                    return null;
+                }
                 let changed = false;
                 const currentIds = new Set();
 
+                // Single pass over the FULL submissions list: for each one,
+                // compare its real current status against what we last saw.
+                // pending -> approved and pending -> rejected are both
+                // detected directly here now that approved/rejected items no
+                // longer vanish from the response.
                 submissions.forEach(s => {
                     currentIds.add(String(s.id));
                     const prevStatus = prevStatusOf(seen[s.id]);
-                    if (prevStatus && prevStatus !== s.status && (s.status === 'approved' || s.status === 'rejected')) {
-                        notifications.unshift({
-                            title: s.status === 'approved' ? 'Submission approved!' : 'Submission rejected',
-                            message: `"${s.name}" is now ${s.status}.`
-                        });
-                        changed = true;
+                    if (prevStatus && prevStatus !== s.status) {
+                        const note = buildStatusNotification(
+                            s.status,
+                            s.name,
+                            s.rejection_reason
+                        );
+
+                        if (note) {
+                            notifications.unshift(note);
+                            changed = true;
+                        }
                     }
                     seen[s.id] = { status: s.status, name: s.name || prevNameOf(seen[s.id]) };
                 });
 
-                // Approved submissions typically DISAPPEAR from /submissions/me
-                // (they become live products), so the status flip above can't
-                // always observe an approval. If an id last seen as 'pending'
-                // is no longer listed, treat that as approved. Rejected items
-                // stay listed (the Under Review section renders them), so
-                // rejections always arrive via the flip branch.
+                // REMOVED: the old "disappeared id last seen as pending ==
+                // approved" inference. That was only needed when the endpoint
+                // returned pending-only data; now every submission (including
+                // approved/rejected ones) stays in the response, so a missing
+                // id just means it belongs to a different developer account
+                // or was actually deleted — not an approval. We still prune
+                // seen[] entries for ids that truly vanished, so stale keys
+                // don't accumulate forever.
                 Object.keys(seen).forEach(id => {
-                    if (currentIds.has(String(id))) return;
-                    const entry = seen[id];
-                    if (prevStatusOf(entry) === 'pending') {
-                        const name = prevNameOf(entry);
-                        notifications.unshift({
-                            title: 'Submission approved!',
-                            message: `"${name || 'Your submission'}" is now approved.`
-                        });
-                        changed = true;
-                    }
-                    delete seen[id]; // never notify twice for the same id
+                    if (!currentIds.has(String(id))) delete seen[id];
                 });
 
                 if (notifications.length > 30) {
@@ -287,11 +321,23 @@
     }
 
     /* ==========================================================================
-       NEW: Under Review / Rejected submissions
-       Reuses GET /submissions/me, the same endpoint
-       initDevNotifications() already polls — never confirmed by backend.
-       Confirm the path, and confirm submission objects carry the fields
-       used below (id, name, category, status, rejection_reason).
+       Under Review submissions list.
+       FIX: GET /submissions/me now returns ALL submissions (pending,
+       approved, rejected). This view only ever wants to show submissions
+       that are still awaiting a decision, so it filters to status ===
+       'pending' only.
+
+       Per product decision: once a submission is approved, it moves to the
+       Approved Products grid (fetchApprovedProducts) and should drop out of
+       this list — filtering to 'pending' only already achieves that, since
+       an approved item's status is no longer 'pending'. Once a submission
+       is rejected, it should also stop showing here (rejected items no
+       longer persist in this view either) — same 'pending'-only filter
+       handles that too, since a rejected item's status is 'rejected', not
+       'pending'. So only truly-pending submissions ever render in this
+       section; approved and rejected items are both cleared from it
+       automatically by this filter, with approved ones surfacing instead in
+       the Approved Products grid above.
        ========================================================================== */
     async function fetchPendingSubmissions(token) {
         const loadingEl = document.getElementById('dashboard-pending-loading');
@@ -311,7 +357,7 @@
             if (!res.ok) throw new Error('Could not load your submissions right now.');
 
             const submissions = await res.json();
-            const relevant = (submissions || []).filter(s => s.status === 'pending' || s.status === 'rejected');
+            const relevant = (submissions || []).filter(s => s.status === 'pending');
 
             loadingEl.classList.add('hidden');
 
@@ -338,6 +384,12 @@
             ? `<img src="${escapeAttr(sub.logo_url)}" alt="" class="dashboard-product-logo" onerror="this.outerHTML='<div class=\\'dashboard-product-logo\\'>${escapeHTML(getInitial(sub.name))}</div>'">`
             : `<div class="dashboard-product-logo">${escapeHTML(getInitial(sub.name))}</div>`;
 
+        // NOTE: with the pending-only filter above, this card is now only
+        // ever built for status === 'pending' submissions (rejected ones no
+        // longer reach fetchPendingSubmissions at all). The rejected-badge
+        // and rejection-reason branches below are kept as dead-safe fallback
+        // rendering in case this function is ever called with a non-pending
+        // item from elsewhere, but they should not normally trigger.
         const badge = sub.status === 'rejected'
             ? `<span class="dashboard-status-badge rejected">Rejected</span>`
             : `<span class="dashboard-status-badge pending">Pending Review</span>`;

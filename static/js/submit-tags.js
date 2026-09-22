@@ -35,6 +35,8 @@
             input.placeholder = tags.length >= MAX_TAGS ? 'Maximum 10 keywords reached' : 'Type a keyword and press Enter';
         }
 
+        
+
         function addTag(raw) {
             const val = raw.trim().replace(/,+$/, '');
             if (!val || tags.length >= MAX_TAGS) return;
@@ -77,24 +79,64 @@
             if (wrap) wrap.classList.remove('has-error');
         }
 
-        form.addEventListener('submit', (e) => {
+                form.addEventListener('submit', (e) => {
             if (tags.length === 0) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 showError('Add at least 1 keyword.');
-                input.focus();
+                forceStepOneWithNotice();
             } else if (tags.length > MAX_TAGS) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 showError('Maximum 10 keywords allowed.');
+                forceStepOneWithNotice();
             } else {
                 clearError();
             }
         }, true); // capture phase — runs before submit.js's own listener
 
-        function escapeHTML(str) {
-            return String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t]));
+        // This listener runs in the CAPTURE phase and can block submit.js's
+        // own handler entirely (via stopImmediatePropagation) — which means
+        // submit.js never gets a chance to move the user back to Step 1 or
+        // show its own "please complete Step 1" message. So when THIS
+        // widget is the reason submission is blocked, it has to force the
+        // step change and show the notice itself, or the Submit button
+        // just silently does nothing with no explanation.
+        function forceStepOneWithNotice() {
+            if (typeof window.__enovoxGoToStep === 'function') {
+                window.__enovoxGoToStep(1); // reuses submit.js's own step logic — keeps currentStep in sync
+            } else {
+                // Fallback if submit.js hasn't loaded/exposed it for some reason.
+                const step1 = document.getElementById('step-1');
+                const step2 = document.getElementById('step-2');
+                if (step1) step1.classList.remove('hidden');
+                if (step2) step2.classList.add('hidden');
+            }
+
+            const alertBox = document.getElementById('form-alert');
+            if (alertBox) {
+                alertBox.textContent = 'Please add at least one keyword in Product Information (Step 1) before submitting.';
+                alertBox.className = 'alert error';
+                alertBox.style.display = 'block';
+            }
+            input.focus();
         }
+
+        function escapeHTML(str) {
+            return String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[t]));
+        }
+
+        // Exposed for potential future use (e.g. clearing chips after a
+        // successful submit) — not used for autosave/restore anymore.
+        window.renderKeywordChipsFromValue = function (commaSeparated) {
+            const restored = String(commaSeparated || '')
+                .split(',')
+                .map(t => t.trim())
+                .filter(Boolean)
+                .slice(0, MAX_TAGS);
+            tags = restored;
+            sync();
+        };
 
         sync();
     });

@@ -314,7 +314,7 @@ a {
 .pill-edu { background-color: var(--pill-edu-bg); color: var(--pill-edu-text); }
 .pill-business { background-color: var(--pill-biz-bg); color: var(--pill-biz-text); }
 .pill-ecommerce { background-color: var(--pill-ecom-bg); color: var(--pill-ecom-text); }
-.pill-transport { background-color: var(--pill-trans-bg); color: var(--pill-trans-text); }
+.pill-transport-logistics { background-color: var(--pill-trans-bg); color: var(--pill-trans-text); }
 
 /* Dynamically Generated Category Pills */
 .hero-categories-wrapper {
@@ -373,13 +373,18 @@ a {
 .pill-business { background-color: #ffedd5; color: #9a3412; }
 .pill-productivity { background-color: #e0f2fe; color: #075985; }
 .pill-e-commerce { background-color: #fce7f3; color: #9d174d; }
-.pill-transportation { background-color: #f3e8ff; color: #6b21a8; }
+.pill-transportation-logistics { background-color: #f3e8ff; color: #6b21a8; }
 .pill-health-wellness { background-color: #ccfbf1; color: #115e59; }
 .pill-entertainment-media { background-color: #fae8ff; color: #86198f; }
+.pill-freelance-gig-work { background-color: #ffedd5; color: #9a3412; }
 .pill-real-estate-housing { background-color: #fef4c3; color: #a16207; }
 .pill-agriculture { background-color: #d1fae5; color: #065f46; }
 .pill-social-community { background-color: #fee2e2; color: #991b1b; }
 .pill-developer-tools { background-color: #f1f5f9; color: #334155; }
+.pill-legal-compliance { background-color: #ffedd5; color: #9a3412; }
+.pill-energy-utilities { background-color: #fef4c3; color: #a16207; }
+.pill-travel-tourism { background-color: #fae8ff; color: #86198f; }
+.pill-gaming-esports { background-color: #e0f2fe; color: #075985; }
 .pill-other { background-color: #e5e7eb; color: #374151; }
 
 /* ==========================================================================
@@ -1805,4 +1810,70 @@ body {
         opacity: 1;
         margin-left: 0.25rem;
     }
+}
+
+
+
+/* Modern elevated primary button (used for Next Step / Submit Product) */
+.btn-primary-modern {
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 0.75rem 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35), 0 1px 2px rgba(0, 0, 0, 0.12);
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.btn-primary-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.42), 0 2px 4px rgba(0, 0, 0, 0.14);
+    filter: brightness(1.05);
+}
+
+.btn-primary-modern:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* Green accent variant (used for Submit Product) — swap the rgba tint
+   to your green's rgb if it differs from var(--color-green) */
+.btn-primary-modern.btn-accent-green {
+    box-shadow: 0 6px 18px rgba(21, 128, 61, 0.38), 0 2px 5px rgba(0, 0, 0, 0.16);
+}
+
+.btn-primary-modern.btn-accent-green:hover {
+    box-shadow: 0 8px 22px rgba(21, 128, 61, 0.46), 0 3px 7px rgba(0, 0, 0, 0.18);
+}
+
+/* Dark mode — shadows need to be darker/neutral, colored shadows barely read on dark backgrounds */
+.dark-mode .btn-primary-modern {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .btn-primary-modern:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 3px 8px rgba(0, 0, 0, 0.32);
+}
+
+/* Outlined secondary button (used for Back) */
+.btn-outline-modern {
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    background: transparent;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.15s ease;
+}
+
+.btn-outline-modern:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--color-blue);
+    transform: translateY(-1px);
+}
+
+.btn-outline-modern:active {
+    transform: translateY(0);
 }
