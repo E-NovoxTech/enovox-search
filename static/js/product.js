@@ -137,6 +137,21 @@
             popover.classList.toggle('hidden');
         });
 
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                try {
+                    await navigator.clipboard.writeText(pageUrl);
+                    if (copyConfirm) {
+                        copyConfirm.classList.remove('hidden');
+                        setTimeout(() => copyConfirm.classList.add('hidden'), 2000);
+                    }
+                } catch (err) {
+                    console.error('[share] clipboard copy failed:', err);
+                }
+            });
+        }
+
         document.addEventListener('click', (e) => {
             if (!popover.contains(e.target) && e.target !== shareBtn) {
                 popover.classList.add('hidden');

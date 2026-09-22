@@ -114,7 +114,7 @@
                                 {{ product.category }}
                             </span>
                             <span class="pricing-pill {{ 'free' if product.pricing | lower == 'free' else 'paid' }}">
-                                {{ 'Free' if product.pricing | lower == 'free' else 'Paid' }}
+                                {{ product.pricing }}
                             </span>
                         </div>
                     </div>
