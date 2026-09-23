@@ -45,6 +45,7 @@
         setupGoogleModal();
         initGoogleSignIn();
         applyUrlParams();
+        setupPasswordToggles();
 
         const loginForm = document.getElementById('login-form');
         const signupForm = document.getElementById('signup-form');
@@ -55,6 +56,18 @@
         if (signupForm) signupForm.addEventListener('submit', handleSignup);
         if (verifyForm) verifyForm.addEventListener('submit', handleVerify);
         if (resendLink) resendLink.addEventListener('click', handleResend);
+
+        const forgotPasswordLink = document.getElementById('forgot-password-link');
+        const backToLoginLink = document.getElementById('back-to-login-link');
+        const forgotPasswordForm = document.getElementById('forgot-password-form');
+        const resetPasswordForm = document.getElementById('reset-password-form');
+        const resendResetLink = document.getElementById('resend-reset-code-link');
+
+        if (forgotPasswordLink) forgotPasswordLink.addEventListener('click', (e) => { e.preventDefault(); showForgotPasswordScreen(); });
+        if (backToLoginLink) backToLoginLink.addEventListener('click', (e) => { e.preventDefault(); showLoginScreen(); });
+        if (forgotPasswordForm) forgotPasswordForm.addEventListener('submit', handleForgotPassword);
+        if (resetPasswordForm) resetPasswordForm.addEventListener('submit', handleResetPassword);
+        if (resendResetLink) resendResetLink.addEventListener('click', handleResendResetCode);
     });
 
     /* ==========================================================================
@@ -121,6 +134,32 @@
     function getAccountType() {
         const input = document.getElementById('account_type');
         return input && input.value === 'developer' ? 'developer' : 'user';
+    }
+
+    /* ==========================================================================
+       Show/hide password toggle (eye icon) — works on any input wrapped in
+       .password-field with a sibling .password-toggle-btn[data-target=inputId].
+       Applies to login, signup, and reset-password fields alike.
+       ========================================================================== */
+    function setupPasswordToggles() {
+        document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (!input) return;
+
+                const icon = btn.querySelector('i');
+                const willShow = input.type === 'password';
+                input.type = willShow ? 'text' : 'password';
+
+                if (icon) {
+                    icon.classList.toggle('fa-eye', !willShow);
+                    icon.classList.toggle('fa-eye-slash', willShow);
+                }
+                btn.setAttribute('aria-label', willShow ? 'Hide password' : 'Show password');
+                btn.setAttribute('aria-pressed', willShow ? 'true' : 'false');
+            });
+        });
     }
 
     /* ==========================================================================
@@ -410,6 +449,207 @@
             link.textContent = originalText;
             setTimeout(() => {
                 resendCooldownActive = false;
+                link.classList.remove('disabled-link');
+            }, RESEND_COOLDOWN_MS);
+        }
+    }
+
+    /* ==========================================================================
+       Forgot / Reset password — POST /forgot-password, POST /reset-password
+       Confirmed payloads (per /docs schema):
+         /forgot-password : { email, account_type }
+         /reset-password  : { email, code, new_password, account_type }
+       account_type is taken from the login form's current tab selection
+       (getAccountType()) and carried through to the reset screen.
+       ========================================================================== */
+    let resendResetCooldownActive = false;
+
+    function showForgotPasswordScreen() {
+        hideAllAuthScreens();
+        const screen = document.getElementById('forgot-password-screen');
+        if (!screen) return;
+        screen.classList.remove('hidden');
+        hideAlert('forgot-password-alert');
+        clearFieldError('forgot-email');
+        const emailInput = document.getElementById('forgot-email');
+        if (emailInput) {
+            const loginEmail = document.getElementById('email');
+            emailInput.value = loginEmail ? loginEmail.value.trim() : '';
+            emailInput.focus();
+        }
+    }
+
+    function showResetPasswordScreen(email, accountType) {
+        hideAllAuthScreens();
+        const screen = document.getElementById('reset-password-screen');
+        if (!screen) return;
+        screen.classList.remove('hidden');
+        screen.dataset.email = email;
+        screen.dataset.accountType = accountType || 'user';
+        hideAlert('reset-password-alert');
+        clearFieldErrors(['reset-code', 'new-password', 'confirm-new-password']);
+        const resetForm = document.getElementById('reset-password-form');
+        if (resetForm) resetForm.reset();
+        const codeInput = document.getElementById('reset-code');
+        if (codeInput) codeInput.focus();
+    }
+
+    function showLoginScreen() {
+        hideAllAuthScreens();
+        const formView = document.getElementById('auth-form-view');
+        if (formView) formView.classList.remove('hidden');
+    }
+
+    function hideAllAuthScreens() {
+        ['auth-form-view', 'verify-screen', 'forgot-password-screen', 'reset-password-screen'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+    }
+
+    async function handleForgotPassword(e) {
+        e.preventDefault();
+        const form = e.target;
+        const btn = document.getElementById('forgot-password-btn');
+
+        hideAlert('forgot-password-alert');
+        clearFieldError('forgot-email');
+
+        const email = form.email.value.trim();
+        if (!EMAIL_RE.test(email)) {
+            setFieldError('forgot-email', 'Enter a valid email address.');
+            return;
+        }
+
+        const accountType = getAccountType();
+
+        setLoading(btn, true, 'Sending...');
+
+        try {
+            const response = await fetch(`${API_URL}/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, account_type: accountType })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Something went wrong. Please try again.');
+            }
+
+            // Same "always succeeds" response whether or not the account
+            // exists (email enumeration protection) — always move forward.
+            showResetPasswordScreen(email, accountType);
+
+        } catch (error) {
+            showAlert('error', error.message, 'forgot-password-alert');
+        } finally {
+            setLoading(btn, false, 'Send Reset Code');
+        }
+    }
+
+    async function handleResetPassword(e) {
+        e.preventDefault();
+        const screen = document.getElementById('reset-password-screen');
+        const form = e.target;
+        const btn = document.getElementById('reset-password-btn');
+        if (!screen) return;
+
+        hideAlert('reset-password-alert');
+        clearFieldErrors(['reset-code', 'new-password', 'confirm-new-password']);
+
+        const code = form.code.value.trim();
+        const newPassword = form.new_password.value;
+        const confirmNewPassword = form.confirm_new_password.value;
+        let hasError = false;
+
+        if (!/^\d{6}$/.test(code)) {
+            setFieldError('reset-code', 'Enter the 6-digit code.');
+            hasError = true;
+        }
+        if (newPassword.length < MIN_PASSWORD_LENGTH) {
+            setFieldError('new-password', `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+            hasError = true;
+        }
+        if (newPassword !== confirmNewPassword) {
+            setFieldError('confirm-new-password', 'Passwords do not match.');
+            hasError = true;
+        }
+        if (hasError) return;
+
+        const email = screen.dataset.email;
+        const accountType = screen.dataset.accountType || 'user';
+
+        setLoading(btn, true, 'Resetting...');
+
+        try {
+            const response = await fetch(`${API_URL}/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code, new_password: newPassword, account_type: accountType })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Could not reset your password. Check the code and try again.');
+            }
+
+            showLoginScreen();
+            showAlert('success', 'Password reset — log in with your new password.', 'auth-alert');
+
+        } catch (error) {
+            showAlert('error', error.message, 'reset-password-alert');
+        } finally {
+            setLoading(btn, false, 'Reset Password');
+        }
+    }
+
+    async function handleResendResetCode(e) {
+        e.preventDefault();
+        if (resendResetCooldownActive) return;
+
+        const screen = document.getElementById('reset-password-screen');
+        const link = document.getElementById('resend-reset-code-link');
+        const msgEl = document.getElementById('resend-reset-message');
+        if (!screen || !link) return;
+
+        const email = screen.dataset.email;
+        const accountType = screen.dataset.accountType || 'user';
+
+        resendResetCooldownActive = true;
+        link.classList.add('disabled-link');
+        const originalText = link.textContent;
+        link.textContent = 'Sending...';
+        if (msgEl) msgEl.textContent = '';
+
+        try {
+            const res = await fetch(`${API_URL}/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, account_type: accountType })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Could not resend the code.');
+            }
+
+            if (msgEl) {
+                msgEl.textContent = 'Code resent — check your email.';
+                msgEl.classList.remove('resend-error');
+                setTimeout(() => {
+                    if (msgEl.textContent === 'Code resent — check your email.') msgEl.textContent = '';
+                }, 4000);
+            }
+        } catch (error) {
+            if (msgEl) {
+                msgEl.textContent = error.message;
+                msgEl.classList.add('resend-error');
+            }
+        } finally {
+            link.textContent = originalText;
+            setTimeout(() => {
+                resendResetCooldownActive = false;
                 link.classList.remove('disabled-link');
             }, RESEND_COOLDOWN_MS);
         }

@@ -15,6 +15,8 @@ class Developer(Base):
     verification_code_expires = Column(DateTime, nullable=True)
     auth_provider = Column(String, default="password", nullable=True)
     newsletter_opt_in = Column(Boolean, default=False)
+    reset_code = Column(String, nullable=True)
+    reset_code_expires = Column(DateTime, nullable=True)
     
 class Product(Base):
     __tablename__ = "products"
@@ -92,6 +94,8 @@ class User(Base):
     verification_code_expires = Column(DateTime, nullable=True)
     auth_provider = Column(String, default="password", nullable=True)
     newsletter_opt_in = Column(Boolean, default=False)
+    reset_code = Column(String, nullable=True)
+    reset_code_expires = Column(DateTime, nullable=True)
 
 class SearchUsage(Base):
     __tablename__ = "search_usage"

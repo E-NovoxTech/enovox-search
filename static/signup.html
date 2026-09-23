@@ -86,12 +86,22 @@
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required minlength="8" placeholder="At least 8 characters">
+                    <div class="password-field">
+                        <input type="password" id="password" name="password" required minlength="8" placeholder="At least 8 characters">
+                        <button type="button" class="password-toggle-btn" data-target="password" aria-label="Show password" aria-pressed="false">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                     <span class="field-error" id="password-error"></span>
                 </div>
                 <div class="form-group">
                     <label for="confirm_password">Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Repeat your password">
+                    <div class="password-field">
+                        <input type="password" id="confirm_password" name="confirm_password" required minlength="8" placeholder="Repeat your password">
+                        <button type="button" class="password-toggle-btn" data-target="confirm_password" aria-label="Show password" aria-pressed="false">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                     <span class="field-error" id="confirm_password-error"></span>
                 </div>
                 <div class="form-group checkbox-group">

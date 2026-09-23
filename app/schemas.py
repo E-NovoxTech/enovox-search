@@ -237,3 +237,13 @@ class NewsletterProductSend(BaseModel):
 class NewsletterCustomSend(BaseModel):
     subject: str
     html_body: str
+    
+class ForgotPassword(BaseModel):
+    email: str
+    account_type: str
+
+class ResetPassword(BaseModel):
+    email: str
+    code: str
+    new_password: str
+    account_type: str

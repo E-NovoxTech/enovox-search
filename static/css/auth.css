@@ -419,3 +419,35 @@ button.full-width {
     color: #bfdbfe;
     text-decoration: underline;
 }
+.password-field {
+    position: relative;
+}
+
+.password-field input {
+    padding-right: 2.75rem; /* room for the icon so text doesn't run under it */
+}
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary, #888); /* match whatever muted text color token you already use */
+    font-size: 1rem;
+}
+
+.password-toggle-btn:hover {
+    color: var(--text-primary, #333);
+}
+.forgot-password-link {
+    display: block;
+    text-align: right;
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+}

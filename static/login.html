@@ -88,8 +88,14 @@
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required placeholder="••••••••">
+                    <div class="password-field">
+                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                        <button type="button" class="password-toggle-btn" data-target="password" aria-label="Show password" aria-pressed="false">
+                            <i class="fa-regular fa-eye"></i>
+                        </button>
+                    </div>
                     <span class="field-error" id="password-error"></span>
+                    <a href="#" id="forgot-password-link" class="auth-link forgot-password-link">Forgot password?</a>
                 </div>
                 <button type="submit" id="login-btn" class="btn-primary full-width">Log In</button>
             </form>
@@ -158,6 +164,69 @@
                 <div class="auth-footer">
                     <p>Didn't get a code? <a href="#" id="resend-code-link" class="auth-link">Resend</a></p>
                     <p class="field-error" id="resend-message"></p>
+                </div>
+            </div>
+
+            <!-- Forgot password — request a reset code -->
+            <div id="forgot-password-screen" class="hidden">
+                <h2>Forgot Password</h2>
+                <p class="auth-subtitle">Enter your email and we'll send you a code to reset your password.</p>
+
+                <div id="forgot-password-alert" class="alert hidden"></div>
+
+                <form id="forgot-password-form" novalidate>
+                    <div class="form-group">
+                        <label for="forgot-email">Email Address</label>
+                        <input type="email" id="forgot-email" name="email" required placeholder="you@example.com">
+                        <span class="field-error" id="forgot-email-error"></span>
+                    </div>
+                    <button type="submit" id="forgot-password-btn" class="btn-primary full-width">Send Reset Code</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p><a href="#" id="back-to-login-link" class="auth-link">Back to login</a></p>
+                </div>
+            </div>
+
+            <!-- Reset password — enter code + new password -->
+            <div id="reset-password-screen" class="hidden">
+                <h2>Reset Password</h2>
+                <p class="auth-subtitle" id="reset-password-message">Enter the code we sent to your email and choose a new password.</p>
+
+                <div id="reset-password-alert" class="alert hidden"></div>
+
+                <form id="reset-password-form" novalidate>
+                    <div class="form-group">
+                        <label for="reset-code">Verification Code</label>
+                        <input type="text" id="reset-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
+                        <span class="field-error" id="reset-code-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <div class="password-field">
+                            <input type="password" id="new-password" name="new_password" required placeholder="••••••••">
+                            <button type="button" class="password-toggle-btn" data-target="new-password" aria-label="Show password" aria-pressed="false">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        <span class="field-error" id="new-password-error"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-new-password">Confirm New Password</label>
+                        <div class="password-field">
+                            <input type="password" id="confirm-new-password" name="confirm_new_password" required placeholder="••••••••">
+                            <button type="button" class="password-toggle-btn" data-target="confirm-new-password" aria-label="Show password" aria-pressed="false">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                        <span class="field-error" id="confirm-new-password-error"></span>
+                    </div>
+                    <button type="submit" id="reset-password-btn" class="btn-primary full-width">Reset Password</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Didn't get a code? <a href="#" id="resend-reset-code-link" class="auth-link">Resend</a></p>
+                    <p class="field-error" id="resend-reset-message"></p>
                 </div>
             </div>
         </div>

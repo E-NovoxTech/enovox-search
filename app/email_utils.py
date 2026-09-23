@@ -20,3 +20,15 @@ def send_verification_email(to_email: str, code: str):
             <p>This code expires in 15 minutes.</p>
         """
     })
+    
+def send_password_reset_email(to_email: str, code: str):
+    resend.Emails.send({
+        "from": EMAIL_FROM,
+        "to": to_email,
+        "subject": "Reset your Enovox Search password",
+        "html": f"""
+            <p>You requested a password reset. Your code is:</p>
+            <h2>{code}</h2>
+            <p>This code expires in 15 minutes. If you didn't request this, you can safely ignore this email.</p>
+        """
+    })
