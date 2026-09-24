@@ -125,7 +125,17 @@ class NewsletterSubscriber(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False)
     created_at = Column(Date, default=date.today)
-    
+ 
+class SiteBanner(Base):
+    __tablename__ = "site_banner"
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String, nullable=True)
+    link_url = Column(String, nullable=True)
+    link_text = Column(String, nullable=True)
+    is_active = Column(Boolean, default=False)
+    is_marquee = Column(Boolean, default=False)
+    updated_at = Column(Date, default=date.today)
+    link_style = Column(String, default="button")
     
 class SearchLog(Base):
     __tablename__ = "search_logs"

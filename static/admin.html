@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enovox Admin Dashboard</title>
-    <link rel="canonical" href="https://search.enovoxtech.com/admin" />
+    <!-- <link rel="canonical" href="https://search.enovoxtech.com/admin" /> -->
     <link rel="stylesheet" href="/static/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
@@ -90,6 +90,7 @@
                     <button class="nav-tab" data-target="claims-tab">Claims</button>
                     <button class="nav-tab" data-target="newsletter-tab">Newsletter</button>
                     <button class="nav-tab" data-target="analytics-tab">Analytics</button>
+                    <button class="nav-tab" data-target="banner-tab">Site Banner</button>
                     <a href="/" class="nav-tab" style="font-weight: bold; text-decoration: none;">Home</a>
                 </nav>
                 <div class="sidebar-footer">
@@ -357,7 +358,7 @@
                         </div>
                     </div>
 
-                    <!-- MODE 2: Custom HTML -->
+                        <!-- MODE 2: Custom HTML -->
                     <div id="nl-custom-panel" class="nl-panel hidden">
                         <div class="form-group">
                             <label>Subject *</label>
@@ -371,6 +372,9 @@
                             <button type="button" id="nl-send-custom-btn" class="btn-primary">Send Newsletter</button>
                         </div>
                     </div>
+                </section>
+                <!-- /NEWSLETTER TAB -->
+
                 <!-- ANALYTICS TAB — dedicated space; add more cards to .analytics-grid over time -->
                 <section id="analytics-tab" class="tab-content hidden">
                     <div class="section-header">
@@ -402,6 +406,95 @@
                     </div>
                 </section>
 
+                <!-- SITE BANNER TAB -->
+                <section id="banner-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Site Banner</h2>
+                        <div class="section-header-actions">
+                            <button id="banner-reload-btn" type="button" class="btn-secondary">Reload</button>
+                        </div>
+                    </div>
+
+                    <div id="banner-loading" class="text-muted" style="margin-bottom: 1rem;">Loading current banner…</div>
+                    <div id="banner-alert" class="alert hidden"></div>
+
+                    <!-- Live preview: same look as the public banner -->
+                    <div class="banner-preview-label text-muted">Live preview</div>
+                    <div class="banner-preview-frame">
+                        <div id="banner-preview" class="banner-preview">
+                            <div class="banner-preview-inner">
+                                <div class="banner-preview-content">
+                                    <span class="banner-preview-track" id="banner-preview-track">
+                                        <span id="banner-preview-text"></span>
+                                        <span id="banner-preview-link" class="banner-preview-link hidden"></span>
+                                    </span>
+                                </div>
+                                <span class="banner-preview-close" aria-hidden="true">&times;</span>
+                            </div>
+                        </div>
+                        <div id="banner-preview-status" class="banner-preview-status"></div>
+                    </div>
+
+                    <form id="banner-form" class="nl-panel banner-form" novalidate>
+                        <div class="form-group">
+                            <label for="banner-message">Message *</label>
+                            <textarea id="banner-message" rows="3" placeholder="e.g. Enovox AI is now live! Try it today."></textarea>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="banner-link-text">Link Text (optional)</label>
+                                <input type="text" id="banner-link-text" placeholder="e.g. Click here to download">
+                            </div>
+                            <div class="form-group">
+                                <label for="banner-link-url">Link URL (optional)</label>
+                                <input type="text" id="banner-link-url" placeholder="https://... or /explore">
+                            </div>
+                        </div>
+                        <div class="error-text hidden" id="banner-link-error"></div>
+                        <div class="form-group">
+                            <label>Link Style</label>
+                            <div class="banner-style-options">
+                                <label class="banner-style-option">
+                                    <input type="radio" name="banner-link-style" value="button" checked>
+                                    <span class="banner-style-card">
+                                        <span class="banner-style-sample banner-style-sample--button">Click here</span>
+                                        <span class="banner-style-name">Button</span>
+                                    </span>
+                                </label>
+                                <label class="banner-style-option">
+                                    <input type="radio" name="banner-link-style" value="text">
+                                    <span class="banner-style-card">
+                                        <span class="banner-style-sample banner-style-sample--text">Click here</span>
+                                        <span class="banner-style-name">Underlined text</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="banner-toggles">
+                            <label class="banner-switch">
+                                <input type="checkbox" id="banner-marquee">
+                                <span class="banner-switch-track"><span class="banner-switch-thumb"></span></span>
+                                <span class="banner-switch-text">
+                                    <strong>Scroll this message</strong>
+                                    <small class="text-muted">Best for longer messages</small>
+                                </span>
+                            </label>
+
+                            <label class="banner-switch">
+                                <input type="checkbox" id="banner-active">
+                                <span class="banner-switch-track"><span class="banner-switch-thumb"></span></span>
+                                <span class="banner-switch-text">
+                                    <strong>Show banner on site</strong>
+                                    <small class="text-muted">Master on/off switch. Turning it off keeps your saved content.</small>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" id="banner-save-btn" class="btn-primary">Save Banner</button>
+                        </div>
+                    </form>
                 </section>
             </main>
         </div>

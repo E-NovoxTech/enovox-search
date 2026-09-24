@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
@@ -79,6 +80,44 @@ def score_product_relevance(product, query: str) -> int:
             score += 1
 
     return score
+@router.get("/banner")
+def get_banner(db: Session = Depends(get_db)):
+    banner = db.query(models.SiteBanner).first()
+    if not banner or not banner.is_active:
+        return {"is_active": False}
+
+    return {
+        "is_active": True,
+        "message": banner.message,
+        "link_url": banner.link_url,
+        "link_text": banner.link_text,
+        "link_style": banner.link_style,
+        "is_marquee": banner.is_marquee,
+        "updated_at": str(banner.updated_at)
+    }
+
+
+@router.put("/admin/banner")
+def update_banner(admin_key: str, data: schemas.BannerUpdate, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    banner = db.query(models.SiteBanner).first()
+    if not banner:
+        banner = models.SiteBanner()
+        db.add(banner)
+
+    update_data = data.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(banner, field, value)
+
+    banner.updated_at = date.today()
+    db.commit()
+    db.refresh(banner)
+
+    return {"message": "Banner updated.", "banner": banner}
+
+
 
 @router.get("/categories/counts")
 def category_counts(db: Session = Depends(get_db)):

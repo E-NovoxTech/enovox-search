@@ -1106,3 +1106,237 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
     color: var(--text-muted);
     font-size: 0.85rem;
 }
+
+
+/* ==========================================================================
+   SITE BANNER tab  (COMPLETE BLOCK, replaces all earlier banner CSS)
+   Live preview + form + toggle switches + link style picker.
+   Preview mirrors the public banner (solid brand-blue gradient, white text).
+   ========================================================================== */
+
+/* ---------- Live preview ---------- */
+.banner-preview-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+}
+
+.banner-preview-frame {
+    max-width: 760px;
+    margin-bottom: 1.25rem;
+}
+
+.banner-preview {
+    background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+    color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: opacity 0.2s;
+}
+
+.banner-preview,
+.banner-preview * {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.banner-preview.is-inactive {
+    opacity: 0.45; /* dimmed = saved but hidden from visitors */
+}
+
+.banner-preview-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0.9rem;
+    min-height: 36px;
+}
+
+.banner-preview-content {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-align: center;
+}
+
+.banner-preview-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #ffffff;
+}
+
+/* Preview link: BUTTON style (default) */
+.banner-preview-link {
+    font-weight: 700;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    padding: 0.28rem 0.85rem;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #1e3a8a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+/* Preview link: UNDERLINED TEXT style */
+.banner-preview-link.is-text {
+    background: transparent;
+    color: #ffffff;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+}
+
+.banner-preview-close {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    opacity: 0.85;
+}
+
+.banner-preview.is-marquee .banner-preview-content { text-align: left; }
+.banner-preview.is-marquee .banner-preview-track {
+    white-space: nowrap;
+    padding-left: 100%;
+    animation: banner-preview-scroll var(--marquee-duration, 20s) linear infinite;
+}
+
+@keyframes banner-preview-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .banner-preview.is-marquee .banner-preview-track {
+        animation: none;
+        padding-left: 0;
+        white-space: normal;
+    }
+    .banner-preview.is-marquee .banner-preview-content { text-align: center; }
+}
+
+.banner-preview-status {
+    margin-top: 0.4rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* ---------- Form ---------- */
+.banner-form { max-width: 760px; }
+.banner-form .form-group textarea { resize: vertical; }
+
+/* ---------- Link style picker ---------- */
+.banner-style-options { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.banner-style-option { cursor: pointer; }
+.banner-style-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.banner-style-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 150px;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-card);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.banner-style-option input:checked + .banner-style-card {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.banner-style-option input:focus-visible + .banner-style-card {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+}
+
+.banner-style-sample {
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.banner-style-sample--button {
+    background: #ffffff;
+    color: #1e3a8a;
+    border: 1px solid var(--border-color);
+    border-radius: 9999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.banner-style-sample--text {
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.banner-style-name { font-size: 0.82rem; font-weight: 600; }
+
+/* ---------- Toggle switches ---------- */
+.banner-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin: 0.5rem 0 0.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.banner-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.banner-switch input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.banner-switch-track {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #cbd5e1;
+    transition: background-color 0.2s;
+}
+
+.banner-switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s;
+}
+
+.banner-switch input:checked + .banner-switch-track { background: var(--color-blue); }
+.banner-switch input:checked + .banner-switch-track .banner-switch-thumb { transform: translateX(18px); }
+.banner-switch input:focus-visible + .banner-switch-track { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25); }
+
+.banner-switch-text { display: flex; flex-direction: column; font-size: 0.9rem; }
+.banner-switch-text small { font-size: 0.78rem; margin-top: 0.1rem; }

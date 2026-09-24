@@ -247,3 +247,12 @@ class ResetPassword(BaseModel):
     code: str
     new_password: str
     account_type: str
+    
+    
+class BannerUpdate(BaseModel):
+    message: Optional[str] = None
+    link_url: Optional[str] = None
+    link_text: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_marquee: Optional[bool] = None
+    link_style: Optional[str] = None

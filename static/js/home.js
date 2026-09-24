@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMobileMenu();
     initFooterSubscribe();
     initSubscribeHeaderButton();
+    initSiteBanner();
     
     if (document.getElementById('newly-launched-list')) {
         loadGridData();
@@ -490,4 +491,97 @@ function initReportIssueScrollExpand() {
             }, 1500);
         }
     }, { passive: true });
+}
+/* ==========================================================================
+   Site-wide Announcement Banner
+   GET /products/banner -> { is_active, message, link_url, link_text,
+                             is_marquee, updated_at }
+   Dismissal is stored in localStorage as 'dismissed_banner' = updated_at.
+   A changed updated_at (admin published new content) shows it again.
+   Skipped entirely on admin pages and on pages without the banner markup.
+   ========================================================================== */
+async function initSiteBanner() {
+    const banner = document.getElementById('site-banner');
+    if (!banner) return;
+    if (window.location.pathname.startsWith('/admin')) return;
+
+    const textEl = document.getElementById('site-banner-text');
+    const linkEl = document.getElementById('site-banner-link');
+    const trackEl = document.getElementById('site-banner-track');
+    const closeBtn = document.getElementById('site-banner-close');
+    if (!textEl || !linkEl || !trackEl || !closeBtn) return;
+
+    const root = document.documentElement;
+
+    function setOffset() {
+        root.style.setProperty('--banner-h', banner.classList.contains('hidden') ? '0px' : banner.offsetHeight + 'px');
+    }
+
+    function hideBanner() {
+        banner.classList.add('hidden');
+        setOffset();
+    }
+
+    function safeGet(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function safeSet(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* storage blocked; dismiss just won't persist */ }
+    }
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/products/banner`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (!data || !data.is_active || !data.message) return;
+
+        const version = String(data.updated_at || '');
+        if (version && safeGet('dismissed_banner') === version) return; // already dismissed, no new content
+
+        // Build content (textContent = XSS-safe for admin-entered text)
+        textEl.textContent = data.message;
+
+        const linkUrl = typeof data.link_url === 'string' ? data.link_url.trim() : '';
+        const safeLink = /^(https?:\/\/|\/)/i.test(linkUrl);
+
+        if (linkUrl && data.link_text && safeLink) {
+            linkEl.href = linkUrl;
+            linkEl.textContent = data.link_text;
+
+            // Same-site paths open in the same tab; external links in a new one
+            if (linkUrl.startsWith('/')) {
+                linkEl.removeAttribute('target');
+            } else {
+                linkEl.target = '_blank';
+            }
+
+            // Style: 'text' = underlined text, anything else = button (default)
+            linkEl.classList.toggle('is-text', data.link_style === 'text');
+            linkEl.classList.remove('hidden');
+        } else {
+            linkEl.classList.add('hidden');
+        }
+
+        banner.classList.toggle('is-marquee', !!data.is_marquee);
+        banner.classList.remove('hidden');
+
+        // Marquee speed: roughly constant px/sec regardless of message length
+        if (data.is_marquee) {
+            const distance = trackEl.scrollWidth + banner.offsetWidth;
+            const seconds = Math.max(12, Math.round(distance / 60));
+            trackEl.style.setProperty('--marquee-duration', seconds + 's');
+        }
+
+        setOffset();
+        window.addEventListener('resize', setOffset);
+
+        closeBtn.addEventListener('click', () => {
+            if (version) safeSet('dismissed_banner', version);
+            hideBanner();
+        });
+    } catch (err) {
+        console.error('Banner load failed:', err);
+        // Fail silently: a broken banner call must never affect the page
+    }
 }

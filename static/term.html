@@ -15,8 +15,31 @@
     <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
     <link rel="manifest" href="/static/assets/site.webmanifest">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KWLYDKBTN2"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-KWLYDKBTN2');
+    </script>
 </head>
 <body>
+    <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
+    <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
+        <div class="site-banner-inner">
+            <div class="site-banner-content" id="site-banner-content">
+                <span class="site-banner-track" id="site-banner-track">
+                    <span class="site-banner-text" id="site-banner-text"></span>
+                    <a class="site-banner-link hidden" id="site-banner-link" href="#" target="_blank" rel="noopener"></a>
+                </span>
+            </div>
+            <button type="button" class="site-banner-close" id="site-banner-close" aria-label="Dismiss announcement">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    </div>
  <!-- Navigation Bar -->
     <header class="navbar">
         <div class="nav-container">

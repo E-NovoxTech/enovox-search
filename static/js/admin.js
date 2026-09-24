@@ -152,6 +152,7 @@
         setupNewsletter();
         setupClaims();
         setupAnalytics();
+        setupBanner();
         initNotifications();
         initAuth(); // async — kicked off last, verifies any stored key itself
     });
@@ -555,6 +556,7 @@
         if (tabId === 'analytics-tab') {
             fetchSearchAnalytics();
         }
+        if (tabId === 'banner-tab') loadBannerAdmin();
     }
 
     function getActiveTabId() {
@@ -2642,5 +2644,210 @@
         if (emptyEl) emptyEl.classList.toggle('hidden', total !== 0);
         topEl.innerHTML = buildAnalyticsList(data.top_searches);
         zeroEl.innerHTML = buildAnalyticsList(data.zero_result_searches);
+    }
+
+            /* ==========================================================================
+       SITE BANNER — admin control  (COMPLETE BLOCK, replaces all earlier banner JS)
+       GET /products/banner
+         -> { is_active, message, link_url, link_text, link_style, is_marquee, updated_at }
+       PUT /products/admin/banner?admin_key=...
+         body: { message, link_url, link_text, link_style, is_active, is_marquee }
+         -> { message: "Banner updated.", banner: {...} }
+       link_style is "button" (default) or "text" (underlined text).
+       The live preview mirrors the public banner and updates as you type.
+       ========================================================================== */
+    function setupBanner() {
+        const form = document.getElementById('banner-form');
+        if (!form) return;
+
+        ['banner-message', 'banner-link-text', 'banner-link-url', 'banner-marquee', 'banner-active'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => {
+                clearBannerLinkError();
+                renderBannerPreview();
+            });
+        });
+
+        document.querySelectorAll('input[name="banner-link-style"]').forEach(r => {
+            r.addEventListener('change', renderBannerPreview);
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveBanner();
+        });
+
+        const reloadBtn = document.getElementById('banner-reload-btn');
+        if (reloadBtn) reloadBtn.addEventListener('click', () => loadBannerAdmin());
+    }
+
+    function bannerEl(id) { return document.getElementById(id); }
+
+    function showBannerAlert(type, message) {
+        const el = bannerEl('banner-alert');
+        if (!el) return;
+        el.textContent = message;
+        el.className = `alert ${type}`;
+    }
+
+    function hideBannerAlert() {
+        const el = bannerEl('banner-alert');
+        if (el) { el.textContent = ''; el.className = 'alert hidden'; }
+    }
+
+    function clearBannerLinkError() {
+        clearFieldError('banner-link-error');
+    }
+
+    // Reads the current form state (trimmed strings, real booleans)
+    function readBannerForm() {
+        const styleEl = document.querySelector('input[name="banner-link-style"]:checked');
+        return {
+            message: (bannerEl('banner-message').value || '').trim(),
+            link_text: (bannerEl('banner-link-text').value || '').trim(),
+            link_url: (bannerEl('banner-link-url').value || '').trim(),
+            link_style: styleEl ? styleEl.value : 'button',
+            is_marquee: !!bannerEl('banner-marquee').checked,
+            is_active: !!bannerEl('banner-active').checked
+        };
+    }
+
+    async function loadBannerAdmin() {
+        const loadingEl = bannerEl('banner-loading');
+        if (!bannerEl('banner-form')) return;
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        hideBannerAlert();
+        clearBannerLinkError();
+
+        try {
+            const res = await fetch(`${API_URL}/products/banner`);
+            if (!res.ok) throw new Error('Could not load the current banner.');
+            const data = await res.json();
+            fillBannerForm(data || {});
+        } catch (error) {
+            showBannerAlert('error', error.message);
+            renderBannerPreview();
+        } finally {
+            if (loadingEl) loadingEl.classList.add('hidden');
+        }
+    }
+
+    // Always fills the form from whatever the server returns. Missing fields
+    // fall back to empty values and the default "button" style.
+    function fillBannerForm(data) {
+        bannerEl('banner-message').value = data.message || '';
+        bannerEl('banner-link-text').value = data.link_text || '';
+        bannerEl('banner-link-url').value = data.link_url || '';
+        bannerEl('banner-marquee').checked = !!data.is_marquee;
+        bannerEl('banner-active').checked = !!data.is_active;
+
+        const savedStyle = data.link_style === 'text' ? 'text' : 'button';
+        const styleRadio = document.querySelector(`input[name="banner-link-style"][value="${savedStyle}"]`);
+        if (styleRadio) styleRadio.checked = true;
+
+        renderBannerPreview();
+    }
+
+    function renderBannerPreview() {
+        const preview = bannerEl('banner-preview');
+        const textEl = bannerEl('banner-preview-text');
+        const linkEl = bannerEl('banner-preview-link');
+        const trackEl = bannerEl('banner-preview-track');
+        const statusEl = bannerEl('banner-preview-status');
+        if (!preview || !textEl || !linkEl || !trackEl) return;
+
+        const f = readBannerForm();
+
+        textEl.textContent = f.message || 'Your announcement will appear here…';
+
+        if (f.link_text && f.link_url) {
+            linkEl.textContent = f.link_text;
+            linkEl.classList.toggle('is-text', f.link_style === 'text');
+            linkEl.classList.remove('hidden');
+        } else {
+            linkEl.classList.add('hidden');
+        }
+
+        preview.classList.toggle('is-marquee', f.is_marquee);
+        preview.classList.toggle('is-inactive', !f.is_active);
+
+        if (f.is_marquee) {
+            // Same constant-speed rule as the public banner (~60px/sec, min 12s)
+            const distance = trackEl.scrollWidth + preview.offsetWidth;
+            const seconds = Math.max(12, Math.round(distance / 60));
+            trackEl.style.setProperty('--marquee-duration', seconds + 's');
+        }
+
+        if (statusEl) {
+            statusEl.textContent = f.is_active
+                ? 'Visitors will see this banner once saved.'
+                : 'Hidden from visitors (dimmed). Your content is kept when you save.';
+        }
+    }
+
+    function isValidBannerLink(url) {
+        return /^(https?:\/\/|\/)/i.test(url);
+    }
+
+    async function saveBanner() {
+        const btn = bannerEl('banner-save-btn');
+        if (!btn) return;
+        hideBannerAlert();
+        clearBannerLinkError();
+
+        const f = readBannerForm();
+
+        // Going live needs a message; a hidden banner may be saved with any content.
+        if (f.is_active && !f.message) {
+            showBannerAlert('error', 'Please enter a message before showing the banner on the site.');
+            bannerEl('banner-message').focus();
+            return;
+        }
+
+        // The public site only renders a link when BOTH parts exist, so flag half-filled pairs.
+        if ((f.link_url && !f.link_text) || (!f.link_url && f.link_text)) {
+            showFieldError('banner-link-error', 'Fill in both Link Text and Link URL, or leave both empty.');
+            return;
+        }
+        if (f.link_url && !isValidBannerLink(f.link_url)) {
+            showFieldError('banner-link-error', 'Link URL must start with https://, http:// or / (for pages on this site).');
+            return;
+        }
+
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        try {
+            const res = await fetch(`${API_URL}/products/admin/banner?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: f.message,
+                    link_url: f.link_url,
+                    link_text: f.link_text,
+                    link_style: f.link_style,
+                    is_active: f.is_active,
+                    is_marquee: f.is_marquee
+                })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                let detail = data.detail || data.message || '';
+                if (Array.isArray(detail) && detail[0] && detail[0].msg) detail = detail[0].msg;
+                throw new Error(detail || `Could not save the banner (status ${res.status}).`);
+            }
+
+            showBannerAlert('success', f.is_active
+                ? 'Banner updated — now live on the site.'
+                : 'Banner saved but hidden (inactive).');
+            renderBannerPreview();
+        } catch (error) {
+            showBannerAlert('error', error.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
     }
 })();
