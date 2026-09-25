@@ -9,6 +9,13 @@
     const LIMIT = 20;
     let currentPage = 1;
 
+    // Human-readable labels for filter groups (used to prefix ambiguous chip text if ever needed).
+    const FILTER_GROUP_LABELS = {
+        category: 'Category',
+        pricing: 'Pricing',
+        product_type: 'Type'
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         // Generate category checkboxes with a six-item cutoff and see-more toggle.
         const categoryFilterContainer = document.getElementById('dynamic-category-filters');
@@ -101,15 +108,7 @@
         const clearBtn = document.getElementById('clear-filters');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                document.getElementById('filter-form').reset();
-                document.getElementById('explore-search').value = '';
-                
-                // Force sort back to default "newest"
-                const defaultSort = document.querySelector('input[name="sort"][value="newest"]');
-                if (defaultSort) defaultSort.checked = true;
-
-                currentPage = 1;
-                fetchAndRender();
+                clearAllFilters();
             });
         }
 
@@ -127,6 +126,22 @@
                 filtersSidebar.classList.toggle('open');
             });
         }
+    }
+
+    /**
+     * Unchecks every filter checkbox, resets sort/search, and re-runs the search.
+     * Shared by the sidebar "Clear all" button and the chip row's "Clear all" chip.
+     */
+    function clearAllFilters() {
+        document.getElementById('filter-form').reset();
+        document.getElementById('explore-search').value = '';
+
+        // Force sort back to default "newest"
+        const defaultSort = document.querySelector('input[name="sort"][value="newest"]');
+        if (defaultSort) defaultSort.checked = true;
+
+        currentPage = 1;
+        fetchAndRender();
     }
 
     /* ==========================================================================
@@ -199,6 +214,76 @@
     }
 
     /* ==========================================================================
+       Active Filter Chips
+       ========================================================================== */
+
+    /**
+     * Reads the current checkbox filter state (category / pricing / product_type)
+     * and renders one removable chip per active value, plus a trailing "Clear all"
+     * chip when there's at least one active filter. Hides the whole row when empty.
+     *
+     * Note: the search text box and sort radios are intentionally NOT rendered as
+     * chips — this row surfaces the checkbox filter groups called out in the spec
+     * (category / pricing / product type), which are the ones otherwise hidden
+     * inside the collapsed Filters dropdown.
+     */
+    function renderActiveFilterChips() {
+        const row = document.getElementById('active-filters-row');
+        if (!row) return;
+
+        const activeCheckboxes = Array.from(
+            document.querySelectorAll('#filter-form input[type="checkbox"]:checked')
+        );
+
+        row.innerHTML = '';
+
+        if (activeCheckboxes.length === 0) {
+            row.classList.add('hidden');
+            return;
+        }
+
+        row.classList.remove('hidden');
+
+        activeCheckboxes.forEach(cb => {
+            const chip = document.createElement('span');
+            chip.className = 'filter-chip';
+            chip.dataset.filterName = cb.name;
+            chip.dataset.filterValue = cb.value;
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'chip-label';
+            labelSpan.textContent = cb.value;
+            chip.appendChild(labelSpan);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'chip-remove';
+            removeBtn.setAttribute('aria-label', `Remove ${cb.value} filter`);
+            removeBtn.innerHTML = '&#10005;';
+            removeBtn.addEventListener('click', () => {
+                // Uncheck the matching checkbox in the Filters dropdown so the two stay in sync,
+                // then re-run the search exactly as if the user had unchecked it there.
+                cb.checked = false;
+                currentPage = 1;
+                fetchAndRender();
+            });
+            chip.appendChild(removeBtn);
+
+            row.appendChild(chip);
+        });
+
+        // Trailing "Clear all" chip
+        const clearChip = document.createElement('button');
+        clearChip.type = 'button';
+        clearChip.className = 'filter-chip chip-clear-all';
+        clearChip.textContent = 'Clear all';
+        clearChip.addEventListener('click', () => {
+            clearAllFilters();
+        });
+        row.appendChild(clearChip);
+    }
+
+    /* ==========================================================================
        Data Fetching & Rendering logic
        ========================================================================== */
 
@@ -210,6 +295,10 @@
         const resultsCountStr = document.getElementById('results-count');
         
         grid.innerHTML = '<div class="loading-state">Loading products...</div>';
+
+        // Keep the chip row in sync with whatever the form state is right now,
+        // regardless of whether this fetch was triggered by the form, a chip, or Clear all.
+        renderActiveFilterChips();
         
         // Build query string from current filters
         const params = syncFormToUrl();

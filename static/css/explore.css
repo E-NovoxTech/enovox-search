@@ -309,6 +309,79 @@
     font-weight: 500;
 }
 
+/* ==========================================================================
+   Active Filter Chips
+   ========================================================================== */
+.active-filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.active-filters-row.hidden {
+    display: none;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--color-green);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.35rem 0.5rem 0.35rem 0.9rem;
+    border-radius: 9999px;
+    box-shadow: var(--card-shadow);
+    line-height: 1.2;
+    max-width: 100%;
+}
+
+.filter-chip .chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.filter-chip .chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(34, 197, 94, 0.15);
+    color: var(--color-green);
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    padding: 0;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.filter-chip .chip-remove:hover {
+    background-color: var(--color-green);
+    color: #fff;
+}
+
+.filter-chip.chip-clear-all {
+    background-color: transparent;
+    border: 1px dashed var(--border-color);
+    color: var(--text-muted);
+    padding: 0.35rem 0.9rem;
+    cursor: pointer;
+}
+
+.filter-chip.chip-clear-all:hover {
+    color: var(--color-blue);
+    border-color: var(--color-blue);
+}
+
 .explore-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -550,6 +623,15 @@
         padding-top: 0.65rem;
         padding-bottom: 0.65rem;
     }
+    .filter-chip {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.4rem 0.3rem 0.8rem;
+    }
+    .filter-chip .chip-remove {
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+    }
 }
 
 /* 5. Smallest iPhone / Narrow Mobile (max-width: 320px) */
@@ -579,5 +661,8 @@
         height: 30px;
         font-size: 0.8rem;
         padding: 0 0.35rem;
+    }
+    .filter-chip {
+        max-width: 60vw;
     }
 }

@@ -25,6 +25,48 @@
 
 </head>
 <body>
+    <style>
+/* ============================================================
+   OVERRIDE: force full-width, left-aligned inputs on Submit page
+   Placed last / inline so it beats any conflicting global rule
+   in style.css (e.g. a centered or fixed-width input default)
+   ============================================================ */
+#submit-tool-form .form-group input[type="text"],
+#submit-tool-form .form-group input[type="email"],
+#submit-tool-form .form-group input[type="url"],
+#submit-tool-form .form-group textarea,
+#submit-tool-form .form-group select,
+#submit-tool-form .tag-input-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+    display: block !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    float: none !important;
+}
+
+#submit-tool-form .form-group input::placeholder,
+#submit-tool-form .form-group textarea::placeholder {
+    text-align: left !important;
+}
+
+/* The keyword tag input sits inside .tag-input-wrap, not directly
+   in .form-group, so it needs its own line to actually fill it */
+#submit-tool-form #keyword-input {
+    width: 100% !important;
+    text-align: left !important;
+}
+
+/* Belt-and-suspenders: make sure the wrapping form-group itself
+   isn't constrained or centered by a global rule */
+#submit-tool-form .form-group {
+    width: 100% !important;
+    text-align: left !important;
+    align-items: stretch !important;
+}
+</style>
     <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
     <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
         <div class="site-banner-inner">
@@ -136,7 +178,7 @@
                         <span class="step-circle">2</span>
                         <span class="step-text">
                             <strong>Company Information</strong>
-                            <small>Founder, company &amp; contact details</small>
+                            <small>Founder &amp; company details</small>
                         </span>
                     </div>
                 </div>
@@ -145,12 +187,12 @@
                     <!-- ============ STEP 1: PRODUCT INFORMATION ============ -->
                     <div class="form-step" id="step-1">
                         <div class="form-group" id="name-group">
-                            <label for="name">Product Name *</label>
+                            <label for="name" style="text-align: left !important;">Product Name *</label>
                             <input type="text" id="name" name="name" required minlength="2" maxlength="100" placeholder="e.g. Paystack">
                             <span class="field-error" id="name-error"></span>
                         </div>
 
-                        <div class="form-group" id="description-group">
+                        <div class="form-group" id="description-group" >
                             <label for="description">Short Description *</label>
                             <textarea id="description" name="description" required minlength="20" maxlength="1000" rows="3" placeholder="What does your tool do? (20&ndash;1000 characters)"></textarea>
                             <span class="char-count" id="description-count">0/1000</span>
