@@ -354,7 +354,7 @@ a {
 .category-pill {
     display: inline-block;
     padding: 0.5rem 1rem;
-    border-radius: 9999px;
+    border-radius: 10px;
     font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
@@ -376,7 +376,9 @@ a {
 .pill-transportation-logistics { background-color: #f3e8ff; color: #6b21a8; }
 .pill-health-wellness { background-color: #ccfbf1; color: #115e59; }
 .pill-entertainment-media { background-color: #fae8ff; color: #86198f; }
+.pill-web3-blockchain { background-color: #e0e7ff; color: #3730a3; }
 .pill-freelance-gig-work { background-color: #ffedd5; color: #9a3412; }
+.pill-design-creative { background-color: #fce7f3; color: #9d174d; }
 .pill-real-estate-housing { background-color: #fef4c3; color: #a16207; }
 .pill-agriculture { background-color: #d1fae5; color: #065f46; }
 .pill-social-community { background-color: #fee2e2; color: #991b1b; }

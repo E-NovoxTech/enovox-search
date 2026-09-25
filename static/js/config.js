@@ -11,6 +11,8 @@ const ENOVOX_CONFIG = {
         "Business", 
         "Productivity",
         "E-commerce",
+        "Web3 & Blockchain",
+        "Design & Creative",
         "Transportation & Logistics", 
         "Health & Wellness",
         "Entertainment & Media",
