@@ -580,3 +580,14 @@
 
 /* Generic .hidden utility */
 .hidden { display: none !important; }
+
+/* ==========================================================================
+   Bookmark + arrow cluster on Similar Products cards
+   (.card-bookmark-btn itself is the shared toggle style from style.css)
+   ========================================================================== */
+.card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}

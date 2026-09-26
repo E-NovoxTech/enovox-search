@@ -143,3 +143,12 @@ class SearchLog(Base):
     query = Column(String, nullable=False)
     results_count = Column(Integer, default=0)
     created_at = Column(Date, default=date.today)
+
+
+class SavedProduct(Base):
+    __tablename__ = "saved_products"
+    id = Column(Integer, primary_key=True, index=True)
+    account_type = Column(String, nullable=False)  # "developer" or "user"
+    account_id = Column(Integer, nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    created_at = Column(Date, default=date.today)

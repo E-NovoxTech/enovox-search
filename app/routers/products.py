@@ -18,6 +18,8 @@ from .. import models, schemas
 from ..database import get_db
 from ..utils import generate_slug
 from ..indexnow_utils import submit_to_indexnow
+from ..routers.users import get_current_user
+
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -637,3 +639,66 @@ def search_analytics(admin_key: str, db: Session = Depends(get_db)):
         "top_searches": [{"query": q, "count": c} for q, c in top_searches],
         "zero_result_searches": [{"query": q, "count": c} for q, c in zero_result_searches]
     }
+
+@router.post("/{product_id}/save")
+def toggle_save_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_account = Depends(get_current_user)
+):
+    if not current_account:
+        raise HTTPException(status_code=401, detail="Please log in to save products")
+
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    account_type = "developer" if isinstance(current_account, models.Developer) else "user"
+
+    existing = db.query(models.SavedProduct).filter(
+        models.SavedProduct.account_type == account_type,
+        models.SavedProduct.account_id == current_account.id,
+        models.SavedProduct.product_id == product_id
+    ).first()
+
+    if existing:
+        db.delete(existing)
+        db.commit()
+        return {"message": "Product removed from saved list.", "saved": False}
+    else:
+        new_save = models.SavedProduct(
+            account_type=account_type,
+            account_id=current_account.id,
+            product_id=product_id
+        )
+        db.add(new_save)
+        db.commit()
+        return {"message": "Product saved.", "saved": True}
+    
+    
+@router.get("/me/saved", response_model=List[schemas.ProductOut])
+def get_saved_products(
+    db: Session = Depends(get_db),
+    current_account = Depends(get_current_user)
+):
+    if not current_account:
+        raise HTTPException(status_code=401, detail="Please log in to view saved products")
+
+    account_type = "developer" if isinstance(current_account, models.Developer) else "user"
+
+    saved_entries = db.query(models.SavedProduct).filter(
+        models.SavedProduct.account_type == account_type,
+        models.SavedProduct.account_id == current_account.id
+    ).all()
+
+    product_ids = [entry.product_id for entry in saved_entries]
+
+    if not product_ids:
+        return []
+
+    products = db.query(models.Product).filter(
+        models.Product.id.in_(product_ids),
+        models.Product.status == True
+    ).all()
+
+    return products

@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initFooterSubscribe();
     initSubscribeHeaderButton();
     initSiteBanner();
+    EnovoxBookmarks.init();
     
     if (document.getElementById('newly-launched-list')) {
         loadGridData();
@@ -226,6 +227,7 @@ function createProductCard(product) {
     const safeCategoryClass = product.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
     // Note: The backend uses Jinja2 for /product/{slug} so we route directly there
     card.href = `/product/${product.slug}`;
+    const bookmarkHtml = (window.EnovoxBookmarks ? window.EnovoxBookmarks.cardButtonHtml(product.id) : '');
     card.className = 'product-card';
 
     card.innerHTML = `
@@ -236,6 +238,7 @@ function createProductCard(product) {
             <p class="product-desc" title="${escapeHTML(product.description)}">${escapeHTML(product.description)}</p>
             <span class="category-pill pill-${safeCategoryClass} pill-sm">${escapeHTML(product.category)}</span>
         </div>
+        ${bookmarkHtml}
         <svg class="card-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="5" y1="12" x2="19" y2="12"></line>
             <polyline points="12 5 19 12 12 19"></polyline>
@@ -585,3 +588,518 @@ async function initSiteBanner() {
         // Fail silently: a broken banner call must never affect the page
     }
 }
+
+/* ==========================================================================
+   Bookmarks / Saved Products (site-wide) -- window.EnovoxBookmarks
+   GET  /products/me/saved           -> array of saved product objects
+   POST /products/{product_id}/save  -> { message, saved: true|false }
+   (401 "Please log in to save products" when unauthenticated.)
+
+   Powers three things, all fed from one saved-id set:
+   1. Header bookmark control (visible only when logged in, Developer or
+      User) with a desktop dropdown (<=768px = mobile: bottom sheet instead).
+      Both containers share the exact same list/card markup and empty state;
+      only the presentation differs. Both fetch /products/me/saved on open.
+   2. Per-card bookmark toggles rendered by explore.js (Explore grid) and
+      createProductCard() below (homepage Featured / Newly Launched /
+      Popular) via EnovoxBookmarks.cardButtonHtml(product.id).
+   3. The product detail page toggle (product.html #bookmark-product-btn,
+      next to the share icon) -- same .bookmark-toggle[data-product-id]
+      hook, handled by the delegated click listener below.
+
+   On page load (logged-in only) the saved list is fetched once and every
+   toggle's filled/outline state is synced from it. Toggling flips the icon
+   instantly from the POST response -- no reload.
+
+   Logged-out gating: clicking a bookmark icon while logged out opens a
+   popover with a clickable "Log in" link to /login -- no forced redirect.
+   Hovering any bookmark icon shows a small tooltip ("Save this to your
+   list"; the header icon reads "Saved product") in that same shared box.
+   ========================================================================== */
+window.EnovoxBookmarks = (function () {
+    'use strict';
+
+    // Same localStorage keys product.js uses for the auth session.
+    const TOKEN_KEY = 'enovox_dev_token';
+    // Matches the app's mobile breakpoint (hamburger nav / stacked layouts).
+    const MOBILE_MQ = '(max-width: 768px)'; // same breakpoint as the hamburger nav
+    // Hover tooltip / logged-out prompt targets: card + product toggles and the header icon.
+    const TIP_TARGETS = '.bookmark-toggle[data-product-id], #nav-bookmark-btn';
+
+    let savedIds = new Set();   // String(product.id) -> true
+    let panelMode = null;       // 'dropdown' | 'sheet' | null
+    let panelWasMobile = false;
+    let tipMode = null;        // 'hover' | 'prompt' | null
+    let tipAnchor = null;      // element the tip is currently pointed at
+    let wired = false;
+    const inflight = new Set(); // product ids with a toggle request in flight
+
+    /* ---------- auth ---------- */
+    function getToken() {
+        try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; }
+    }
+
+    function isLoggedIn() {
+        return !!getToken(); // a stored Bearer token covers both Developer and User accounts
+    }
+
+    /* ---------- hover tooltip + logged-out prompt ----------
+       One shared fixed-position box (#bookmark-tip) serves both the hover
+       tooltip and the logged-out click prompt, so their styling and
+       alignment are identical. positionTip() centers the box above the
+       icon, flips it below when there is no room above, and clamps it to
+       the viewport (with the arrow still tracking the icon center) so it
+       never gets cut off at screen edges -- including cards hard against
+       the edge. */
+
+    function getTipEl() {
+        return document.getElementById('bookmark-tip');
+    }
+
+    function hoverCapable() {
+        try { return window.matchMedia('(hover: hover)').matches; } catch (e) { return true; }
+    }
+
+    function hoverTextFor(el) {
+        return el.id === 'nav-bookmark-btn' ? 'Saved product' : 'Save this to your list';
+    }
+
+    function showTip(anchor, html, mode) {
+        const tip = getTipEl();
+        if (!tip || !anchor) return;
+        tip.innerHTML = html;
+        tip.classList.toggle('is-prompt', mode === 'prompt');
+        tip.classList.remove('bm-tip--below');
+        tip.classList.remove('hidden');
+        tipAnchor = anchor;
+        tipMode = mode;
+        positionTip(anchor);
+    }
+
+    function hideTip(force) {
+        if (tipMode === 'prompt' && !force) return; // hover-outs must not kill the prompt
+        const tip = getTipEl();
+        if (tip) tip.classList.add('hidden');
+        tipAnchor = null;
+        tipMode = null;
+    }
+
+    function showPrompt(anchor) {
+        showTip(anchor, '<a class="bm-tip-link" href="/login">Log in</a> to save this', 'prompt');
+    }
+
+    function positionTip(anchor) {
+        const tip = getTipEl();
+        if (!tip || tip.classList.contains('hidden') || !anchor) return;
+        const r = anchor.getBoundingClientRect();
+        tip.style.left = '0px';
+        tip.style.top = '0px';
+        const tw = tip.offsetWidth;
+        const th = tip.offsetHeight;
+        const GAP = 8;
+        const EDGE = 8;
+        const vw = document.documentElement.clientWidth || window.innerWidth;
+        const vh = document.documentElement.clientHeight || window.innerHeight;
+
+        // Prefer sitting above the icon (never covers its own card); flip
+        // below only when that would clip off the top of the viewport.
+        let top = r.top - th - GAP;
+        let below = false;
+        if (top < EDGE) {
+            top = r.bottom + GAP;
+            below = true;
+        }
+        if (below && top + th > vh - EDGE) {
+            const aboveTop = r.top - th - GAP;
+            if (aboveTop >= EDGE) { top = aboveTop; below = false; }
+        }
+
+        let left = r.left + r.width / 2 - tw / 2;
+        left = Math.min(Math.max(EDGE, left), Math.max(EDGE, vw - tw - EDGE));
+
+        tip.classList.toggle('bm-tip--below', below);
+        // Arrow keeps pointing at the icon center even when the box had to
+        // slide sideways to stay on screen.
+        const arrowX = Math.min(Math.max(12, r.left + r.width / 2 - left), Math.max(12, tw - 12));
+        tip.style.setProperty('--tip-arrow-x', arrowX + 'px');
+        tip.style.left = left + 'px';
+        tip.style.top = top + 'px';
+    }
+
+    function repositionTip() {
+        if (!tipMode) return;
+        if (!tipAnchor || !tipAnchor.isConnected) { hideTip(true); return; }
+        positionTip(tipAnchor);
+    }
+
+    /* ---------- saved-state bookkeeping ---------- */
+    function isSaved(productId) {
+        return savedIds.has(String(productId));
+    }
+
+    function rememberSavedList(products) {
+        savedIds = new Set((products || []).map(p => String(p.id)));
+    }
+
+    function syncButton(btn) {
+        if (!btn || !btn.dataset.productId) return;
+        const saved = isSaved(btn.dataset.productId);
+        btn.classList.toggle('is-saved', saved);
+        btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+        const icon = btn.querySelector('.bm-icon');
+        if (icon) {
+            icon.classList.toggle('fa-solid', saved);
+            icon.classList.toggle('fa-regular', !saved);
+        }
+    }
+
+    function syncAll() {
+        document.querySelectorAll('.bookmark-toggle[data-product-id]').forEach(syncButton);
+    }
+
+    /* ---------- markup ---------- */
+    // Small outline/filled bookmark button for product cards. Cards are <a>
+    // links, so the delegated click handler below prevents navigation and
+    // stops propagation on this button.
+    function cardButtonHtml(productId) {
+        const saved = isSaved(productId);
+        const iconCls = saved ? 'fa-solid' : 'fa-regular';
+        return `<button type="button" class="card-bookmark-btn bookmark-toggle${saved ? ' is-saved' : ''}" data-product-id="${productId}" aria-label="Save this product" aria-pressed="${saved}"><i class="${iconCls} fa-bookmark bm-icon"></i></button>`;
+    }
+
+    function truncateText(str, maxLength) {
+        if (!str) return '';
+        return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+    }
+
+    // Compact clickable row: logo, name, ~60-char description.
+    function savedItemHtml(product) {
+        const name = escapeHTML(product.name || '');
+        const desc = escapeHTML(truncateText(product.description || '', 60));
+        const initial = escapeHTML((product.name || 'E').charAt(0).toUpperCase());
+        const logo = product.logo_url
+            ? `<img src="${escapeHTML(product.logo_url)}" alt="${name} logo" class="saved-item-logo">`
+            : `<div class="saved-item-logo saved-item-fallback">${initial}</div>`;
+        return `<a class="saved-item" href="/product/${product.slug}">${logo}` +
+            `<div class="saved-item-info"><span class="saved-item-name">${name}</span>` +
+            `<span class="saved-item-desc">${desc}</span></div></a>`;
+    }
+
+    function renderSavedList(container, products) {
+        if (!container) return;
+        if (!products || products.length === 0) {
+            container.innerHTML = '<p class="saved-empty">No saved tools yet.</p>';
+            return;
+        }
+        container.innerHTML = products.map(savedItemHtml).join('');
+    }
+
+    // Header control + desktop dropdown + mobile bottom sheet. Injected on
+    // every page that loads home.js (same approach as the report-issue
+    // button), so the header feature is identical site-wide without
+    // per-page HTML edits. Hidden until we see a logged-in session.
+    const PANEL_MARKUP = `
+<div class="nav-bookmark-wrap hidden" id="nav-bookmark-wrap">
+    <button type="button" id="nav-bookmark-btn" class="icon-btn nav-bookmark-btn" aria-label="Saved tools" aria-expanded="false" aria-haspopup="true">
+        <i class="fa-regular fa-bookmark"></i>
+    </button>
+    <div id="saved-dropdown" class="saved-dropdown hidden" role="dialog" aria-label="Saved tools">
+        <div class="saved-panel-header">
+            <span class="saved-panel-title">Saved Tools</span>
+            <button type="button" id="saved-dropdown-close" class="saved-close-btn" aria-label="Close saved tools">&times;</button>
+        </div>
+        <div id="saved-dropdown-list" class="saved-list"></div>
+    </div>
+</div>
+<div id="saved-sheet-overlay" class="saved-sheet-overlay" aria-hidden="true">
+    <div id="saved-sheet" class="saved-sheet" role="dialog" aria-modal="true" aria-label="Saved tools">
+        <div class="saved-sheet-grab" id="saved-sheet-grab">
+            <div class="saved-sheet-handle"></div>
+            <div class="saved-panel-header">
+                <span class="saved-panel-title">Saved Tools</span>
+                <button type="button" id="saved-sheet-close" class="saved-close-btn" aria-label="Close saved tools">&times;</button>
+            </div>
+        </div>
+        <div id="saved-sheet-list" class="saved-list saved-list-sheet"></div>
+    </div>
+</div>
+<div id="bookmark-tip" class="bm-tip hidden" role="tooltip"></div>
+`;
+
+    function injectHeaderUI() {
+        const navActions = document.querySelector('.nav-actions');
+        if (!navActions || document.getElementById('nav-bookmark-wrap')) return;
+
+        const host = document.createElement('div');
+        host.innerHTML = PANEL_MARKUP;
+        const wrap = host.querySelector('#nav-bookmark-wrap');
+        const overlay = host.querySelector('#saved-sheet-overlay');
+        const tipEl = host.querySelector('#bookmark-tip');
+
+        // Park the control right after the header search icon (fall back to
+        // just before the hamburger).
+        const searchBtn = navActions.querySelector('.icon-btn[aria-label="Search"]');
+        const burger = document.getElementById('hamburger-menu');
+        if (searchBtn && searchBtn.nextSibling) {
+            navActions.insertBefore(wrap, searchBtn.nextSibling);
+        } else if (burger) {
+            navActions.insertBefore(wrap, burger);
+        } else {
+            navActions.appendChild(wrap);
+        }
+        document.body.appendChild(overlay);
+        if (tipEl) document.body.appendChild(tipEl);
+
+        // Visible only when logged in (Developer or User).
+        if (isLoggedIn()) wrap.classList.remove('hidden');
+    }
+
+    /* ---------- API ---------- */
+    async function fetchSaved() {
+        const token = getToken();
+        if (!token) throw new Error('Not logged in');
+        const res = await fetch(`${API_BASE_URL}/products/me/saved`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) throw new Error('Session expired');
+        if (!res.ok) throw new Error('Failed to load saved products');
+        return res.json();
+    }
+
+    async function preloadSavedIds() {
+        try {
+            rememberSavedList(await fetchSaved());
+        } catch (err) {
+            console.error('[bookmarks] saved list preload failed:', err);
+        }
+        syncAll();
+    }
+
+    async function toggleSave(productId, btn) {
+        const id = String(productId);
+        if (!id || inflight.has(id)) return;
+        const token = getToken();
+        if (!token) { showPrompt(btn); return; }
+
+        inflight.add(id);
+        try {
+            const res = await fetch(`${API_BASE_URL}/products/${encodeURIComponent(id)}/save`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 401) { showPrompt(btn); return; }
+            if (!res.ok) throw new Error(data.detail || data.message || 'Could not update saved products');
+
+            if (data.saved) savedIds.add(id);
+            else savedIds.delete(id);
+            syncAll(); // instant outline <-> filled flip, no reload
+            if (panelMode) refreshList(); // keep an open dropdown/sheet in step
+        } catch (err) {
+            console.error('[bookmarks] toggle failed:', err);
+        } finally {
+            inflight.delete(id);
+        }
+    }
+
+    /* ---------- dropdown + bottom sheet ---------- */
+    function activeList() {
+        return panelMode === 'sheet'
+            ? document.getElementById('saved-sheet-list')
+            : document.getElementById('saved-dropdown-list');
+    }
+
+    async function refreshList() {
+        const mode = panelMode;
+        if (!mode) return;
+        const list = activeList();
+        if (list) list.innerHTML = '<p class="saved-empty">Loading saved tools...</p>';
+        try {
+            const products = await fetchSaved();
+            rememberSavedList(products); // same payload also refreshes card states
+            syncAll();
+            if (panelMode !== mode) return; // panel closed/swapped while fetching
+            renderSavedList(activeList(), products);
+        } catch (err) {
+            console.error('[bookmarks] saved list load failed:', err);
+            if (panelMode !== mode) return;
+            const target = activeList();
+            if (target) target.innerHTML = '<p class="saved-empty">Couldn\'t load saved tools.</p>';
+        }
+    }
+
+    function openPanel() {
+        hideTip(true);
+        if (!isLoggedIn()) { showPrompt(document.getElementById('nav-bookmark-btn')); return; }
+        const isMobile = window.matchMedia(MOBILE_MQ).matches;
+        closePanels(true);
+        panelMode = isMobile ? 'sheet' : 'dropdown';
+        panelWasMobile = isMobile;
+
+        if (panelMode === 'sheet') {
+            const overlay = document.getElementById('saved-sheet-overlay');
+            const sheet = document.getElementById('saved-sheet');
+            if (sheet) sheet.style.transform = '';
+            if (overlay) {
+                overlay.classList.add('open');
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+            document.body.style.overflow = 'hidden';
+        } else {
+            const dropdown = document.getElementById('saved-dropdown');
+            const btn = document.getElementById('nav-bookmark-btn');
+            if (dropdown) dropdown.classList.remove('hidden');
+            if (btn) btn.setAttribute('aria-expanded', 'true');
+        }
+        refreshList(); // fetch /products/me/saved on open
+    }
+
+    function closePanels(silent) {
+        const dropdown = document.getElementById('saved-dropdown');
+        const overlay = document.getElementById('saved-sheet-overlay');
+        const sheet = document.getElementById('saved-sheet');
+        const btn = document.getElementById('nav-bookmark-btn');
+        if (dropdown) dropdown.classList.add('hidden');
+        if (overlay) {
+            overlay.classList.remove('open');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+        if (sheet) sheet.style.transform = '';
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+        if (!silent) panelMode = null;
+    }
+
+    // Swipe-down dismissal from the sheet's grab zone (drag handle + header).
+    // The list below scrolls normally and is deliberately not a drag surface.
+    function attachSheetDrag() {
+        const grab = document.getElementById('saved-sheet-grab');
+        const sheet = document.getElementById('saved-sheet');
+        if (!grab || !sheet) return;
+        let startY = null;
+        let dy = 0;
+
+        grab.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            dy = 0;
+            sheet.style.transition = 'none';
+        }, { passive: true });
+
+        grab.addEventListener('touchmove', (e) => {
+            if (startY === null) return;
+            dy = Math.max(0, e.touches[0].clientY - startY);
+            sheet.style.transform = `translateY(${dy}px)`;
+        }, { passive: true });
+
+        const endDrag = () => {
+            sheet.style.transition = '';
+            sheet.style.transform = '';
+            if (dy > 80) closePanels();
+            startY = null;
+            dy = 0;
+        };
+        grab.addEventListener('touchend', endDrag);
+        grab.addEventListener('touchcancel', endDrag);
+    }
+
+    function wireEvents() {
+        if (wired) return;
+        wired = true;
+
+        // Delegated toggle handling for every bookmark button (all product
+        // cards + the product detail page). Cards are <a> links, so swallow
+        // the click completely: never navigate, never bubble into the card.
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest && e.target.closest('.bookmark-toggle[data-product-id]');
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSave(btn.dataset.productId, btn);
+        });
+
+        // Hover tooltip (fine pointers only, i.e. desktop). The header icon
+        // reads "Saved product"; every other bookmark icon reads
+        // "Save this to your list".
+        document.addEventListener('mouseover', (e) => {
+            if (tipMode === 'prompt' || panelMode || !hoverCapable()) return;
+            const el = e.target.closest && e.target.closest(TIP_TARGETS);
+            if (!el) return;
+            if (e.relatedTarget && el.contains(e.relatedTarget)) return;
+            showTip(el, hoverTextFor(el), 'hover');
+        });
+        document.addEventListener('mouseout', (e) => {
+            if (tipMode !== 'hover') return;
+            const el = e.target.closest && e.target.closest(TIP_TARGETS);
+            if (!el) return;
+            if (e.relatedTarget && el.contains(e.relatedTarget)) return;
+            hideTip();
+        });
+
+        // The logged-out prompt is a popover: dismiss on outside click.
+        document.addEventListener('click', (e) => {
+            if (tipMode !== 'prompt') return;
+            if (e.target.closest && e.target.closest('.bm-tip, .bookmark-toggle, #nav-bookmark-btn')) return;
+            hideTip(true);
+        });
+
+        const openBtn = document.getElementById('nav-bookmark-btn');
+        if (openBtn) openBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (panelMode) closePanels();
+            else openPanel();
+        });
+
+        const dropdownClose = document.getElementById('saved-dropdown-close');
+        if (dropdownClose) dropdownClose.addEventListener('click', () => closePanels());
+
+        const sheetClose = document.getElementById('saved-sheet-close');
+        if (sheetClose) sheetClose.addEventListener('click', () => closePanels());
+
+        // Desktop dropdown: clicking outside closes it.
+        document.addEventListener('click', (e) => {
+            if (panelMode !== 'dropdown') return;
+            const wrap = document.getElementById('nav-bookmark-wrap');
+            if (wrap && !wrap.contains(e.target)) closePanels();
+        });
+
+        // Mobile sheet: tapping the backdrop closes it.
+        const overlay = document.getElementById('saved-sheet-overlay');
+        if (overlay) overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closePanels();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (panelMode) closePanels();
+            hideTip(true);
+        });
+
+        window.addEventListener('scroll', repositionTip, { passive: true });
+        window.addEventListener('resize', repositionTip);
+
+        // One container is display:none once the viewport crosses the
+        // breakpoint -- dismiss rather than leave a ghost panel behind.
+        window.addEventListener('resize', () => {
+            if (!panelMode) return;
+            const isMobile = window.matchMedia(MOBILE_MQ).matches;
+            if (isMobile !== panelWasMobile) closePanels();
+        });
+
+        attachSheetDrag();
+    }
+
+    function init() {
+        injectHeaderUI();
+        wireEvents();
+        if (isLoggedIn()) preloadSavedIds(); // one saved-list fetch per page load
+    }
+
+    return {
+        init,
+        isSaved,
+        cardButtonHtml,
+        syncButton,
+        syncAll,
+        toggleSave
+    };
+})();

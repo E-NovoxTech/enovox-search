@@ -353,6 +353,7 @@
             card.href = `/product/${product.slug}`;
             card.className = 'product-card';
             const safeCategoryClass = product.category.toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
+            const bookmarkHtml = (window.EnovoxBookmarks ? window.EnovoxBookmarks.cardButtonHtml(product.id) : '');
 
             let logoHtml = '';
             if (product.logo_url) {
@@ -368,6 +369,7 @@
                     <p class="product-desc" title="${safeEscape(product.description)}">${safeEscape(product.description)}</p>
                     <span class="category-pill pill-${safeCategoryClass} pill-sm">${safeEscape(product.category)}</span>
                 </div>
+                ${bookmarkHtml}
                 <svg class="card-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
