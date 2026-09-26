@@ -11,6 +11,10 @@ from fastapi import UploadFile, File
 from ..bulk_upload_utils import parse_csv_to_rows
 from ..newsletter_utils import get_all_recipients, build_product_update_html, wrap_in_template, send_newsletter
 
+from fastapi.responses import StreamingResponse
+import csv
+import io
+
 from sqlalchemy import desc
 from app.routers.developers import get_current_developer
 
@@ -702,3 +706,34 @@ def get_saved_products(
     ).all()
 
     return products
+
+
+@router.get("/admin/export-csv")
+def export_products_csv(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    products = db.query(models.Product).order_by(models.Product.created_at.desc()).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    writer.writerow([
+        "Name", "Description", "Category", "Website", "Founder", "Company", "Contact Email",
+        "Pricing", "Pricing Details", "Status", "Developer ID", "Date Added",
+        "Keywords", "Twitter", "Instagram", "Facebook", "LinkedIn", "GitHub"
+    ])
+
+    for p in products:
+        writer.writerow([
+            p.name, p.description, p.category, p.website, p.founder, p.company_name, p.contact_email,
+            p.pricing, p.pricing_details, "Active" if p.status else "Inactive", p.developer_id, p.created_at,
+            p.keywords, p.twitter_url, p.instagram_url, p.facebook_url, p.linkedin_url, p.github_url
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=enovox_products_export.csv"}
+    )
