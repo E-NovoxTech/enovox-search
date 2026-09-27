@@ -2386,3 +2386,367 @@ body {
     border-top-color: transparent;
     border-bottom-color: #1e293b;
 }
+
+/* ==========================================================================
+   Explore Popular Categories (homepage)
+   Uses the existing product card + bookmark. Desktop: three columns;
+   mobile: the same six cards in a horizontally swipeable, stacked carousel.
+   ========================================================================== */
+.popular-categories-section {
+    max-width: 1200px;
+    margin: 0 auto 4rem;
+    padding: 2.5rem;
+    background-color: var(--bg-secondary);
+    border-radius: 24px;
+}
+
+.popular-categories-heading .accent-bar {
+    margin-bottom: 1rem;
+}
+
+.popular-categories-heading h2 {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.45rem;
+}
+
+.popular-categories-heading p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.popular-category-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 720px;
+    margin: 1.5rem 0;
+    padding: 0.35rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+}
+
+.popular-category-tab {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    padding: 0.7rem 0.6rem;
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.popular-category-tab:hover:not(.active) {
+    background-color: var(--hover-bg);
+    color: var(--text-main);
+}
+
+.popular-category-tab.active {
+    background-color: var(--color-blue);
+    color: #fff;
+    box-shadow: 0 2px 7px rgba(37, 99, 235, 0.18);
+}
+
+.popular-category-tab:focus-visible,
+.popular-products-grid .product-card:focus-visible,
+.popular-retry-btn:focus-visible,
+.popular-category-see-all:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 3px;
+}
+
+.popular-products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+/* Layout only: home.js still supplies every card through createProductCard(). */
+.popular-products-grid > .product-card {
+    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    min-height: 196px;
+    padding: 1.25rem;
+}
+
+.popular-products-grid .card-explore-text {
+    display: none;
+}
+
+.popular-products-grid .product-logo {
+    width: 52px;
+    height: 52px;
+    margin: 0 0 0.9rem;
+}
+
+.popular-products-grid .product-info {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding-right: 1.75rem; /* space for the bottom-right arrow */
+}
+
+.popular-products-grid .product-desc {
+    margin-bottom: 0.75rem;
+}
+
+.popular-products-grid .product-info .category-pill {
+    align-self: flex-start;
+    max-width: 100%;
+    margin-top: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.popular-products-grid .card-bookmark-btn {
+    position: absolute;
+    top: 1.05rem;
+    right: 1.05rem;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    z-index: 1;
+}
+
+.popular-products-grid .card-arrow {
+    position: absolute;
+    right: 1.25rem;
+    bottom: 1.25rem;
+}
+
+.popular-category-see-all {
+    display: block;
+    width: fit-content;
+    margin: 1.25rem 0 0 auto;
+}
+
+.dark-mode .popular-category-see-all {
+    color: #93c5fd;
+}
+
+.popular-preview-state,
+.popular-products-state {
+    padding: 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    text-align: center;
+    background-color: var(--bg-card);
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+}
+
+.popular-preview-state {
+    padding: 1rem;
+}
+
+.popular-products-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    grid-column: 1 / -1;
+    min-height: 196px;
+    width: 100%;
+}
+
+.popular-retry-btn {
+    padding: 0.45rem 0.85rem;
+    background-color: var(--bg-card);
+    color: var(--color-blue);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.popular-retry-btn:hover {
+    border-color: var(--color-blue);
+    background-color: var(--hover-bg);
+}
+
+/* Screen-reader status stays readable without taking up a grid cell. */
+.popular-category-announcement {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.popular-card-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    min-width: 0;
+    min-height: 196px;
+    padding: 1.25rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.popular-card-skeleton span {
+    display: block;
+    border-radius: 8px;
+    background: linear-gradient(100deg, var(--hover-bg) 25%, var(--border-color) 50%, var(--hover-bg) 75%);
+    background-size: 200% 100%;
+    animation: popular-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.popular-skeleton-logo {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 0.15rem;
+}
+
+.popular-skeleton-line {
+    width: 85%;
+    height: 11px;
+}
+
+.popular-skeleton-line.short {
+    width: 58%;
+}
+
+@keyframes popular-skeleton-pulse {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popular-card-skeleton span { animation: none; }
+}
+
+@media (min-width: 1440px) {
+    .popular-categories-section { max-width: 1400px; }
+}
+
+@media (max-width: 768px) {
+    .popular-categories-section {
+        margin: 0 1rem 3rem;
+        padding: 1.5rem 1rem 1.25rem;
+    }
+
+    .popular-categories-heading h2 { font-size: 1.4rem; }
+    .popular-categories-heading p { font-size: 0.85rem; }
+
+    /* Three equal tabs stay on a single line; long names are ellipsized.
+       Buttons keep full title + accessible text for their category name. */
+    .popular-category-tabs {
+        max-width: none;
+        gap: 0.25rem;
+        margin: 1.25rem 0;
+        padding: 0.3rem;
+    }
+
+    .popular-category-tab {
+        min-width: 0;
+        padding: 0.7rem 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .popular-products-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.75rem;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 0.15rem 0.15rem 0.75rem;
+        scroll-snap-type: x mandatory;
+        scroll-padding-inline: 0.15rem;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+    }
+
+    .popular-products-grid > .product-card,
+    .popular-products-grid > .popular-card-skeleton {
+        flex: 0 0 clamp(144px, 40vw, 184px);
+        min-height: 188px;
+        padding: 2.75rem 0.7rem 0.9rem;
+        scroll-snap-align: start;
+    }
+
+    .popular-products-grid > .product-card {
+        align-items: center;
+        text-align: center;
+    }
+
+    .popular-products-grid .card-bookmark-btn {
+        top: 0.45rem;
+        right: 0.45rem;
+        width: 34px;
+        height: 34px;
+        font-size: 0.9rem;
+    }
+
+    .popular-products-grid .product-logo {
+        align-self: center;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 0.65rem;
+    }
+
+    .popular-products-grid .product-info {
+        display: block;
+        flex: 1;
+        width: 100%;
+        padding: 0;
+    }
+
+    .popular-products-grid .product-name { font-size: 0.86rem; }
+    .popular-products-grid .product-desc {
+        margin: 0;
+        font-size: 0.73rem;
+        line-height: 1.4;
+        -webkit-line-clamp: 3;
+    }
+
+    .popular-products-grid .card-arrow,
+    .popular-products-grid .category-pill { display: none; }
+
+    .popular-card-skeleton { align-items: center; }
+    .popular-card-skeleton .popular-skeleton-logo {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 0.15rem;
+    }
+
+    .popular-products-state { flex: 0 0 100%; }
+}
+
+@media (max-width: 320px) {
+    .popular-categories-section {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        padding: 1.15rem 0.7rem;
+    }
+
+    .popular-category-tab { font-size: 0.7rem; }
+}

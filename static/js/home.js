@@ -1,5 +1,42 @@
 const API_BASE_URL = '';
 
+// Start the category section independently of the other homepage widgets.
+// A failure in hero/theme/bookmark setup must never strand its initial
+// "Finding popular categories..." state without making the counts request.
+function startPopularCategories() {
+    const grid = document.getElementById('popular-category-grid');
+    if (!grid) return; // home.js also runs on Explore and product pages
+
+    console.info('[popular categories] Homepage ready; starting category counts.');
+    initPopularCategories().catch(error => {
+        // Covers failures BEFORE initPopularCategories() reaches its own
+        // fetch try/catch (e.g. missing markup or an unexpected DOM error).
+        console.error('[popular categories] Initialization failed before counts could load:', error);
+        grid.setAttribute('aria-busy', 'false');
+        const state = document.createElement('div');
+        state.className = 'popular-products-state';
+        state.textContent = 'Unable to load popular categories right now.';
+        grid.replaceChildren(state);
+        const announcement = document.getElementById('popular-category-announcement');
+        if (announcement) announcement.textContent = state.textContent;
+        const preview = document.getElementById('popular-categories-list');
+        if (preview) {
+            const previewState = document.createElement('div');
+            previewState.className = 'popular-preview-state';
+            previewState.textContent = 'Unable to load popular categories.';
+            preview.replaceChildren(previewState);
+        }
+    });
+}
+
+// Register this before any legacy page initialization. Also start immediately
+// if this script is injected after DOMContentLoaded has already fired.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startPopularCategories, { once: true });
+} else {
+    startPopularCategories();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Generate Home Category Pills with Progressive Reveal
     const pillsContainer = document.getElementById('home-category-pills');
@@ -155,12 +192,195 @@ function loadGridData() {
     // 1. Newly Launched (Newest products)
     fetchProducts('/products/?sort=newest&limit=3', 'newly-launched-list');
     
-    // 2. Popular Categories (We will fetch 'Fintech' to represent a popular category)
-    // URL encoded for safety
-    fetchProducts(`/products/?category=${encodeURIComponent('Fintech')}&limit=3`, 'popular-categories-list');
-    
-    // 3. Featured Products
+    // The existing Popular categories column is populated from the live
+    // highest-count category by initPopularCategories(), not a fixed category.
+
+    // 2. Featured Products
     fetchProducts('/products/?featured=true&limit=3', 'featured-products-list');
+}
+
+/**
+ * Homepage's three most populated categories. Keep the small pre-existing
+ * "Popular categories" column in sync using the first three of the highest
+ * category's six products, without a second request or a fixed category.
+ */
+async function initPopularCategories() {
+    const tabs = document.getElementById('popular-category-tabs');
+    const grid = document.getElementById('popular-category-grid');
+    const seeAll = document.getElementById('popular-category-see-all');
+    const announcement = document.getElementById('popular-category-announcement');
+    if (!grid) return;
+    if (!tabs || !seeAll) {
+        throw new Error('Popular categories section is missing its tabs or See all link');
+    }
+
+    const preview = document.getElementById('popular-categories-list');
+    const previewSeeAll = document.querySelector('#col-popular-categories .see-all');
+    let categories = [];
+    let topCategory = null;
+    let activeCategory = null;
+    let latestRequest = 0;
+    let previewLoaded = false;
+
+    function previewMessage(message) {
+        if (!preview) return;
+        const box = document.createElement('div');
+        box.className = 'popular-preview-state';
+        box.textContent = message;
+        preview.replaceChildren(box);
+    }
+
+    function renderPreview(products) {
+        if (!preview) return;
+        if (!products.length) {
+            previewMessage('More products coming soon!');
+            return;
+        }
+        preview.replaceChildren(...products.slice(0, 3).map(createProductCard));
+    }
+
+    function showMessage(message, canRetry = false) {
+        grid.setAttribute('aria-busy', 'false');
+        const box = document.createElement('div');
+        box.className = 'popular-products-state';
+        const text = document.createElement('p');
+        text.textContent = message;
+        box.appendChild(text);
+        if (canRetry && activeCategory) {
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'popular-retry-btn';
+            retry.textContent = 'Try again';
+            retry.addEventListener('click', () => selectCategory(activeCategory, true));
+            box.appendChild(retry);
+        }
+        grid.replaceChildren(box);
+        if (announcement) announcement.textContent = message;
+    }
+
+    function showSkeletons() {
+        grid.setAttribute('aria-busy', 'true');
+        grid.innerHTML = Array.from({ length: 6 }, () => `
+            <div class="popular-card-skeleton" aria-hidden="true">
+                <span class="popular-skeleton-logo"></span>
+                <span class="popular-skeleton-line"></span>
+                <span class="popular-skeleton-line short"></span>
+                <span class="popular-skeleton-line"></span>
+            </div>
+        `).join('');
+    }
+
+    async function selectCategory(category, force = false) {
+        if (category === activeCategory && !force) return;
+        activeCategory = category;
+        tabs.querySelectorAll('.popular-category-tab').forEach(tab => {
+            const selected = tab.dataset.category === category;
+            tab.classList.toggle('active', selected);
+            tab.setAttribute('aria-selected', String(selected));
+            tab.tabIndex = selected ? 0 : -1;
+            if (selected) grid.setAttribute('aria-labelledby', tab.id);
+        });
+        seeAll.href = `/explore?category=${encodeURIComponent(category)}`;
+        seeAll.setAttribute('aria-label', `See all ${category} products`);
+        seeAll.classList.remove('hidden');
+        grid.scrollLeft = 0; // start the mobile carousel at the first product
+        showSkeletons();
+        if (announcement) announcement.textContent = `Loading ${category} products...`;
+        const request = ++latestRequest;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/products/?category=${encodeURIComponent(category)}&limit=6`);
+            if (!response.ok) throw new Error('Failed to fetch popular products');
+            const products = await response.json();
+            if (!Array.isArray(products)) throw new Error('Invalid popular products response');
+
+            // Also update the older homepage preview. Do this even if the user
+            // switched tabs while the first (top-category) request was pending.
+            if (category === topCategory && !previewLoaded) {
+                previewLoaded = true;
+                renderPreview(products);
+            }
+            if (request !== latestRequest) return; // never display stale tab results
+
+            if (!products.length) {
+                showMessage(`No products in ${category} yet.`);
+                return;
+            }
+            grid.replaceChildren(...products.slice(0, 6).map(createProductCard));
+            grid.setAttribute('aria-busy', 'false');
+            if (announcement) announcement.textContent = `Showing ${Math.min(products.length, 6)} ${category} products.`;
+        } catch (error) {
+            console.error(`Error loading popular products for ${category}:`, error);
+            if (category === topCategory && !previewLoaded) previewMessage('Unable to load popular products.');
+            if (request !== latestRequest) return;
+            showMessage(`Couldn't load ${category} products right now.`, true);
+        }
+    }
+
+    // Standard tablist keyboard navigation (three tabs stay in one row).
+    tabs.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        const current = Array.from(tabs.children).indexOf(document.activeElement);
+        if (current < 0) return;
+        event.preventDefault();
+        let next = current;
+        if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = categories.length - 1;
+        else next = (current + (event.key === 'ArrowRight' ? 1 : -1) + categories.length) % categories.length;
+        tabs.children[next].focus();
+        selectCategory(categories[next]);
+    });
+
+    previewMessage('Finding popular categories...');
+    const countsUrl = `${API_BASE_URL}/products/categories/counts`;
+    try {
+        console.info('[popular categories] Requesting', countsUrl);
+        const response = await fetch(countsUrl);
+        if (!response.ok) throw new Error(`GET ${countsUrl} failed (HTTP ${response.status})`);
+        const counts = await response.json();
+        if (!counts || typeof counts !== 'object' || Array.isArray(counts)) {
+            throw new Error('Invalid category counts response');
+        }
+
+        categories = Object.entries(counts)
+            .filter(([name, count]) => name.trim() && typeof count === 'number' && Number.isFinite(count) && count >= 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([name]) => name);
+        if (!categories.length) {
+            previewMessage('More products coming soon!');
+            showMessage('No popular categories to show yet.');
+            return;
+        }
+
+        topCategory = categories[0];
+        if (previewSeeAll) {
+            previewSeeAll.href = `/explore?category=${encodeURIComponent(topCategory)}`;
+            previewSeeAll.setAttribute('aria-label', `See all ${topCategory} products`);
+        }
+        const buttons = categories.map((category, index) => {
+            const tab = document.createElement('button');
+            tab.type = 'button';
+            tab.id = `popular-category-tab-${index}`;
+            tab.className = 'popular-category-tab';
+            tab.setAttribute('role', 'tab');
+            tab.setAttribute('aria-controls', grid.id);
+            tab.setAttribute('aria-selected', 'false');
+            tab.tabIndex = -1;
+            tab.dataset.category = category;
+            tab.textContent = category;
+            tab.title = category; // full name remains available when narrow tabs truncate
+            tab.addEventListener('click', () => selectCategory(category));
+            return tab;
+        });
+        tabs.replaceChildren(...buttons);
+        tabs.classList.remove('hidden');
+        selectCategory(topCategory);
+    } catch (error) {
+        console.error('[popular categories] Failed to load counts from ' + countsUrl + ':', error);
+        previewMessage('Unable to load popular categories.');
+        showMessage('Unable to load popular categories right now.');
+    }
 }
 
 /**
@@ -685,7 +905,7 @@ window.EnovoxBookmarks = (function () {
     }
 
     function showPrompt(anchor) {
-        showTip(anchor, '<a class="bm-tip-link" href="/login">Log in</a> to save this', 'prompt');
+        showTip(anchor, '<a class="bm-tip-link" href="/login">Log in</a> to bookmark this', 'prompt');
     }
 
     function positionTip(anchor) {
