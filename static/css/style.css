@@ -2750,3 +2750,370 @@ body {
 
     .popular-category-tab { font-size: 0.7rem; }
 }
+
+/* ==========================================================================
+   Popular categories showcase -- section-only visual polish
+   All selectors below are descendants of .popular-categories-section (or
+   the section itself). The legacy preview column and shared cards are left
+   untouched. CSS-only active-pill movement follows the existing .active tab.
+   ========================================================================== */
+.popular-categories-section {
+    --showcase-ink: #075c3e;
+    --showcase-copy: #506375;
+    --showcase-focus: #08764a;
+    --showcase-spot: #00945d;
+    --showcase-rail: rgba(255, 255, 255, 0.88);
+    --showcase-rail-border: rgba(0, 135, 81, 0.18);
+    --showcase-hover: rgba(0, 135, 81, 0.09);
+    --showcase-card: #ffffff;
+    --showcase-card-border: rgba(0, 110, 68, 0.17);
+    --showcase-card-hover-border: rgba(0, 135, 81, 0.48);
+    --showcase-card-shadow: 0 10px 28px -19px rgba(15, 74, 47, 0.25);
+    --showcase-card-hover-shadow: 0 19px 38px -18px rgba(12, 78, 51, 0.29), 0 6px 15px -10px rgba(0, 89, 54, 0.18);
+    --showcase-icon: rgba(241, 250, 245, 0.95);
+    --showcase-logo: rgba(16, 185, 129, 0.10);
+    --showcase-skeleton-low: #e8f3ec;
+    --showcase-skeleton-high: #d8eade;
+    position: relative;
+    width: calc(100% - 3rem);
+    margin: 0 auto 4.75rem;
+    padding: clamp(2.25rem, 3.7vw, 3.5rem);
+    background:
+        radial-gradient(circle at 96% 0%, rgba(16, 185, 129, 0.18), transparent 39%),
+        radial-gradient(circle at 0% 100%, rgba(37, 99, 235, 0.075), transparent 38%),
+        linear-gradient(120deg, #fcfefd 0%, #f0faf4 60%, #eaf6f0 100%);
+    border: 1px solid rgba(0, 135, 81, 0.24);
+    border-radius: 30px;
+    box-shadow: 0 28px 65px -36px rgba(15, 42, 35, 0.30),
+                0 8px 25px -17px rgba(0, 135, 81, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.90);
+}
+
+.dark-mode .popular-categories-section {
+    --showcase-ink: #a2edc4;
+    --showcase-copy: #aec3d0;
+    --showcase-focus: #6ee7b7;
+    --showcase-spot: #6ee7b7;
+    --showcase-rail: rgba(10, 27, 36, 0.76);
+    --showcase-rail-border: rgba(110, 231, 183, 0.21);
+    --showcase-hover: rgba(110, 231, 183, 0.10);
+    --showcase-card: #1d333a;
+    --showcase-card-border: rgba(148, 222, 196, 0.18);
+    --showcase-card-hover-border: rgba(110, 231, 183, 0.47);
+    --showcase-card-shadow: 0 13px 29px -18px rgba(0, 0, 0, 0.49);
+    --showcase-card-hover-shadow: 0 22px 42px -18px rgba(0, 0, 0, 0.61), 0 0 0 1px rgba(110, 231, 183, 0.12);
+    --showcase-icon: rgba(11, 30, 38, 0.74);
+    --showcase-logo: rgba(110, 231, 183, 0.12);
+    --showcase-skeleton-low: #274149;
+    --showcase-skeleton-high: #345459;
+    background:
+        radial-gradient(circle at 96% 0%, rgba(16, 185, 129, 0.21), transparent 43%),
+        radial-gradient(circle at 0% 100%, rgba(37, 99, 235, 0.11), transparent 38%),
+        linear-gradient(120deg, #172d30 0%, #142630 61%, #172b35 100%);
+    border-color: rgba(110, 231, 183, 0.26);
+    box-shadow: 0 28px 65px -28px rgba(0, 0, 0, 0.60),
+                0 0 0 1px rgba(16, 185, 129, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* Keep the existing fallback logo letter and card arrow legible on dark cards. */
+.dark-mode .popular-categories-section .popular-products-grid .product-logo {
+    color: #93c5fd;
+}
+
+.dark-mode .popular-categories-section .popular-products-grid .card-arrow {
+    color: #a9bac9;
+}
+
+.dark-mode .popular-categories-section .popular-products-grid > .product-card:hover .card-arrow {
+    color: #86efac;
+}
+
+.popular-categories-section .popular-categories-heading {
+    position: relative;
+    max-width: 45rem;
+}
+
+.popular-categories-section .popular-categories-heading .accent-bar {
+    width: 54px;
+    height: 5px;
+    margin-bottom: 1.45rem;
+    background: linear-gradient(90deg, var(--color-green), #67dda0);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.09),
+                0 5px 19px -3px rgba(0, 135, 81, 0.37);
+}
+
+.popular-categories-section .popular-categories-heading h2 {
+    font-size: clamp(1.75rem, 3vw, 2.35rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.15;
+    margin-bottom: 0.7rem;
+    color: var(--text-main);
+}
+
+/* Small decorative glint: no icon asset or additional HTML required. */
+.popular-categories-section .popular-categories-heading h2::after {
+    content: '';
+    display: inline-block;
+    width: 0.46rem;
+    height: 0.46rem;
+    margin-left: 0.7rem;
+    vertical-align: middle;
+    border-radius: 50%;
+    background-color: var(--showcase-spot);
+    box-shadow: 0 0 0 0.31rem rgba(16, 185, 129, 0.13);
+}
+
+.popular-categories-section .popular-categories-heading p {
+    max-width: 46rem;
+    font-size: 0.97rem;
+    line-height: 1.65;
+    color: var(--showcase-copy);
+}
+
+.popular-categories-section .popular-category-tabs {
+    --showcase-tab-pad: 0.4rem;
+    --showcase-tab-gap: 0.4rem;
+    position: relative;
+    isolation: isolate;
+    gap: var(--showcase-tab-gap);
+    margin: 2rem 0 1.7rem;
+    padding: var(--showcase-tab-pad);
+    background-color: var(--showcase-rail);
+    border-color: var(--showcase-rail-border);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.035),
+                0 9px 26px -19px rgba(13, 67, 43, 0.19);
+}
+
+.popular-categories-section .popular-category-tab {
+    position: relative;
+    z-index: 1;
+    padding: 0.78rem 0.7rem;
+    border-radius: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: color 300ms ease, background-color 300ms ease,
+                box-shadow 300ms ease, transform 300ms ease;
+}
+
+.popular-categories-section .popular-category-tab:hover:not(.active) {
+    background-color: var(--showcase-hover);
+    color: var(--showcase-ink);
+    transform: translateY(-1px);
+}
+
+/* Solid active pill is also the fallback for browsers without :has(). */
+.popular-categories-section .popular-category-tab.active {
+    background-color: #08764a;
+    color: #ffffff;
+    box-shadow: 0 5px 13px rgba(0, 104, 64, 0.25);
+}
+
+@supports selector(:has(*)) {
+    /* Sliding pill tracks whichever of the existing three tabs is active. */
+    .popular-categories-section .popular-category-tabs::before {
+        content: '';
+        position: absolute;
+        z-index: 0;
+        top: var(--showcase-tab-pad);
+        bottom: var(--showcase-tab-pad);
+        left: var(--showcase-tab-pad);
+        width: calc((100% - var(--showcase-tab-pad) - var(--showcase-tab-pad) - var(--showcase-tab-gap) - var(--showcase-tab-gap)) / 3);
+        border-radius: 11px;
+        background: linear-gradient(125deg, #08764a, var(--color-green));
+        box-shadow: 0 6px 15px rgba(0, 104, 64, 0.25),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.17);
+        pointer-events: none;
+        transform: translateX(0);
+        transition: transform 320ms ease;
+    }
+
+    .popular-categories-section .popular-category-tabs:has(> .popular-category-tab:nth-child(2).active)::before {
+        transform: translateX(calc(100% + var(--showcase-tab-gap)));
+    }
+
+    .popular-categories-section .popular-category-tabs:has(> .popular-category-tab:nth-child(3).active)::before {
+        transform: translateX(calc(200% + var(--showcase-tab-gap) + var(--showcase-tab-gap)));
+    }
+
+    .popular-categories-section .popular-category-tab.active {
+        background-color: transparent;
+        box-shadow: none;
+    }
+}
+
+.popular-categories-section .popular-category-tab:focus-visible,
+.popular-categories-section .popular-products-grid .product-card:focus-visible,
+.popular-categories-section .popular-products-grid .card-bookmark-btn:focus-visible,
+.popular-categories-section .popular-retry-btn:focus-visible,
+.popular-categories-section .popular-category-see-all:focus-visible {
+    outline-color: var(--showcase-focus);
+    outline-offset: 3px;
+}
+
+.popular-categories-section .popular-products-grid {
+    gap: 1.15rem;
+}
+
+.popular-categories-section .popular-products-grid > .product-card {
+    min-height: 210px;
+    padding: 1.4rem;
+    background-color: var(--showcase-card);
+    border-color: var(--showcase-card-border);
+    border-radius: 18px;
+    box-shadow: var(--showcase-card-shadow);
+    transition: transform 300ms ease, box-shadow 300ms ease,
+                border-color 300ms ease, background-color 300ms ease;
+}
+
+.popular-categories-section .popular-products-grid .product-logo {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    background-color: var(--showcase-logo);
+    transition: transform 300ms ease;
+}
+
+.popular-categories-section .popular-products-grid .product-name {
+    font-weight: 700;
+}
+
+.popular-categories-section .popular-products-grid .card-bookmark-btn {
+    background-color: var(--showcase-icon);
+    border: 1px solid var(--showcase-card-border);
+    border-radius: 10px;
+    transition: background-color 300ms ease, border-color 300ms ease,
+                color 300ms ease, transform 300ms ease;
+}
+
+.popular-categories-section .popular-products-grid .card-bookmark-btn:hover {
+    background-color: var(--showcase-hover);
+    border-color: var(--showcase-card-hover-border);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .popular-categories-section .popular-products-grid > .product-card:hover {
+        transform: translateY(-4px) scale(1.012);
+        background-color: var(--showcase-card);
+        border-color: var(--showcase-card-hover-border);
+        box-shadow: var(--showcase-card-hover-shadow);
+    }
+
+    .popular-categories-section .popular-products-grid > .product-card:hover .product-logo {
+        transform: scale(1.035);
+    }
+}
+
+@media (hover: none) {
+    .popular-categories-section .popular-products-grid > .product-card:hover {
+        transform: none;
+        border-color: var(--showcase-card-border);
+        box-shadow: var(--showcase-card-shadow);
+    }
+}
+
+.popular-categories-section .popular-category-see-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0.55rem 1rem;
+    margin-top: 1.55rem;
+    border: 1px solid var(--showcase-rail-border);
+    border-radius: 999px;
+    background-color: var(--showcase-rail);
+    color: var(--showcase-ink);
+    font-weight: 700;
+    box-shadow: 0 6px 18px -14px rgba(0, 104, 64, 0.28);
+    transition: transform 280ms ease, background-color 280ms ease,
+                border-color 280ms ease, box-shadow 280ms ease;
+}
+
+.popular-categories-section .popular-category-see-all:hover {
+    transform: translateX(3px);
+    background-color: var(--showcase-hover);
+    border-color: var(--showcase-card-hover-border);
+    box-shadow: var(--showcase-card-shadow);
+    text-decoration: none;
+}
+
+.popular-categories-section .popular-products-state,
+.popular-categories-section .popular-card-skeleton {
+    background-color: var(--showcase-card);
+    border: 1px solid var(--showcase-card-border);
+    border-radius: 18px;
+    box-shadow: var(--showcase-card-shadow);
+}
+
+.popular-categories-section .popular-card-skeleton span {
+    background: linear-gradient(100deg, var(--showcase-skeleton-low) 25%,
+                                      var(--showcase-skeleton-high) 50%,
+                                      var(--showcase-skeleton-low) 75%);
+    background-size: 200% 100%;
+}
+
+@media (max-width: 768px) {
+    .popular-categories-section {
+        width: auto;
+        margin: 0 1rem 3.25rem;
+        padding: 1.65rem 1.15rem 1.5rem;
+        border-radius: 24px;
+    }
+
+    .popular-categories-section .popular-categories-heading h2 {
+        font-size: clamp(1.45rem, 4.7vw, 1.75rem);
+    }
+
+    .popular-categories-section .popular-category-tabs {
+        --showcase-tab-pad: 0.3rem;
+        --showcase-tab-gap: 0.25rem;
+        max-width: none;
+        margin: 1.5rem 0 1.3rem;
+    }
+
+    .popular-categories-section .popular-category-tab {
+        min-width: 0;
+        padding: 0.72rem 0.2rem;
+        font-size: 0.75rem;
+    }
+
+    .popular-categories-section .popular-products-grid {
+        gap: 0.8rem;
+    }
+
+    .popular-categories-section .popular-products-grid > .product-card,
+    .popular-categories-section .popular-products-grid > .popular-card-skeleton {
+        min-height: 194px;
+        padding: 2.75rem 0.7rem 0.9rem;
+    }
+
+    .popular-categories-section .popular-products-grid .product-logo {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+@media (max-width: 320px) {
+    .popular-categories-section {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+        padding: 1.4rem 0.9rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .popular-categories-section .popular-category-tabs::before,
+    .popular-categories-section .popular-category-tab,
+    .popular-categories-section .popular-products-grid > .product-card,
+    .popular-categories-section .popular-products-grid .product-logo,
+    .popular-categories-section .popular-products-grid .card-bookmark-btn,
+    .popular-categories-section .popular-category-see-all {
+        transition: none;
+    }
+
+    .popular-categories-section .popular-card-skeleton span {
+        animation: none;
+    }
+}
