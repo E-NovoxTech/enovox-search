@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import os
 from fastapi import BackgroundTasks
+from typing import Optional
 
 
 from .. import models, schemas
@@ -13,7 +14,6 @@ from ..indexnow_utils import submit_to_indexnow
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
 
 
-
 @router.post("/")
 def submit_product(
     submission: schemas.SubmissionCreate,
@@ -22,6 +22,8 @@ def submit_product(
     current_dev: models.Developer = Depends(get_current_developer)
 ):
     data = submission.dict()
+    foreign_tool_ids_list = data.pop("foreign_tool_ids", [])
+    data["foreign_tool_ids"] = ",".join(str(i) for i in foreign_tool_ids_list) if foreign_tool_ids_list else None
     data["email"] = current_dev.email
     new_submission = models.Submission(**data, developer_id=current_dev.id, status="pending")
     db.add(new_submission)
@@ -34,8 +36,8 @@ def submit_product(
         developer_email=current_dev.email,
         category=new_submission.category
     )
-
     return {"message": "Submission received. We'll review it shortly.", "id": new_submission.id}
+
 
 @router.get("/")
 def list_submissions(admin_key: str, db: Session = Depends(get_db)):
@@ -71,15 +73,29 @@ def get_submission_detail(submission_id: int, admin_key: str, db: Session = Depe
 
     return submission
 
-
 @router.post("/{submission_id}/approve")
-def approve_submission(submission_id: int, admin_key: str, db: Session = Depends(get_db)):
+def approve_submission(
+    submission_id: int,
+    admin_key: str,
+    edits: Optional[schemas.SubmissionApproveEdits] = None,
+    db: Session = Depends(get_db)
+):
     if admin_key != os.getenv("ADMIN_KEY"):
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
     submission = db.query(models.Submission).filter(models.Submission.id == submission_id).first()
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
+
+    if edits:
+        edits_data = edits.dict(exclude_unset=True)
+        if "foreign_tool_ids" in edits_data:
+            tool_ids = edits_data.pop("foreign_tool_ids")
+            submission.foreign_tool_ids = ",".join(str(i) for i in tool_ids) if tool_ids else None
+        for field, value in edits_data.items():
+            setattr(submission, field, value)
+        db.commit()
+        db.refresh(submission)
 
     if submission.product_id:
         # This is an EDIT to an existing product — apply changes, republish
@@ -112,7 +128,7 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
         return {"message": f"Edit to {product.name} approved and live."}
 
     else:
-        # Brand-new submission — your original logic, unchanged
+        # Brand-new submission
         new_product = models.Product(
             slug=generate_slug(submission.name, db),
             name=submission.name,
@@ -144,11 +160,16 @@ def approve_submission(submission_id: int, admin_key: str, db: Session = Depends
         db.commit()
         db.refresh(new_product)
 
+        if submission.foreign_tool_ids:
+            tool_ids = [int(i) for i in submission.foreign_tool_ids.split(",")]
+            for tool_id in tool_ids:
+                db.add(models.ProductAlternative(product_id=new_product.id, foreign_tool_id=tool_id))
+            db.commit()
+
         submit_to_indexnow(f"/product/{new_product.slug}")
 
         return {"message": f"{new_product.name} approved and now live.", "product_id": new_product.id, "slug": new_product.slug}
-    
-    
+
 @router.post("/{submission_id}/reject")
 def reject_submission(submission_id: int, admin_key: str, payload: schemas.RejectSubmission, db: Session = Depends(get_db)):
     if admin_key != os.getenv("ADMIN_KEY"):

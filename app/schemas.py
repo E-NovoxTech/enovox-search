@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime
+from pydantic import validator
 
 
 class ProductBase(BaseModel):
@@ -67,6 +68,7 @@ class SubmissionCreate(BaseModel):
     founder: str = Field(..., min_length=2, max_length=100)
     description: str = Field(..., min_length=20, max_length=1000)
     keywords: str
+    foreign_tool_ids: List[int] = []
     category: str
     website: Optional[str] = None
     pricing: Optional[str] = None
@@ -123,6 +125,7 @@ class SubmissionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
 class SubmissionDetail(BaseModel):
     id: int
     name: str
@@ -131,6 +134,7 @@ class SubmissionDetail(BaseModel):
     category: str
     website: Optional[str] = None
     pricing: Optional[str] = None
+    pricing_details: Optional[str] = None
     product_type: Optional[str] = None
     email: Optional[str] = None
     logo_url: Optional[str] = None
@@ -145,7 +149,18 @@ class SubmissionDetail(BaseModel):
     status: str
     rejection_reason: Optional[str] = None
     developer_id: Optional[int] = None
+    foreign_tool_ids: List[int] = []
 
+    @validator("foreign_tool_ids", pre=True)
+    def parse_foreign_tool_ids(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            return [int(i) for i in value.split(",") if i.strip()]
+        return value
+
+    class Config:
+        from_attributes = True
     class Config:
         from_attributes = True
 
@@ -256,3 +271,36 @@ class BannerUpdate(BaseModel):
     is_active: Optional[bool] = None
     is_marquee: Optional[bool] = None
     link_style: Optional[str] = None
+    
+class ForeignToolCreate(BaseModel):
+    name: str
+    logo_url: Optional[str] = None
+    description: Optional[str] = None
+    category: str
+
+class ProductAlternativesUpdate(BaseModel):
+    foreign_tool_ids: List[int]
+    
+    
+class SubmissionApproveEdits(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    pricing: Optional[str] = None
+    pricing_details: Optional[str] = None
+    website: Optional[str] = None
+    product_type: Optional[str] = None
+    logo_url: Optional[str] = None
+    appstore_url: Optional[str] = None
+    playstore_url: Optional[str] = None
+    user_count_range: Optional[str] = None
+    founder: Optional[str] = None
+    company: Optional[str] = None
+    twitter_url: Optional[str] = None
+    instagram_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    keywords: Optional[str] = None
+    contact_email: Optional[str] = None
+    github_url: Optional[str] = None
+    foreign_tool_ids: Optional[List[int]] = None

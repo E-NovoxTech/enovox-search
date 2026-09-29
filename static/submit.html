@@ -224,6 +224,31 @@
                             </div>
                         </div>
 
+                        <div class="form-group" id="alternatives-group">
+                            <div class="alternative-label-row">
+                                <label for="alternative-trigger" id="alternatives-label">Alternative To *</label>
+                                <button type="button" class="help-trigger" id="alternatives-help-btn" data-help="alternatives"
+                                        aria-expanded="false" aria-controls="alternatives-help-pop" aria-label="Help: Alternative To">?</button>
+                            </div>
+                            <div class="alternative-dropdown">
+                                <button type="button" id="alternative-trigger" class="alternative-dropdown-trigger"
+                                        aria-labelledby="alternatives-label alternative-summary" aria-expanded="false"
+                                        aria-controls="alternative-options" disabled>
+                                    <span id="alternative-summary">Choose a category first</span>
+                                    <svg class="alternative-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                </button>
+                                <div id="alternative-options" class="alternative-options hidden" role="group" aria-label="Foreign tools in the selected category"></div>
+                            </div>
+                            <span id="alternative-status" class="alternative-status" role="status"></span>
+                            <button type="button" id="alternative-retry" class="alternative-retry hidden">Retry loading alternatives</button>
+                            <span class="field-error" id="alternatives-error" role="alert"></span>
+                            <div class="field-help-pop hidden" id="alternatives-help-pop" role="tooltip">
+                                <button type="button" class="field-help-close" id="alternatives-help-close" aria-label="Close help">&times;</button>
+                                <h5>Alternative To</h5>
+                                <p>Tag your product as a local alternative to well-known global tools in the same category.</p>
+                            </div>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group" id="pricing-group">
                                 <label for="pricing">Pricing Model *<button type="button" class="help-trigger" id="pricing-help-btn" data-help="pricing" aria-expanded="false" aria-controls="pricing-help-pop" aria-label="Help: pricing model options">?</button></label>

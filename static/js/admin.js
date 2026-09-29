@@ -36,13 +36,15 @@
         get CATEGORIES() { return (typeof ENOVOX_CONFIG !== 'undefined' && ENOVOX_CONFIG.CATEGORIES) || []; }
     };
 
-    // Central in-memory state. Lists are fetched in full on load / after a
-    // mutating action; filtering & pagination below are done client-side
-    // against these arrays so switching tabs / typing in search is instant.
+    // Core lists load on login; foreign tools load on tab open or category change.
+    // Search and pagination run against the cached results.
     const state = {
         products: [],
         submissions: [],
         developers: [],
+        foreignTools: [],
+        foreignToolsPage: 1,
+        foreignToolsFilter: { search: '', category: '' },
         productsPage: 1,
         submissionsPage: 1,
         developersPage: 1,
@@ -53,7 +55,18 @@
     };
 
     let currentDetailSubmissionId = null;
+    let submissionDetailRequest = 0;
+    let submissionReviewOriginal = null; // Snapshot rendered values; send only actual corrections.
+    let submissionAlternativeRequest = 0;
+    let submissionAlternativeState = {
+        category: '', ready: false, available: new Set(),
+        original: new Set(), selected: new Set(), tools: [], isPending: false,
+        sourceKnown: false, droppedUnavailable: false
+    };
     let rejectContext = null; // { ids: [...] }
+    let foreignToolsRequest = 0;
+    let productAlternativesRequest = 0;
+    let productAlternativesState = { id: null, category: '', ready: false };
 
     // Keywords/Tags entered in the manual "Add Product" modal. Reset on open.
     let productKeywordTags = [];
@@ -65,6 +78,8 @@
     const globalAlert = document.getElementById('global-alert');
     const productModal = document.getElementById('product-modal');
     const productForm = document.getElementById('admin-product-form');
+    const foreignToolModal = document.getElementById('foreign-tool-modal');
+    const foreignToolForm = document.getElementById('foreign-tool-form');
     const submissionDetailModal = document.getElementById('submission-detail-modal');
     const submissionDetailBody = document.getElementById('submission-detail-body');
 
@@ -100,8 +115,9 @@
             });
         }
 
-        // Populate category filter dropdowns (products + submissions toolbars)
-        ['products-category-filter', 'submissions-category-filter'].forEach(id => {
+        // Populate shared category choices for table filters and the foreign-tool form.
+        ['products-category-filter', 'submissions-category-filter',
+         'foreign-tools-category-filter', 'foreign-tool-category'].forEach(id => {
             const sel = document.getElementById(id);
             if (sel && typeof ENOVOX_CONFIG !== 'undefined') {
                 ENOVOX_CONFIG.CATEGORIES.forEach(cat => {
@@ -143,6 +159,8 @@
         setupNavigation();
         setupEventListeners();
         setupToolbars();
+        setupAlternatives();
+        setupProductAlternatives();
         setupSubmissionDetailModal();
         setupRejectReasonModal();
         setupKeywordsTagInput();
@@ -270,6 +288,8 @@
                 productForm.reset();
                 document.getElementById('edit_product_id').value = '';
                 document.getElementById('modal-title').textContent = 'Create New Product';
+                resetProductAlternatives();
+                hideProductModalError();
                 resetKeywordsTagInput();
                 clearProductFormErrors();
                 updatePricingDetailsRequirement();
@@ -281,6 +301,8 @@
         if (closeModalBtn) {
             closeModalBtn.addEventListener('click', () => {
                 productModal.classList.add('hidden');
+                resetProductAlternatives();
+                hideProductModalError();
             });
         }
 
@@ -293,8 +315,20 @@
                 }
 
                 const id = document.getElementById('edit_product_id').value;
+                hideProductModalError();
+                // A failed/unfinished GET must not turn existing links into an empty PUT.
+                if (id && (productAlternativesState.id !== id ||
+                           productAlternativesState.category !== productForm.category.value ||
+                           !productAlternativesState.ready)) {
+                    showProductModalError('Wait for matching alternatives to load (or retry the load) before saving this product.');
+                    return;
+                }
+                const foreignToolIds = id
+                    ? Array.from(document.querySelectorAll('#product-alternatives-picker input[type="checkbox"]:checked'), box => Number(box.value))
+                    : [];
                 const formData = new FormData(productForm);
                 const payload = Object.fromEntries(formData.entries());
+                delete payload.id; // The hidden ID selects the endpoint, not a product field.
 
                 // New fields: keywords (joined string, not array), contact_email, github_url
                 payload.keywords = productKeywordTags.join(', ');
@@ -320,27 +354,46 @@
 
                 const method = id ? 'PUT' : 'POST';
                 const url = id
-                    ? `${API_URL}/products/${id}?admin_key=${adminKey}`
-                    : `${API_URL}/products/?admin_key=${adminKey}`;
+                    ? `${API_URL}/products/${encodeURIComponent(id)}?admin_key=${encodeURIComponent(adminKey)}`
+                    : `${API_URL}/products/?admin_key=${encodeURIComponent(adminKey)}`;
+                const saveBtn = document.getElementById('save-product-btn');
+                const closeBtn = document.getElementById('close-modal-btn');
+                saveBtn.disabled = true;
+                closeBtn.disabled = true;
+                let detailsSaved = false;
 
                 try {
                     const res = await fetch(url, {
-                        method: method,
+                        method,
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    await requireAdminResponse(res, 'Failed to save product');
+                    detailsSaved = true;
 
-                    if (!res.ok) {
-                        const err = await res.json();
-                        throw new Error(err.detail ? JSON.stringify(err.detail) : "Failed to save product");
+                    if (id) {
+                        const linksRes = await fetch(`${API_URL}/products/admin/${encodeURIComponent(id)}/alternatives?admin_key=${encodeURIComponent(adminKey)}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ foreign_tool_ids: foreignToolIds })
+                        });
+                        await requireAdminResponse(linksRes, 'Failed to save alternative links');
                     }
-
-                    productModal.classList.add('hidden');
-                    await refreshProducts();
-                    showAlert('success', id ? 'Product updated successfully.' : 'Product created successfully.');
                 } catch (error) {
-                    alert("Error saving: " + error.message);
+                    if (detailsSaved) await refreshProducts();
+                    showProductModalError(detailsSaved
+                        ? `Product details were saved, but Alternative To links were not saved. ${error.message} Retry saving this form.`
+                        : `Could not save product: ${error.message}`);
+                    return;
+                } finally {
+                    saveBtn.disabled = false;
+                    closeBtn.disabled = false;
                 }
+
+                productModal.classList.add('hidden');
+                resetProductAlternatives();
+                await refreshProducts();
+                showAlert('success', id ? 'Product and alternatives updated successfully.' : 'Product created successfully.');
             });
         }
     }
@@ -545,6 +598,7 @@
         const statsBar = document.getElementById('stats-bar');
         if (statsBar) statsBar.classList.toggle('hidden', tabId === 'analytics-tab');
         if (tabId === 'products-tab') renderProducts();
+        if (tabId === 'alternatives-tab') fetchForeignTools();
         if (tabId === 'submissions-tab') renderSubmissions();
         if (tabId === 'developers-tab') renderDevelopers();
         if (tabId === 'newsletter-tab') {
@@ -856,7 +910,7 @@
 
     window.editProduct = async function(id) {
         try {
-            const p = state.products.find(prod => prod.id === id);
+            const p = state.products.find(prod => String(prod.id) === String(id));
             if (!p) throw new Error("Product not found locally");
 
             document.getElementById('edit_product_id').value = p.id;
@@ -868,7 +922,8 @@
              'github_url', 'description'
             ].forEach(field => {
                 if (productForm[field]) {
-                    productForm[field].value = p[field] !== null ? p[field] : '';
+                    // Bulk/approved products may omit optional fields entirely.
+                    productForm[field].value = p[field] == null ? '' : p[field];
                 }
             });
 
@@ -881,12 +936,339 @@
             }
             clearProductFormErrors();
             updatePricingDetailsRequirement();
+            hideProductModalError();
+            resetProductAlternatives();
+            document.getElementById('product-alternatives-section').classList.remove('hidden');
 
             productModal.classList.remove('hidden');
+            loadProductAlternatives(p.id, productForm.category.value);
         } catch (error) {
             showAlert('error', error.message);
         }
     };
+
+    /* ==========================================================================
+       Alternatives: foreign-tool catalog + product edit checkboxes
+       ========================================================================== */
+    async function requireAdminResponse(res, fallback) {
+        if (res.ok) return;
+        const data = await parseApiResponse(res);
+        const detail = data && (data.detail || data.message);
+        const message = Array.isArray(detail)
+            ? detail.map(item => item.msg || item.message || JSON.stringify(item)).join('; ')
+            : (typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : ''));
+        throw new Error(message || `${fallback} (HTTP ${res.status}).`);
+    }
+
+    function setupAlternatives() {
+        document.getElementById('open-foreign-tool-btn').addEventListener('click', () => openForeignToolModal());
+        document.getElementById('close-foreign-tool-btn').addEventListener('click', closeForeignToolModal);
+        document.getElementById('cancel-foreign-tool-btn').addEventListener('click', closeForeignToolModal);
+        foreignToolForm.addEventListener('submit', saveForeignTool);
+
+        const search = document.getElementById('foreign-tools-search');
+        search.addEventListener('input', () => {
+            state.foreignToolsFilter.search = search.value;
+            state.foreignToolsPage = 1;
+            renderForeignTools();
+        });
+        const category = document.getElementById('foreign-tools-category-filter');
+        category.addEventListener('change', () => {
+            state.foreignToolsFilter.category = category.value;
+            state.foreignToolsPage = 1;
+            fetchForeignTools();
+        });
+        document.getElementById('foreign-tools-table-body').addEventListener('click', event => {
+            const menuBtn = event.target.closest('.dot-btn');
+            if (menuBtn) {
+                const menu = menuBtn.closest('.action-menu');
+                const wasOpen = menu.classList.contains('active');
+                document.querySelectorAll('.action-menu.active').forEach(el => el.classList.remove('active'));
+                menu.classList.toggle('active', !wasOpen);
+                return;
+            }
+            const editBtn = event.target.closest('[data-foreign-edit]');
+            const deleteBtn = event.target.closest('[data-foreign-delete]');
+            const id = editBtn ? editBtn.dataset.foreignEdit : (deleteBtn ? deleteBtn.dataset.foreignDelete : null);
+            if (id === null) return;
+            const tool = state.foreignTools.find(item => String(item.id) === id);
+            if (!tool) return;
+            if (editBtn) openForeignToolModal(tool);
+            else deleteForeignTool(tool);
+        });
+    }
+
+    async function fetchForeignTools() {
+        const requestId = ++foreignToolsRequest;
+        const category = state.foreignToolsFilter.category;
+        const tbody = document.getElementById('foreign-tools-table-body');
+        const errorEl = document.getElementById('foreign-tools-error');
+        errorEl.classList.add('hidden');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Loading foreign tools…</td></tr>';
+        document.getElementById('foreign-tools-pagination').innerHTML = '';
+        try {
+            const query = `admin_key=${encodeURIComponent(adminKey)}` +
+                (category ? `&category=${encodeURIComponent(category)}` : '');
+            const res = await fetch(`${API_URL}/products/admin/alternatives/foreign-tools?${query}`);
+            await requireAdminResponse(res, 'Could not load foreign tools');
+            const tools = await res.json();
+            if (!Array.isArray(tools)) throw new Error('Invalid foreign-tool list from the server.');
+            if (requestId !== foreignToolsRequest) return false;
+            state.foreignTools = tools;
+            renderForeignTools();
+            return true;
+        } catch (error) {
+            if (requestId !== foreignToolsRequest) return false;
+            state.foreignTools = [];
+            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Could not load foreign tools. Revisit this tab to retry.</td></tr>';
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+            return false;
+        }
+    }
+
+    function renderForeignTools() {
+        const tbody = document.getElementById('foreign-tools-table-body');
+        const search = state.foreignToolsFilter.search.trim().toLowerCase();
+        const category = state.foreignToolsFilter.category;
+        const filtered = state.foreignTools.filter(tool =>
+            (!category || tool.category === category) &&
+            (!search || String(tool.name || '').toLowerCase().includes(search))
+        );
+        const { pageItems, totalPages, safePage } = paginate(filtered, state.foreignToolsPage, PAGE_SIZE);
+        state.foreignToolsPage = safePage;
+        if (!pageItems.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No foreign tools match your filters.</td></tr>';
+        } else {
+            tbody.innerHTML = '';
+            pageItems.forEach(tool => {
+                const count = Number(tool.alternative_count ?? 0);
+                const date = formatClaimDate(tool.created_at || tool.date_added) || '—';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${escapeHTML(tool.name)}</strong></td>
+                    <td>${Number.isFinite(count) && count >= 0 ? count : '—'}</td>
+                    <td>${escapeHTML(tool.category)}</td>
+                    <td>${escapeHTML(date)}</td>
+                    <td>
+                        <div class="action-menu">
+                            <button type="button" class="dot-btn" aria-label="Actions for ${escapeHTML(tool.name)}">⋮</button>
+                            <div class="dropdown-content">
+                                <button type="button" data-foreign-edit="${escapeHTML(tool.id)}">Edit</button>
+                                <button type="button" class="danger" data-foreign-delete="${escapeHTML(tool.id)}">Delete</button>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        renderPagination('foreign-tools-pagination', filtered.length, safePage, totalPages, page => {
+            state.foreignToolsPage = page;
+            renderForeignTools();
+        });
+    }
+
+    function openForeignToolModal(tool) {
+        foreignToolForm.reset();
+        document.getElementById('foreign-tool-form-error').classList.add('hidden');
+        document.getElementById('foreign-tool-modal-title').textContent = tool ? 'Edit Foreign Tool' : 'Add Foreign Tool';
+        document.getElementById('save-foreign-tool-btn').textContent = tool ? 'Save Changes' : 'Add Foreign Tool';
+        document.getElementById('foreign-tool-id').value = tool ? tool.id : '';
+        document.getElementById('foreign-tool-name').value = tool ? tool.name || '' : '';
+        document.getElementById('foreign-tool-logo').value = tool ? tool.logo_url || '' : '';
+        document.getElementById('foreign-tool-description').value = tool ? tool.description || '' : '';
+        document.getElementById('foreign-tool-category').value = tool ? tool.category || '' : '';
+        foreignToolModal.classList.remove('hidden');
+        document.getElementById('foreign-tool-name').focus();
+    }
+
+    function closeForeignToolModal() {
+        foreignToolModal.classList.add('hidden');
+    }
+
+    async function saveForeignTool(event) {
+        event.preventDefault();
+        const id = document.getElementById('foreign-tool-id').value;
+        const payload = {
+            name: document.getElementById('foreign-tool-name').value.trim(),
+            logo_url: document.getElementById('foreign-tool-logo').value.trim(),
+            description: document.getElementById('foreign-tool-description').value.trim(),
+            category: document.getElementById('foreign-tool-category').value
+        };
+        const errorEl = document.getElementById('foreign-tool-form-error');
+        errorEl.classList.add('hidden');
+        if (!payload.name || !payload.logo_url || !payload.description || !payload.category) {
+            errorEl.textContent = 'Fill in all foreign-tool fields before saving.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+        const saveBtn = document.getElementById('save-foreign-tool-btn');
+        saveBtn.disabled = true;
+        document.getElementById('close-foreign-tool-btn').disabled = true;
+        document.getElementById('cancel-foreign-tool-btn').disabled = true;
+        try {
+            const url = id
+                ? `${API_URL}/products/admin/alternatives/foreign-tools/${encodeURIComponent(id)}?admin_key=${encodeURIComponent(adminKey)}`
+                : `${API_URL}/products/admin/alternatives/foreign-tools?admin_key=${encodeURIComponent(adminKey)}`;
+            const res = await fetch(url, {
+                method: id ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await requireAdminResponse(res, 'Could not save foreign tool');
+            closeForeignToolModal();
+            const refreshed = await fetchForeignTools();
+            showAlert(refreshed ? 'success' : 'error', refreshed
+                ? (id ? 'Foreign tool updated.' : 'Foreign tool added.')
+                : 'Foreign tool saved, but the table could not be refreshed. Revisit this tab to retry.');
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            saveBtn.disabled = false;
+            document.getElementById('close-foreign-tool-btn').disabled = false;
+            document.getElementById('cancel-foreign-tool-btn').disabled = false;
+        }
+    }
+
+    async function deleteForeignTool(tool) {
+        if (!confirm(`Delete "${tool.name}"? Its links to Nigerian alternatives will also be removed.`)) return;
+        try {
+            const res = await fetch(`${API_URL}/products/admin/alternatives/foreign-tools/${encodeURIComponent(tool.id)}?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'DELETE'
+            });
+            await requireAdminResponse(res, 'Could not delete foreign tool');
+            const refreshed = await fetchForeignTools();
+            showAlert(refreshed ? 'success' : 'error', refreshed
+                ? 'Foreign tool deleted and linked alternatives removed.'
+                : 'Foreign tool deleted, but the table could not be refreshed. Revisit this tab to retry.');
+        } catch (error) {
+            showAlert('error', error.message);
+        }
+    }
+
+    function setupProductAlternatives() {
+        const category = productForm.querySelector('select[name="category"]');
+        const control = document.querySelector('#product-alternatives-section .product-alternative-control');
+        const trigger = document.getElementById('product-alternatives-trigger');
+        const picker = document.getElementById('product-alternatives-picker');
+        category.addEventListener('change', () => {
+            const id = document.getElementById('edit_product_id').value;
+            if (id && !productModal.classList.contains('hidden')) loadProductAlternatives(id, category.value);
+        });
+        document.getElementById('retry-product-alternatives').addEventListener('click', () => {
+            const id = document.getElementById('edit_product_id').value;
+            if (id) loadProductAlternatives(id, category.value);
+        });
+        trigger.addEventListener('click', () => setProductAlternativesOpen(picker.classList.contains('hidden')));
+        picker.addEventListener('change', updateProductAlternativeSummary);
+        document.addEventListener('click', event => {
+            if (!control.contains(event.target)) setProductAlternativesOpen(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !picker.classList.contains('hidden')) {
+                setProductAlternativesOpen(false);
+                trigger.focus();
+            }
+        });
+    }
+
+    function setProductAlternativesOpen(open) {
+        const picker = document.getElementById('product-alternatives-picker');
+        const trigger = document.getElementById('product-alternatives-trigger');
+        const expanded = open && !trigger.disabled;
+        picker.classList.toggle('hidden', !expanded);
+        trigger.setAttribute('aria-expanded', String(expanded));
+    }
+
+    function updateProductAlternativeSummary() {
+        const count = document.querySelectorAll('#product-alternatives-picker input[type="checkbox"]:checked').length;
+        document.getElementById('product-alternatives-summary').textContent = count
+            ? `${count} foreign tool${count === 1 ? '' : 's'} selected` : 'Select foreign tools';
+    }
+
+    function resetProductAlternatives() {
+        ++productAlternativesRequest; // Ignore any GET from a previously open modal.
+        productAlternativesState = { id: null, category: '', ready: false };
+        document.getElementById('product-alternatives-section').classList.add('hidden');
+        setProductAlternativesOpen(false);
+        document.getElementById('product-alternatives-picker').replaceChildren();
+        document.getElementById('product-alternatives-trigger').disabled = true;
+        document.getElementById('product-alternatives-summary').textContent = 'Select foreign tools';
+        document.getElementById('product-alternatives-status').textContent = '';
+        document.getElementById('product-alternatives-error').classList.add('hidden');
+        document.getElementById('retry-product-alternatives').classList.add('hidden');
+    }
+
+    async function loadProductAlternatives(id, category) {
+        const requestId = ++productAlternativesRequest;
+        productAlternativesState = { id: String(id), category, ready: false };
+        const picker = document.getElementById('product-alternatives-picker');
+        const trigger = document.getElementById('product-alternatives-trigger');
+        const summary = document.getElementById('product-alternatives-summary');
+        const status = document.getElementById('product-alternatives-status');
+        const errorEl = document.getElementById('product-alternatives-error');
+        const retryBtn = document.getElementById('retry-product-alternatives');
+        setProductAlternativesOpen(false);
+        trigger.disabled = true;
+        picker.replaceChildren();
+        errorEl.classList.add('hidden');
+        retryBtn.classList.add('hidden');
+        summary.textContent = category ? 'Loading alternatives…' : 'Choose a category first';
+        status.textContent = category ? '' : 'Choose a category to see matching foreign tools.';
+        if (!category) return;
+
+        try {
+            const [linkedRes, toolsRes] = await Promise.all([
+                fetch(`${API_URL}/products/${encodeURIComponent(id)}/alternatives`),
+                fetch(`${API_URL}/products/admin/alternatives/foreign-tools?admin_key=${encodeURIComponent(adminKey)}&category=${encodeURIComponent(category)}`)
+            ]);
+            await Promise.all([
+                requireAdminResponse(linkedRes, 'Could not load linked alternatives'),
+                requireAdminResponse(toolsRes, 'Could not load foreign tools in this category')
+            ]);
+            const [linked, tools] = await Promise.all([linkedRes.json(), toolsRes.json()]);
+            if (!Array.isArray(linked) || !Array.isArray(tools)) throw new Error('Invalid alternatives response from the server.');
+            if (requestId !== productAlternativesRequest) return;
+
+            const linkedIds = new Set(linked.map(item => Number(item.id ?? item.foreign_tool_id)));
+            const matching = tools.filter(item => item.category === category &&
+                Number.isSafeInteger(Number(item.id)) && Number(item.id) > 0);
+            if (!matching.length) {
+                summary.textContent = 'No foreign tools in this category';
+                status.textContent = `No foreign tools are available in ${category}. Add one in the Alternatives tab.`;
+            } else {
+                picker.innerHTML = matching.map(item => `
+                    <label class="nl-product-row">
+                        <input type="checkbox" value="${Number(item.id)}" ${linkedIds.has(Number(item.id)) ? 'checked' : ''}>
+                        <span class="nl-product-name">${escapeHTML(item.name)}</span>
+                    </label>
+                `).join('');
+                trigger.disabled = false;
+                updateProductAlternativeSummary();
+            }
+            productAlternativesState.ready = true;
+        } catch (error) {
+            if (requestId !== productAlternativesRequest) return;
+            summary.textContent = 'Alternatives unavailable';
+            errorEl.textContent = `Could not load alternatives: ${error.message}`;
+            errorEl.classList.remove('hidden');
+            retryBtn.classList.remove('hidden');
+        }
+    }
+
+    function showProductModalError(message) {
+        const errorEl = document.getElementById('product-modal-error');
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+    }
+
+    function hideProductModalError() {
+        const errorEl = document.getElementById('product-modal-error');
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+    }
 
     /* ==========================================================================
        BULK CSV UPLOAD (Products tab)
@@ -1672,12 +2054,26 @@
     /* ==========================================================================
        Submission Detail / Edit-before-approve Modal
        ========================================================================== */
+    function resetSubmissionReview() {
+        ++submissionAlternativeRequest; // Invalidate any in-flight category lookup.
+        submissionReviewOriginal = null;
+        submissionAlternativeState = {
+            category: '', ready: false, available: new Set(),
+            original: new Set(), selected: new Set(), tools: [],
+            isPending: false, sourceKnown: false, droppedUnavailable: false
+        };
+    }
+
+    function closeSubmissionDetail() {
+        ++submissionDetailRequest; // Invalidate a detail GET as well as its catalog lookup.
+        resetSubmissionReview();
+        currentDetailSubmissionId = null;
+        submissionDetailModal.classList.add('hidden');
+    }
+
     function setupSubmissionDetailModal() {
         const closeBtn = document.getElementById('close-submission-modal-btn');
-        if (closeBtn) closeBtn.addEventListener('click', () => {
-            submissionDetailModal.classList.add('hidden');
-            currentDetailSubmissionId = null;
-        });
+        if (closeBtn) closeBtn.addEventListener('click', closeSubmissionDetail);
 
         const approveBtn = document.getElementById('detail-approve-btn');
         if (approveBtn) approveBtn.addEventListener('click', () => window.approveFromDetail());
@@ -1686,24 +2082,33 @@
         if (rejectBtn) rejectBtn.addEventListener('click', () => {
             if (currentDetailSubmissionId != null) openRejectReasonModal([currentDetailSubmissionId]);
         });
+        submissionDetailBody.addEventListener('input', clearSubmissionReviewErrors);
     }
 
     window.openSubmissionDetail = async function(id) {
+        const requestId = ++submissionDetailRequest;
+        resetSubmissionReview();
         currentDetailSubmissionId = id;
         submissionDetailBody.innerHTML = `<p class="text-muted">Loading submission details...</p>`;
+        const approveBtn = document.getElementById('detail-approve-btn');
+        const rejectBtn = document.getElementById('detail-reject-btn');
+        if (approveBtn) approveBtn.classList.add('hidden');
+        if (rejectBtn) rejectBtn.classList.add('hidden');
         submissionDetailModal.classList.remove('hidden');
 
         try {
-            const res = await fetch(`${API_URL}/submissions/${id}?admin_key=${adminKey}`);
-            if (!res.ok) throw new Error("Failed to load submission details.");
+            const res = await fetch(`${API_URL}/submissions/${encodeURIComponent(id)}?admin_key=${encodeURIComponent(adminKey)}`);
+            if (!res.ok) throw new Error('Failed to load submission details.');
             const sub = await res.json();
-            renderSubmissionDetail(sub);
+            if (requestId !== submissionDetailRequest) return;
+            renderSubmissionDetail(sub, requestId);
         } catch (error) {
+            if (requestId !== submissionDetailRequest) return;
             submissionDetailBody.innerHTML = `<p style="color: var(--color-red);">${escapeHTML(error.message)}</p>`;
         }
     };
 
-    function renderSubmissionDetail(sub) {
+    function renderSubmissionDetail(sub, requestId) {
         const status = submissionStatus(sub);
         const devEmail = sub.developer ? sub.developer.email : (sub.email || sub.contact_email || 'Unknown');
         const isPending = status === 'pending';
@@ -1721,36 +2126,263 @@
 
         let formHTML = '<div class="form-grid">';
         SUBMISSION_FIELDS.forEach(field => {
-            const value = sub[field.key] !== null && sub[field.key] !== undefined ? sub[field.key] : '';
-            formHTML += `<div class="form-group"><label>${escapeHTML(field.label)}</label>`;
+            // The submission column/wire key is company; products use company_name.
+            const saved = field.key === 'company_name' ? (sub.company ?? sub.company_name) : sub[field.key];
+            const value = saved == null ? '' : String(saved);
+            const id = `detail_${field.key}`;
+            formHTML += `<div class="form-group${field.key === 'pricing_details' ? ' full-width' : ''}"><label for="${id}">${escapeHTML(field.label)}</label>`;
             if (field.type === 'select') {
-                const options = SELECT_OPTIONS[field.options] || [];
-                formHTML += `<select id="detail_${field.key}" ${!isPending ? 'disabled' : ''}>`;
+                const options = [...(SELECT_OPTIONS[field.options] || [])];
+                // Preserve an unexpected saved value instead of silently selecting the first option.
+                if (value && !options.includes(value)) options.unshift(value);
+                formHTML += `<select id="${id}" ${!isPending ? 'disabled' : ''}>`;
+                if (!value) formHTML += '<option value="" selected>Choose an option</option>';
                 options.forEach(opt => {
                     formHTML += `<option value="${escapeHTML(opt)}" ${opt === value ? 'selected' : ''}>${escapeHTML(opt)}</option>`;
                 });
-                formHTML += `</select>`;
+                formHTML += '</select>';
             } else {
-                formHTML += `<input type="${field.type}" id="detail_${field.key}" value="${escapeHTML(value)}" ${!isPending ? 'disabled' : ''}>`;
+                formHTML += `<input type="${field.type}" id="${id}" value="${escapeHTML(value)}" ${!isPending ? 'disabled' : ''}>`;
+                if (field.key === 'pricing_details' && isPending) {
+                    formHTML += '<small class="text-muted submission-review-hint">Correct the saved pricing details here if needed; changes apply on approval.</small>';
+                }
             }
-            formHTML += `</div>`;
+            formHTML += '</div>';
         });
         formHTML += '</div>';
 
         formHTML += `
+            <div class="form-group full-width" id="detail-alternatives-group">
+                <div class="submission-alternatives-heading">
+                    <label>Alternative To${isPending ? ' *' : ''}</label>
+                    <button type="button" id="detail-alternatives-help" class="submission-alt-help-trigger"
+                            aria-label="Help: Alternative To" aria-expanded="false" aria-controls="detail-alternatives-help-pop">?</button>
+                </div>
+                <div id="detail-alternatives-list" class="nl-product-picker submission-alternatives-list"
+                     role="group" aria-label="Foreign tools in this category" aria-describedby="detail-alternatives-status"></div>
+                <div id="detail-alternatives-status" class="text-muted" role="status"></div>
+                <button type="button" id="detail-alternatives-retry" class="submission-alt-retry hidden">Retry loading alternatives</button>
+                <div id="detail-alternatives-error" class="submission-review-error hidden" role="alert"></div>
+                <div id="detail-alternatives-help-pop" class="submission-alt-help-pop hidden" role="tooltip">
+                    <button type="button" id="detail-alternatives-help-close" aria-label="Close help">&times;</button>
+                    <strong>Alternative To</strong>
+                    <p>Tag your product as a local alternative to well-known global tools in the same category.</p>
+                </div>
+            </div>
             <div class="form-group full-width">
-                <label>Description</label>
+                <label for="detail_description">Description</label>
                 <textarea id="detail_description" rows="4" ${!isPending ? 'disabled' : ''}>${escapeHTML(sub.description || '')}</textarea>
             </div>
+            <div id="detail-review-error" class="submission-review-error hidden" role="alert"></div>
         `;
-
         submissionDetailBody.innerHTML = metaHTML + formHTML;
 
-        // Only pending submissions can be edited / approved / rejected from here
+        const originalFields = { description: document.getElementById('detail_description').value };
+        SUBMISSION_FIELDS.forEach(field => {
+            originalFields[field.key] = document.getElementById(`detail_${field.key}`).value;
+        });
+        submissionReviewOriginal = { id: String(currentDetailSubmissionId), fields: originalFields };
+        submissionAlternativeState.isPending = isPending;
+        submissionAlternativeState.sourceKnown = Array.isArray(sub.foreign_tool_ids);
+        const ids = submissionAlternativeState.sourceKnown
+            ? sub.foreign_tool_ids.map(Number).filter(id => Number.isSafeInteger(id) && id > 0) : [];
+        submissionAlternativeState.original = new Set(ids);
+        submissionAlternativeState.selected = new Set(ids);
+        submissionAlternativeState.category = originalFields.category;
+        renderSubmissionAlternativeRows(); // Show saved IDs immediately, even if lookup fails.
+        loadSubmissionReviewAlternatives(originalFields.category, requestId);
+
+        if (isPending) {
+            document.getElementById('detail_category').addEventListener('change', event => {
+                // Returning to the original category restores the submitted selection.
+                submissionAlternativeState.selected = event.target.value === submissionReviewOriginal.fields.category
+                    ? new Set(submissionAlternativeState.original) : new Set();
+                submissionAlternativeState.droppedUnavailable = false;
+                clearSubmissionReviewErrors();
+                loadSubmissionReviewAlternatives(event.target.value, requestId);
+            });
+            document.getElementById('detail-alternatives-list').addEventListener('change', event => {
+                const box = event.target.closest('input[type="checkbox"]');
+                if (!box || !submissionAlternativeState.ready) return;
+                const id = Number(box.value);
+                if (!submissionAlternativeState.available.has(id)) return;
+                // Saved IDs absent from the category catalog stay intact when
+                // only other fields change, but cannot enter corrected links.
+                for (const savedId of submissionAlternativeState.selected) {
+                    if (!submissionAlternativeState.available.has(savedId)) {
+                        submissionAlternativeState.selected.delete(savedId);
+                        submissionAlternativeState.droppedUnavailable = true;
+                    }
+                }
+                if (box.checked) submissionAlternativeState.selected.add(id);
+                else submissionAlternativeState.selected.delete(id);
+                document.querySelectorAll('#detail-alternatives-list .is-unavailable input').forEach(input => {
+                    input.checked = false;
+                });
+                clearSubmissionReviewErrors();
+                updateSubmissionAlternativeStatus();
+            });
+        }
+        document.getElementById('detail-alternatives-retry').addEventListener('click', () => {
+            loadSubmissionReviewAlternatives(document.getElementById('detail_category').value, requestId);
+        });
+        const help = document.getElementById('detail-alternatives-help');
+        const helpPop = document.getElementById('detail-alternatives-help-pop');
+        help.addEventListener('click', () => {
+            helpPop.classList.toggle('hidden');
+            help.setAttribute('aria-expanded', String(!helpPop.classList.contains('hidden')));
+        });
+        document.getElementById('detail-alternatives-help-close').addEventListener('click', () => {
+            helpPop.classList.add('hidden');
+            help.setAttribute('aria-expanded', 'false');
+            help.focus();
+        });
+
         const approveBtn = document.getElementById('detail-approve-btn');
         const rejectBtn = document.getElementById('detail-reject-btn');
         if (approveBtn) approveBtn.classList.toggle('hidden', !isPending);
         if (rejectBtn) rejectBtn.classList.toggle('hidden', !isPending);
+    }
+
+    function appendSubmissionAlternativeRow(list, id, tool, disabled, unavailable = false) {
+        const name = tool && tool.name ? String(tool.name) : `Tool #${id}`;
+        const row = document.createElement(disabled ? 'div' : 'label');
+        row.className = `nl-product-row submission-alternative-row${unavailable ? ' is-unavailable' : ''}`;
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.value = String(id);
+        box.checked = submissionAlternativeState.selected.has(id);
+        box.disabled = disabled;
+        box.setAttribute('aria-label', `Alternative to ${name}`);
+        row.appendChild(box);
+        if (tool && /^https?:\/\//i.test(tool.logo_url || '')) {
+            const logo = document.createElement('img');
+            logo.className = 'submission-alternative-logo';
+            logo.src = tool.logo_url;
+            logo.alt = '';
+            logo.loading = 'lazy';
+            row.appendChild(logo);
+        }
+        const nameEl = document.createElement('span');
+        nameEl.className = 'nl-product-name';
+        nameEl.textContent = name;
+        row.appendChild(nameEl);
+        if (unavailable) {
+            const note = document.createElement('small');
+            note.className = 'text-muted submission-alt-unavailable-note';
+            note.textContent = 'Not in this category';
+            row.appendChild(note);
+        }
+        list.appendChild(row);
+    }
+
+    function renderSubmissionAlternativeRows() {
+        const list = document.getElementById('detail-alternatives-list');
+        if (!list) return;
+        list.replaceChildren();
+        list.classList.remove('is-empty');
+        const alt = submissionAlternativeState;
+        if (alt.ready && alt.isPending) {
+            for (const id of alt.selected) {
+                if (!alt.available.has(id)) appendSubmissionAlternativeRow(list, id, null, true, true);
+            }
+            const sortedTools = [...alt.tools].sort((a, b) =>
+                Number(alt.selected.has(Number(b.id))) - Number(alt.selected.has(Number(a.id))));
+            sortedTools.forEach(tool => appendSubmissionAlternativeRow(list, Number(tool.id), tool, false));
+        } else {
+            const toolsById = new Map(alt.tools.map(tool => [Number(tool.id), tool]));
+            for (const id of alt.selected) {
+                appendSubmissionAlternativeRow(list, id, toolsById.get(id), true);
+            }
+        }
+        if (!list.childElementCount) {
+            list.classList.add('is-empty');
+            list.textContent = alt.ready ? 'No foreign tools in this category.' : 'No foreign tools selected.';
+        }
+    }
+
+    function updateSubmissionAlternativeStatus() {
+        const alt = submissionAlternativeState;
+        const status = document.getElementById('detail-alternatives-status');
+        if (!status || !alt.ready) return;
+        const count = alt.selected.size;
+        status.classList.toggle('is-missing-selection', alt.isPending && !alt.original.size && !count);
+        let text = `${count} foreign tool${count === 1 ? '' : 's'} selected.`;
+        if (alt.isPending) text += ' Check or uncheck tools here to correct the selection before approval.';
+        if (alt.isPending && !alt.original.size && !alt.selected.size) {
+            text += ' No saved selection was returned for this submission. If you chose one earlier, select it again before approval.';
+        }
+        if ([...alt.selected].some(id => !alt.available.has(id))) {
+            text += ' Some saved IDs are no longer in this category; they will be dropped if you change the selection.';
+        } else if (alt.droppedUnavailable) {
+            text += ' Unavailable saved IDs were removed from the corrected selection.';
+        }
+        status.textContent = text;
+    }
+
+    // Admin detail returns numeric IDs, not CSV. A lookup failure must never
+    // discard submitted selections or prevent an unrelated pricing correction.
+    async function loadSubmissionReviewAlternatives(category, detailRequest) {
+        const requestId = ++submissionAlternativeRequest;
+        const alt = submissionAlternativeState;
+        alt.category = category;
+        alt.ready = false;
+        alt.available.clear();
+        alt.tools = [];
+        const status = document.getElementById('detail-alternatives-status');
+        const retry = document.getElementById('detail-alternatives-retry');
+        if (!status || !retry) return;
+        retry.classList.add('hidden');
+        renderSubmissionAlternativeRows();
+        status.textContent = category
+            ? 'Loading matching foreign tools… Saved selections are shown below.'
+            : 'Choose a category to see matching foreign tools.';
+        if (!category) return;
+        try {
+            const res = await fetch(`${API_URL}/products/alternatives/foreign-tools?category=${encodeURIComponent(category)}`);
+            if (!res.ok) throw new Error('Could not load matching foreign tools.');
+            const tools = await res.json();
+            if (!Array.isArray(tools)) throw new Error('Invalid foreign-tool list.');
+            if (requestId !== submissionAlternativeRequest || detailRequest !== submissionDetailRequest ||
+                submissionDetailModal.classList.contains('hidden')) return;
+            const seen = new Set();
+            alt.tools = tools.filter(tool => {
+                const id = Number(tool && tool.id);
+                if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id) ||
+                    (tool.category && tool.category !== category)) return false;
+                seen.add(id);
+                return true;
+            });
+            alt.available = seen;
+            alt.ready = true;
+            renderSubmissionAlternativeRows();
+            updateSubmissionAlternativeStatus();
+            if (!alt.sourceKnown) {
+                status.textContent += ' The submission did not return its original selections.';
+            }
+        } catch (error) {
+            if (requestId !== submissionAlternativeRequest || detailRequest !== submissionDetailRequest ||
+                submissionDetailModal.classList.contains('hidden')) return;
+            renderSubmissionAlternativeRows();
+            status.textContent = `${error.message} Saved tool IDs remain visible; retry to edit the selection.`;
+            retry.classList.remove('hidden');
+        }
+    }
+
+    function clearSubmissionReviewErrors() {
+        ['detail-review-error', 'detail-alternatives-error'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.textContent = ''; el.classList.add('hidden'); }
+        });
+    }
+
+    function showSubmissionReviewError(message, alternative = false) {
+        const el = document.getElementById(alternative ? 'detail-alternatives-error' : 'detail-review-error');
+        if (el) {
+            el.textContent = message;
+            el.classList.remove('hidden');
+            el.scrollIntoView({ block: 'nearest' });
+        }
     }
 
     function statusBadgeHTMLPlain(status) {
@@ -1760,46 +2392,108 @@
     }
 
     window.approveFromDetail = async function() {
-        if (currentDetailSubmissionId == null) return;
+        if (currentDetailSubmissionId == null || !submissionReviewOriginal ||
+            submissionReviewOriginal.id !== String(currentDetailSubmissionId)) return;
         const id = currentDetailSubmissionId;
-
-        // Gather any edits the admin made before approving.
-        const payload = { description: valueOf('detail_description') };
+        const approveBtn = document.getElementById('detail-approve-btn');
+        if (approveBtn.disabled) return;
+        clearSubmissionReviewErrors();
+        const payload = {};
         SUBMISSION_FIELDS.forEach(field => {
-            payload[field.key] = valueOf(`detail_${field.key}`);
+            const input = document.getElementById(`detail_${field.key}`);
+            if (!input || input.value === submissionReviewOriginal.fields[field.key]) return;
+            const key = field.key === 'company_name' ? 'company' : field.key;
+            payload[key] = input.value === '' ? null : input.value;
         });
-
-        if (!payload.name || payload.name.trim() === '') {
-            showAlert('error', 'Product Name cannot be empty.');
-            return;
+        const description = document.getElementById('detail_description');
+        if (description.value !== submissionReviewOriginal.fields.description) {
+            payload.description = description.value === '' ? null : description.value;
         }
 
-        if (!confirm("Save these edits and approve? The submission will instantly become a live product.")) return;
+        const name = document.getElementById('detail_name');
+        if (!name.value.trim()) {
+            showSubmissionReviewError('Product Name cannot be empty.');
+            name.focus();
+            return;
+        }
+        const pricingDetails = document.getElementById('detail_pricing_details');
+        if (('pricing_details' in payload || 'pricing' in payload) && !pricingDetails.value.trim()) {
+            showSubmissionReviewError('Pricing details are required.');
+            pricingDetails.focus();
+            return;
+        }
+        // The detail modal is not a <form>; validate edited URL/email fields explicitly.
+        for (const field of SUBMISSION_FIELDS) {
+            const key = field.key === 'company_name' ? 'company' : field.key;
+            const input = document.getElementById(`detail_${field.key}`);
+            if ((field.type === 'email' || field.type === 'url') && key in payload &&
+                input.value && !input.checkValidity()) {
+                showSubmissionReviewError(`Enter a valid ${field.label.toLowerCase()}.`);
+                input.focus();
+                return;
+            }
+        }
+        const alt = submissionAlternativeState;
+        const category = document.getElementById('detail_category').value;
+        const categoryChanged = 'category' in payload;
+        const alternativesChanged = alt.selected.size !== alt.original.size ||
+            [...alt.selected].some(toolId => !alt.original.has(toolId));
+        // Alternative To is required even for an otherwise unchanged review.
+        // An empty detail response must never silently publish an unlinked product.
+        if (!alt.selected.size) {
+            showSubmissionReviewError(alt.ready && alt.category === category
+                ? 'Alternative is compulsory, pick one.'
+                : 'Wait for matching alternatives to load before approving.', true);
+            return;
+        }
+        if (categoryChanged || alternativesChanged) {
+            if (!category || !alt.ready || alt.category !== category) {
+                showSubmissionReviewError('Wait for matching alternatives to load before approving changes to the category or selection.', true);
+                return;
+            }
+            if (!alt.selected.size) {
+                showSubmissionReviewError('Alternative is compulsory, pick one.', true);
+                return;
+            }
+            if ([...alt.selected].some(toolId => !alt.available.has(toolId))) {
+                showSubmissionReviewError('Choose alternatives available in this category before approving.', true);
+                return;
+            }
+            payload.foreign_tool_ids = [...alt.selected];
+        }
 
+        const changed = Object.keys(payload).length > 0;
+        const question = changed
+            ? 'Save these edits and approve? The submission will instantly become a live product.'
+            : 'Approve this submission? It will instantly become a live product.';
+        if (!confirm(question)) return;
+
+        approveBtn.disabled = true;
+        const rejectBtn = document.getElementById('detail-reject-btn');
+        if (rejectBtn) rejectBtn.disabled = true;
         try {
-            const res = await fetch(`${API_URL}/submissions/${id}/approve?admin_key=${adminKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!res.ok) throw new Error("Approval failed");
-            submissionDetailModal.classList.add('hidden');
-            currentDetailSubmissionId = null;
+            // An unchanged review uses the original body-less approval endpoint.
+            const options = changed
+                ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
+                : { method: 'POST' };
+            const res = await fetch(`${API_URL}/submissions/${encodeURIComponent(id)}/approve?admin_key=${encodeURIComponent(adminKey)}`, options);
+            if (!res.ok) {
+                const error = await res.json().catch(() => ({}));
+                throw new Error(typeof error.detail === 'string' ? error.detail : error.message || 'Approval failed.');
+            }
+            if (currentDetailSubmissionId === id) closeSubmissionDetail();
             state.selectedSubmissionIds.delete(id);
             await refreshSubmissions();
             await refreshProducts();
             showAlert('success', 'Submission approved and product is now live.');
         } catch (error) {
-            showAlert('error', error.message);
+            if (currentDetailSubmissionId === id) showSubmissionReviewError(error.message);
+            else showAlert('error', error.message);
+        } finally {
+            approveBtn.disabled = false;
+            if (rejectBtn) rejectBtn.disabled = false;
         }
     };
-
-    function valueOf(elId) {
-        const el = document.getElementById(elId);
-        if (!el) return null;
-        const v = el.value;
-        return v === '' ? null : v;
-    }
 
     /* ==========================================================================
        Reject reason modal (single row, detail view, or bulk)

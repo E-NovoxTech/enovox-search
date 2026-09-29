@@ -737,3 +737,136 @@ def export_products_csv(admin_key: str, db: Session = Depends(get_db)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=enovox_products_export.csv"}
     )
+    
+@router.post("/admin/alternatives/foreign-tools")
+def create_foreign_tool(admin_key: str, data: schemas.ForeignToolCreate, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    slug = generate_slug(data.name, db)
+    new_tool = models.ForeignTool(
+        name=data.name,
+        slug=slug,
+        logo_url=data.logo_url,
+        description=data.description,
+        category=data.category
+    )
+    db.add(new_tool)
+    db.commit()
+    db.refresh(new_tool)
+    return new_tool
+
+
+@router.get("/admin/alternatives/foreign-tools")
+def list_foreign_tools_admin(admin_key: str, category: Optional[str] = None, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    q = db.query(models.ForeignTool)
+    if category:
+        q = q.filter(models.ForeignTool.category == category)
+    tools = q.order_by(models.ForeignTool.created_at.desc()).all()
+
+    result = []
+    for tool in tools:
+        count = db.query(models.ProductAlternative).filter(models.ProductAlternative.foreign_tool_id == tool.id).count()
+        result.append({
+            "id": tool.id, "name": tool.name, "slug": tool.slug, "logo_url": tool.logo_url,
+            "description": tool.description, "category": tool.category,
+            "created_at": tool.created_at, "alternative_count": count
+        })
+    return result
+
+
+@router.delete("/admin/alternatives/foreign-tools/{tool_id}")
+def delete_foreign_tool(tool_id: int, admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    tool = db.query(models.ForeignTool).filter(models.ForeignTool.id == tool_id).first()
+    if not tool:
+        raise HTTPException(status_code=404, detail="Foreign tool not found")
+
+    db.query(models.ProductAlternative).filter(models.ProductAlternative.foreign_tool_id == tool_id).delete()
+    db.delete(tool)
+    db.commit()
+    return {"message": f"{tool.name} deleted."}
+
+
+@router.get("/alternatives/foreign-tools")
+def list_foreign_tools_public(category: Optional[str] = None, db: Session = Depends(get_db)):
+    q = db.query(models.ForeignTool)
+    if category:
+        q = q.filter(models.ForeignTool.category == category)
+    tools = q.all()
+
+    result = []
+    for tool in tools:
+        count = db.query(models.ProductAlternative).filter(models.ProductAlternative.foreign_tool_id == tool.id).count()
+        result.append({
+            "id": tool.id, "name": tool.name, "slug": tool.slug,
+            "logo_url": tool.logo_url, "description": tool.description,
+            "category": tool.category, "alternative_count": count
+        })
+    return result
+
+
+@router.get("/alternatives/foreign-tools/{slug}")
+def get_foreign_tool_alternatives(slug: str, db: Session = Depends(get_db)):
+    tool = db.query(models.ForeignTool).filter(models.ForeignTool.slug == slug).first()
+    if not tool:
+        raise HTTPException(status_code=404, detail="Foreign tool not found")
+
+    links = db.query(models.ProductAlternative).filter(models.ProductAlternative.foreign_tool_id == tool.id).all()
+    product_ids = [l.product_id for l in links]
+    products = db.query(models.Product).filter(
+        models.Product.id.in_(product_ids),
+        models.Product.status == True
+    ).all()
+
+    return {
+        "foreign_tool": {"name": tool.name, "slug": tool.slug, "logo_url": tool.logo_url, "description": tool.description},
+        "alternatives": products
+    }
+
+
+@router.get("/{product_id}/alternatives")
+def get_product_alternatives(product_id: int, db: Session = Depends(get_db)):
+    links = db.query(models.ProductAlternative).filter(models.ProductAlternative.product_id == product_id).all()
+    tool_ids = [l.foreign_tool_id for l in links]
+    return db.query(models.ForeignTool).filter(models.ForeignTool.id.in_(tool_ids)).all()
+
+
+@router.put("/admin/{product_id}/alternatives")
+def update_product_alternatives(product_id: int, admin_key: str, data: schemas.ProductAlternativesUpdate, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    db.query(models.ProductAlternative).filter(models.ProductAlternative.product_id == product_id).delete()
+
+    for tool_id in data.foreign_tool_ids:
+        db.add(models.ProductAlternative(product_id=product_id, foreign_tool_id=tool_id))
+
+    db.commit()
+    return {"message": "Alternatives updated.", "foreign_tool_ids": data.foreign_tool_ids}
+
+@router.put("/admin/alternatives/foreign-tools/{tool_id}")
+def update_foreign_tool(tool_id: int, admin_key: str, data: schemas.ForeignToolCreate, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    tool = db.query(models.ForeignTool).filter(models.ForeignTool.id == tool_id).first()
+    if not tool:
+        raise HTTPException(status_code=404, detail="Foreign tool not found")
+
+    tool.name = data.name
+    tool.logo_url = data.logo_url
+    tool.description = data.description
+    tool.category = data.category
+    db.commit()
+    db.refresh(tool)
+    return tool

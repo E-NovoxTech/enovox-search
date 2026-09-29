@@ -145,6 +145,102 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .submission-meta .meta-label { color: var(--text-muted); margin-right: 0.3rem; }
 .submission-meta-reason { width: 100%; color: #991b1b; }
 
+/* Submission review: category-scoped Alternative To checklist and inline help. */
+#detail-alternatives-group { position: relative; }
+#detail-alternatives-group .submission-alternatives-heading { display: flex; align-items: center; gap: 0.45rem; }
+#detail-alternatives-group .submission-alternatives-heading label { margin: 0; }
+#detail-alternatives-group .submission-alt-help-trigger {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--color-blue);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+#detail-alternatives-group .submission-alt-help-trigger:focus-visible,
+#detail-alternatives-group .submission-alt-retry:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+#detail-alternatives-group .submission-alt-help-pop {
+    position: absolute;
+    z-index: 4;
+    top: 1.8rem;
+    left: 0;
+    width: min(360px, 100%);
+    padding: 0.8rem 2rem 0.8rem 0.9rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-card);
+    box-shadow: 0 8px 20px rgba(15,23,42,0.15);
+    line-height: 1.45;
+}
+#detail-alternatives-group .submission-alt-help-pop p { margin-top: 0.25rem; }
+#detail-alternatives-group .submission-alt-help-pop button {
+    position: absolute;
+    right: 0.4rem;
+    top: 0.3rem;
+    border: 0;
+    background: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+#detail-alternatives-group .submission-alternatives-list { width: 100%; max-height: 260px; margin-top: 0.4rem; }
+#detail-alternatives-group .submission-alternatives-list.is-empty { padding: 0.75rem 0.85rem; color: var(--text-muted); }
+#detail-alternatives-group .submission-alternative-row {
+    min-height: 44px;
+    margin: 0;
+    padding: 0.65rem 0.8rem;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+#detail-alternatives-group .submission-alternative-row:has(input:disabled) { cursor: default; }
+#detail-alternatives-group .submission-alternative-row:hover { background: var(--bg-main); }
+#detail-alternatives-group .submission-alternative-row input[type="checkbox"] {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--color-blue);
+}
+#detail-alternatives-group .submission-alternative-row:focus-within { outline: 2px solid var(--color-blue); outline-offset: -2px; }
+#detail-alternatives-group .submission-alternative-row.is-unavailable { flex-wrap: wrap; background: var(--bg-main); }
+#detail-alternatives-group .submission-alt-unavailable-note { flex: none; }
+#detail-alternatives-group .submission-alternative-logo {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    object-fit: contain;
+    background: var(--bg-main);
+}
+#detail-alternatives-group .nl-product-name { min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+#detail-alternatives-status:not(:empty) { margin-top: 0.5rem; font-size: 0.82rem; }
+#detail-alternatives-status.is-missing-selection {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    background: #fffbeb;
+    color: #92400e;
+}
+#detail-alternatives-group .submission-alt-retry {
+    margin-top: 0.45rem;
+    border: 0;
+    background: none;
+    color: var(--color-blue);
+    font-weight: 600;
+    cursor: pointer;
+}
+.submission-review-error { color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; padding: 0.65rem 0.75rem; border-radius: 6px; }
+#detail-alternatives-error { margin-top: 0.5rem; }
+#detail-review-error { margin-top: 0.75rem; }
+.submission-review-hint { display: block; margin-top: 0.35rem; font-size: 0.78rem; line-height: 1.4; }
+@media (max-width: 600px) {
+    #detail-alternatives-group .submission-alternative-row { min-height: 48px; }
+}
+
 /* Alerts */
 .alert { padding: 1rem; border-radius: 6px; margin-bottom: 1rem; font-weight: 500; }
 .alert.success { background: #dcfce7; color: #166534; }
@@ -845,6 +941,47 @@ button { cursor: pointer; border-radius: 6px; font-weight: 500; }
 .nl-product-row:hover { background: var(--bg-main); }
 .nl-product-row input[type="checkbox"] { width: auto; }
 .nl-product-name { font-weight: 600; flex: 1; }
+
+/* Product edit: collapsed Alternative To dropdown (reuses the checkbox rows above). */
+#product-alternatives-section .product-alternative-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 42px;
+    padding: 0.6rem 0.8rem;
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    text-align: left;
+    font-size: 0.9rem;
+}
+#product-alternatives-section .product-alternative-trigger:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+}
+#product-alternatives-section .product-alternative-trigger:disabled {
+    cursor: not-allowed;
+    color: var(--text-muted);
+    background: var(--bg-main);
+}
+#product-alternatives-section .product-alternative-chevron { flex: none; transition: transform 0.15s; }
+#product-alternatives-trigger[aria-expanded="true"] .product-alternative-chevron { transform: rotate(180deg); }
+#product-alternatives-section .nl-product-picker { width: 100%; max-height: 240px; margin-top: 0.4rem; }
+#product-alternatives-section .nl-product-row { min-height: 44px; margin: 0; padding: 0.65rem 0.8rem; }
+#product-alternatives-section .nl-product-row input[type="checkbox"] {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--color-blue);
+}
+#product-alternatives-section .nl-product-name { min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
+#product-alternatives-status:not(:empty) { margin-top: 0.45rem; }
+
 .nl-picker-hint { margin-top: 0.4rem; font-size: 0.8rem; }
 
 .nl-failed { margin: -0.5rem 0 1rem; font-size: 0.85rem; color: var(--text-muted); }

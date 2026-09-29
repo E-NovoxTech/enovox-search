@@ -27,6 +27,7 @@
         setupStepNavigation();
         setupContextHelp();
         setupDescriptionCounter();
+        setupAlternativeToField();
         setupFormAutosave();
     });
 
@@ -179,6 +180,164 @@
     // it — keeps currentStep and the stepper UI in sync from either file.
     window.__enovoxGoToStep = goToStep;
 
+    /* Alternative To — category-matched multi-select in Product Information. */
+    const alternativeState = {
+        category: '', ready: false, requestId: 0,
+        available: new Set(), selected: new Set()
+    };
+
+    function setupAlternativeToField() {
+        const category = document.getElementById('category');
+        const trigger = document.getElementById('alternative-trigger');
+        const panel = document.getElementById('alternative-options');
+        const dropdown = document.querySelector('#alternatives-group .alternative-dropdown');
+        if (!category || !trigger || !panel) return;
+
+        category.addEventListener('change', () => loadAlternativesForCategory());
+        trigger.addEventListener('click', () => setAlternativePanelOpen(panel.classList.contains('hidden')));
+        panel.addEventListener('change', event => {
+            const box = event.target.closest('input[type="checkbox"]');
+            if (!box) return;
+            const id = Number(box.value);
+            if (!alternativeState.available.has(id)) { box.checked = false; return; }
+            if (box.checked) alternativeState.selected.add(id);
+            else alternativeState.selected.delete(id);
+            updateAlternativeSummary();
+            if (alternativeState.selected.size) clearFieldError('alternatives-group', 'alternatives-error');
+        });
+        document.getElementById('alternative-retry').addEventListener('click', () =>
+            loadAlternativesForCategory({ keepSelection: true })
+        );
+        document.addEventListener('click', event => {
+            if (!dropdown.contains(event.target)) setAlternativePanelOpen(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !panel.classList.contains('hidden')) {
+                setAlternativePanelOpen(false);
+                trigger.focus();
+            }
+        });
+    }
+
+    function setAlternativePanelOpen(open) {
+        const panel = document.getElementById('alternative-options');
+        const trigger = document.getElementById('alternative-trigger');
+        if (!panel || !trigger) return;
+        const expanded = !!open && !trigger.disabled && alternativeState.ready;
+        panel.classList.toggle('hidden', !expanded);
+        trigger.setAttribute('aria-expanded', String(expanded));
+    }
+
+    function updateAlternativeSummary() {
+        const summary = document.getElementById('alternative-summary');
+        const count = alternativeState.selected.size;
+        summary.textContent = count
+            ? `${count} foreign tool${count === 1 ? '' : 's'} selected`
+            : 'Select foreign tools';
+    }
+
+    function restoreAlternativeSelections(ids) {
+        alternativeState.selected = new Set(Array.isArray(ids)
+            ? ids.map(Number).filter(id => Number.isSafeInteger(id) && id > 0) : []);
+        loadAlternativesForCategory({ keepSelection: true });
+    }
+
+    async function loadAlternativesForCategory({ keepSelection = false } = {}) {
+        const category = document.getElementById('category').value;
+        const requestId = ++alternativeState.requestId;
+        alternativeState.category = category;
+        alternativeState.ready = false;
+        alternativeState.available.clear();
+        if (!keepSelection) alternativeState.selected.clear();
+
+        const panel = document.getElementById('alternative-options');
+        const trigger = document.getElementById('alternative-trigger');
+        const summary = document.getElementById('alternative-summary');
+        const status = document.getElementById('alternative-status');
+        const retry = document.getElementById('alternative-retry');
+        setAlternativePanelOpen(false);
+        panel.replaceChildren();
+        trigger.disabled = true;
+        status.textContent = '';
+        retry.classList.add('hidden');
+        clearFieldError('alternatives-group', 'alternatives-error');
+        summary.textContent = category ? 'Loading alternatives…' : 'Choose a category first';
+        if (!category) {
+            alternativeState.selected.clear();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/products/alternatives/foreign-tools?category=${encodeURIComponent(category)}`);
+            if (!response.ok) throw new Error(`The alternatives service returned ${response.status}.`);
+            const tools = await response.json();
+            if (!Array.isArray(tools)) throw new Error('Invalid foreign-tool list.');
+            if (requestId !== alternativeState.requestId) return;
+
+            const matching = [];
+            const seen = new Set();
+            for (const tool of tools) {
+                if (!tool || (tool.category && tool.category !== category)) continue;
+                const id = Number(tool.id);
+                if (!Number.isSafeInteger(id) || id <= 0) throw new Error('A foreign tool is missing its ID.');
+                if (!seen.has(id)) { matching.push(tool); seen.add(id); }
+            }
+            alternativeState.available = seen;
+            alternativeState.selected = new Set([...alternativeState.selected].filter(id => seen.has(id)));
+            alternativeState.ready = true;
+            if (alternativeState.selected.size) clearFieldError('alternatives-group', 'alternatives-error');
+            if (!matching.length) {
+                summary.textContent = 'No foreign tools in this category';
+                status.textContent = 'No foreign tools are available here. Choose another category.';
+            } else {
+                const rows = document.createDocumentFragment();
+                matching.forEach(tool => {
+                    const id = Number(tool.id);
+                    const label = document.createElement('label');
+                    label.className = 'alternative-option';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.value = String(id);
+                    box.checked = alternativeState.selected.has(id);
+                    const name = document.createElement('span');
+                    name.className = 'alternative-option-name';
+                    name.textContent = String(tool.name || tool.slug || `Tool ${id}`);
+                    label.append(box, makeAlternativeToolLogo(tool, name.textContent), name);
+                    rows.appendChild(label);
+                });
+                panel.appendChild(rows);
+                trigger.disabled = false;
+                updateAlternativeSummary();
+            }
+            // Reconcile a restored draft with tools removed or re-categorised
+            // since it was saved, without ever sending unavailable IDs.
+            scheduleDraftSave();
+        } catch (error) {
+            if (requestId !== alternativeState.requestId) return;
+            summary.textContent = 'Alternatives unavailable';
+            status.textContent = `Could not load alternatives. ${error.message}`;
+            retry.classList.remove('hidden');
+        }
+    }
+
+    // Decorative catalog logo beside each choice; keep a readable fallback
+    // for missing/broken image URLs without affecting checkbox selection.
+    function makeAlternativeToolLogo(tool, displayName) {
+        const fallback = document.createElement('span');
+        fallback.className = 'alternative-option-logo-fallback';
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.textContent = displayName.trim().charAt(0).toUpperCase() || '?';
+        const logoUrl = typeof tool.logo_url === 'string' ? tool.logo_url.trim() : '';
+        if (!/^(https?:\/\/|\/(?!\/))\S+/i.test(logoUrl)) return fallback;
+        const logo = document.createElement('img');
+        logo.className = 'alternative-option-logo';
+        logo.src = logoUrl;
+        logo.alt = '';
+        logo.loading = 'lazy';
+        logo.addEventListener('error', () => logo.replaceWith(fallback), { once: true });
+        return logo;
+    }
+
     /* Step 1 = product information. Every required field gets an inline
        message; we never rely on browser-default validation bubbles.
        NOTE: user_count_range now lives in Step 1 (moved from Step 2 — it's
@@ -194,6 +353,8 @@
             { ok: !name || name.value.trim().length >= 2, group: 'name-group', err: 'name-error', msg: 'Please enter the product name (at least 2 characters).', el: name },
             { ok: !description || description.value.trim().length >= 20, group: 'description-group', err: 'description-error', msg: 'Please describe your tool in at least 20 characters.', el: description },
             { ok: !category || category.value !== '', group: 'category-group', err: 'category-error', msg: 'Please choose a category.', el: category },
+            { ok: alternativeState.ready && alternativeState.category === category?.value && alternativeState.selected.size > 0,
+              group: 'alternatives-group', err: 'alternatives-error', msg: 'Alternative is compulsory, pick one.', el: get('alternative-trigger') },
             { ok: !productType || productType.value !== '', group: 'product-type-group', err: 'product-type-error', msg: 'Please choose a product type.', el: productType },
             { ok: !pricing || pricing.value !== '', group: 'pricing-group', err: 'pricing-error', msg: 'Please choose a pricing model.', el: pricing },
             { ok: !details || details.value.trim() !== '', group: 'pricing-details-group', err: 'pricing-details-error', msg: 'Pricing details are required \u2014 e.g. \u201cFree to use\u201d or \u201c\u20a65,000/month\u201d.', el: details },
@@ -244,17 +405,19 @@
     /* ==========================================================================
        2e. Contextual help popovers (? icons) — desktop hover/click, mobile tap
        ========================================================================== */
-    const HELP_KEYS = ['pricing', 'pricing-details'];
-    // Field that each help bubble belongs to — focusing the field itself
-    // (not just the ? icon) also surfaces the guidance (item 7).
+    const HELP_KEYS = ['pricing', 'pricing-details', 'alternatives'];
+    // Pricing fields also show guidance on focus; Alternative To only opens
+    // from its ? button so focusing the dropdown does not cover the options.
     const HELP_FIELD_IDS = { 'pricing': 'pricing', 'pricing-details': 'pricing_details' };
+
+    const pinnedHelpPops = new Set();
 
     function setupContextHelp() {
         HELP_KEYS.forEach(key => {
             const btn = document.getElementById(key + '-help-btn');
             const pop = document.getElementById(key + '-help-pop');
             const closeBtn = document.getElementById(key + '-help-close');
-            const field = document.getElementById(HELP_FIELD_IDS[key]);
+            const field = HELP_FIELD_IDS[key] ? document.getElementById(HELP_FIELD_IDS[key]) : null;
             if (!btn || !pop) return;
 
             const setOpen = (open) => {
@@ -262,14 +425,31 @@
                 btn.setAttribute('aria-expanded', open ? 'true' : 'false');
             };
 
-            btn.addEventListener('click', () => setOpen(pop.classList.contains('hidden')));
-            btn.addEventListener('mouseenter', () => setOpen(true));   // desktop hover
-            btn.addEventListener('mouseleave', () => setOpen(false));  // desktop hover-out
+            // A mouseenter precedes a desktop click. Pin clicked help open
+            // instead of accidentally toggling that hover-open popover shut.
+            btn.addEventListener('click', () => {
+                if (pinnedHelpPops.has(key)) {
+                    pinnedHelpPops.delete(key);
+                    setOpen(false);
+                } else {
+                    pinnedHelpPops.add(key);
+                    setOpen(true);
+                }
+            });
+            btn.addEventListener('mouseenter', () => setOpen(true));
+            btn.addEventListener('mouseleave', () => {
+                if (!pinnedHelpPops.has(key)) setOpen(false);
+            });
             if (field) {
-                field.addEventListener('focus', () => setOpen(true));  // keyboard/tab focus
-                field.addEventListener('blur', () => setOpen(false));
+                field.addEventListener('focus', () => setOpen(true));
+                field.addEventListener('blur', () => {
+                    if (!pinnedHelpPops.has(key)) setOpen(false);
+                });
             }
-            if (closeBtn) closeBtn.addEventListener('click', () => setOpen(false));
+            if (closeBtn) closeBtn.addEventListener('click', () => {
+                pinnedHelpPops.delete(key);
+                setOpen(false);
+            });
         });
 
         // Click anywhere else closes any open popover.
@@ -281,6 +461,7 @@
     }
 
     function closeAllHelpPops() {
+        pinnedHelpPops.clear();
         HELP_KEYS.forEach(key => {
             const btn = document.getElementById(key + '-help-btn');
             const pop = document.getElementById(key + '-help-pop');
@@ -334,6 +515,7 @@
             founder: form.founder.value.trim(),
             description: form.description.value.trim(),
             category: form.category.value,
+            foreign_tool_ids: Array.from(alternativeState.selected),
             product_type: form.product_type.value,
             website: form.website.value.trim(),
             pricing: form.pricing.value,
@@ -403,6 +585,7 @@
 
             clearAutosavedDraft(); // successful submission — don't let it come back as a "restored draft" next time
             form.reset(); // also clear the visible fields, so nothing stale lingers if the redirect is delayed
+            loadAlternativesForCategory(); // reset checkbox state with the other form fields
             const keywordsEl = document.getElementById('keywords');
             if (keywordsEl && typeof window.renderKeywordChipsFromValue === 'function') {
                 window.renderKeywordChipsFromValue(''); // clear keyword chips too — form.reset() doesn't touch the tag widget's own state
@@ -534,7 +717,7 @@
     const DRAFT_DEBOUNCE_MS = 400;
 
     // Plain text/url/email/number inputs + selects + textarea, all keyed by id.
-    // Keywords (tag widget) and the checkbox are handled separately below.
+    // Keywords stay excluded; terms and Alternative To checkboxes are handled separately.
     const AUTOSAVE_FIELD_IDS = [
         'name', 'description', 'category', 'product_type', 'pricing', 'pricing_details',
         'website', 'user_count_range', 'logo_url',
@@ -570,7 +753,7 @@
         // in DOMContentLoaded, so we can check the real auth state here).
         const isLoggedIn = !!localStorage.getItem(TOKEN_KEY);
         if (isLoggedIn) {
-            restoreDraftIfAny();
+            if (!restoreDraftIfAny()) loadAlternativesForCategory();
         }
         // If not logged in, we simply don't restore now. The draft stays
         // in localStorage untouched, and will be picked up the next time
@@ -592,9 +775,9 @@
                 if (el) data[id] = el.value;
             });
 
-            // NOTE: keywords are intentionally NOT included in the saved
-            // draft (see restoreDraftIfAny for why) — the tag widget
-            // manages its own state and isn't part of autosave.
+            // The checkbox widget saves its selected numeric IDs alongside
+            // the ordinary fields. Keywords remain intentionally excluded.
+            data.foreign_tool_ids = Array.from(alternativeState.selected);
 
             const agreeEl = document.getElementById('agree-terms');
             if (agreeEl) data.agree_terms = agreeEl.checked;
@@ -644,13 +827,11 @@
             }
         });
 
-        // NOTE: keywords are intentionally NOT autosaved/restored. The
-        // keyword-tag widget (submit-tags.js) keeps its own in-memory
-        // state independent of this draft system, and restoring it here
-        // caused unreliable/duplicate-looking results. Most sites don't
-        // autosave tag/chip inputs either — the user re-adds keywords
-        // after a refresh, and the submit-time validation message (see
-        // handleFormSubmit) makes it obvious if they forget.
+        // Keywords are intentionally NOT autosaved/restored. The separate
+        // tag widget still requires users to re-add them after a refresh.
+        // Alternatives are restored only after the category-matched GET loads;
+        // IDs no longer offered for that category are discarded.
+        restoreAlternativeSelections(data.foreign_tool_ids);
         if (typeof data.agree_terms === 'boolean') {
             const agreeEl = document.getElementById('agree-terms');
             if (agreeEl) agreeEl.checked = data.agree_terms;
@@ -672,6 +853,7 @@
         goToStep(step);
 
         showDraftRestoredBanner();
+        return true;
     }
 
     function clearAutosavedDraft() {

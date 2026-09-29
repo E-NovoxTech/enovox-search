@@ -81,6 +81,8 @@ class Submission(Base):
     rejection_reason = Column(Text, nullable=True)
     developer_id = Column(Integer, ForeignKey("developers.id"), nullable=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
+    foreign_tool_ids = Column(String, nullable=True)
+    
     
 class User(Base):
     __tablename__ = "users"
@@ -151,4 +153,22 @@ class SavedProduct(Base):
     account_type = Column(String, nullable=False)  # "developer" or "user"
     account_id = Column(Integer, nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    created_at = Column(Date, default=date.today)
+    
+class ForeignTool(Base):
+    __tablename__ = "foreign_tools"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    logo_url = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    category = Column(String, nullable=False)
+    created_at = Column(Date, default=date.today)
+
+
+class ProductAlternative(Base):
+    __tablename__ = "product_alternatives"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    foreign_tool_id = Column(Integer, ForeignKey("foreign_tools.id"), nullable=False)
     created_at = Column(Date, default=date.today)

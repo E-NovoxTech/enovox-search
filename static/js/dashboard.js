@@ -429,6 +429,10 @@
     let editingItem = null;
     let editingKind = null; // 'product' | 'submission'
     let editingOriginal = null;
+    const editAlternativeState = {
+        requestId: 0, category: '', ready: false, sourceKnown: false,
+        available: new Set(), selected: new Set(), original: new Set()
+    };
 
     // Full editable field list — matches submit.html. Company-field note:
     // the form/DOM field is "company", but the WIRE key differs per endpoint
@@ -454,6 +458,7 @@
         populateEditCategoryOptions();
         setupEditPricingDetailsToggle();
         setupEditKeywordsWidget();
+        setupEditAlternatives();
 
         closeBtn.addEventListener('click', closeEditModal);
         cancelBtn.addEventListener('click', closeEditModal);
@@ -490,6 +495,267 @@
         if (!detailsInput || !label) return;
         detailsInput.required = true;
         label.textContent = 'Pricing Details *';
+    }
+
+    /* Alternative To: same select-like disclosure used by the submit form. */
+    function parseEditForeignToolIds(raw) {
+        const values = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(',') : []);
+        return new Set(values.map(value => {
+            // Product-alternative link records can have their OWN id as well
+            // as foreign_tool_id. Only the latter identifies the checkbox.
+            const toolId = value && typeof value === 'object'
+                ? (value.foreign_tool_id ?? value.foreign_tool?.id ?? value.id) : value;
+            return typeof toolId === 'string' && !toolId.trim() ? NaN : Number(toolId);
+        }).filter(id => Number.isSafeInteger(id) && id > 0));
+    }
+
+    function editAlternativeLinksArray(raw) {
+        if (Array.isArray(raw)) return raw;
+        // Accept both the flat list and common envelope shapes without ever
+        // interpreting a product/link record's id as a foreign tool id.
+        if (raw && typeof raw === 'object') {
+            for (const key of ['alternatives', 'foreign_tools', 'foreign_tool_ids']) {
+                if (Array.isArray(raw[key])) return raw[key];
+            }
+        }
+        return null;
+    }
+
+    let editHelpPinned = false;
+    function setEditAlternativeHelpOpen(open) {
+        const pop = document.getElementById('edit-alternatives-help-pop');
+        const btn = document.getElementById('edit-alternatives-help-btn');
+        pop.classList.toggle('hidden', !open);
+        btn.setAttribute('aria-expanded', String(!!open));
+        if (!open) editHelpPinned = false;
+    }
+
+    function setupEditAlternatives() {
+        const category = document.getElementById('edit_category');
+        const trigger = document.getElementById('edit-alternative-trigger');
+        const dropdown = document.querySelector('#edit-alternatives-group .alternative-dropdown');
+        const panel = document.getElementById('edit-alternative-options');
+        const help = document.getElementById('edit-alternatives-help-btn');
+        const helpPop = document.getElementById('edit-alternatives-help-pop');
+        if (!category || !trigger || !panel) return;
+
+        category.addEventListener('change', () => {
+            const restoreOriginal = category.value === editingOriginal?.category;
+            if (restoreOriginal) editAlternativeState.selected = new Set(editAlternativeState.original);
+            loadEditAlternatives({ keepSelection: restoreOriginal });
+        });
+        trigger.addEventListener('click', () => setEditAlternativeOpen(panel.classList.contains('hidden')));
+        panel.addEventListener('change', event => {
+            const box = event.target.closest('input[type="checkbox"]');
+            if (!box) return;
+            const id = Number(box.value);
+            // An existing saved link may no longer appear in the catalog.
+            // Let its owner uncheck it without silently deleting it on load.
+            if (!editAlternativeState.available.has(id) && !editAlternativeState.original.has(id)) {
+                box.checked = false;
+                return;
+            }
+            if (box.checked) editAlternativeState.selected.add(id);
+            else editAlternativeState.selected.delete(id);
+            updateEditAlternativeSummary();
+            if (editAlternativeState.selected.size) clearEditAlternativeError();
+        });
+        document.getElementById('edit-alternative-retry').addEventListener('click', () =>
+            loadEditAlternatives({ keepSelection: true })
+        );
+        document.addEventListener('click', event => {
+            if (!dropdown.contains(event.target)) setEditAlternativeOpen(false);
+            if (!help.contains(event.target) && !helpPop.contains(event.target)) setEditAlternativeHelpOpen(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                const wasOpen = !panel.classList.contains('hidden');
+                setEditAlternativeOpen(false);
+                setEditAlternativeHelpOpen(false);
+                if (wasOpen) trigger.focus();
+            }
+        });
+        help.addEventListener('mouseenter', () => setEditAlternativeHelpOpen(true));
+        help.addEventListener('mouseleave', () => { if (!editHelpPinned) setEditAlternativeHelpOpen(false); });
+        help.addEventListener('click', () => {
+            if (editHelpPinned) setEditAlternativeHelpOpen(false);
+            else { editHelpPinned = true; setEditAlternativeHelpOpen(true); }
+        });
+        document.getElementById('edit-alternatives-help-close').addEventListener('click', () =>
+            setEditAlternativeHelpOpen(false)
+        );
+    }
+
+    function setEditAlternativeOpen(open) {
+        const panel = document.getElementById('edit-alternative-options');
+        const trigger = document.getElementById('edit-alternative-trigger');
+        const expanded = !!open && !trigger.disabled && editAlternativeState.ready;
+        panel.classList.toggle('hidden', !expanded);
+        trigger.setAttribute('aria-expanded', String(expanded));
+    }
+
+    function updateEditAlternativeSummary() {
+        const count = editAlternativeState.selected.size;
+        document.getElementById('edit-alternative-summary').textContent = count
+            ? `${count} foreign tool${count === 1 ? '' : 's'} selected` : 'Select foreign tools';
+    }
+
+    function setEditAlternativeError(message) {
+        document.getElementById('edit-alternatives-group').classList.add('has-error');
+        document.getElementById('edit-alternatives-error').textContent = message;
+        document.getElementById('edit-alternative-trigger').setAttribute('aria-invalid', 'true');
+    }
+    function clearEditAlternativeError() {
+        document.getElementById('edit-alternatives-group').classList.remove('has-error');
+        document.getElementById('edit-alternatives-error').textContent = '';
+        document.getElementById('edit-alternative-trigger').removeAttribute('aria-invalid');
+    }
+
+    function prepareEditAlternatives(item, kind) {
+        ++editAlternativeState.requestId;
+        editAlternativeState.category = '';
+        editAlternativeState.ready = false;
+        editAlternativeState.sourceKnown = kind === 'submission' &&
+            Object.prototype.hasOwnProperty.call(item, 'foreign_tool_ids');
+        editAlternativeState.available.clear();
+        editAlternativeState.selected = editAlternativeState.sourceKnown
+            ? parseEditForeignToolIds(item.foreign_tool_ids) : new Set();
+        editAlternativeState.original = new Set(editAlternativeState.selected);
+        setEditAlternativeOpen(false);
+        setEditAlternativeHelpOpen(false);
+        clearEditAlternativeError();
+        loadEditAlternatives({ keepSelection: true });
+    }
+
+    async function loadEditAlternatives({ keepSelection = false } = {}) {
+        if (!editingItem || !editingKind) return;
+        const category = document.getElementById('edit_category').value;
+        const requestId = ++editAlternativeState.requestId;
+        editAlternativeState.category = category;
+        editAlternativeState.ready = false;
+        editAlternativeState.available.clear();
+        if (!keepSelection) editAlternativeState.selected.clear();
+
+        const panel = document.getElementById('edit-alternative-options');
+        const trigger = document.getElementById('edit-alternative-trigger');
+        const summary = document.getElementById('edit-alternative-summary');
+        const status = document.getElementById('edit-alternative-status');
+        const retry = document.getElementById('edit-alternative-retry');
+        setEditAlternativeOpen(false);
+        panel.replaceChildren();
+        trigger.disabled = true;
+        status.textContent = '';
+        retry.classList.add('hidden');
+        clearEditAlternativeError();
+        summary.textContent = category ? 'Loading alternatives…' : 'Choose a category first';
+        if (!category) return;
+
+        try {
+            const toolsRequest = fetch(`${API_URL}/products/alternatives/foreign-tools?category=${encodeURIComponent(category)}`);
+            const linksRequest = editingKind === 'product' && !editAlternativeState.sourceKnown
+                ? fetch(`${API_URL}/products/${encodeURIComponent(editingItem.id)}/alternatives`)
+                : Promise.resolve(null);
+            const [toolsRes, linksRes] = await Promise.all([toolsRequest, linksRequest]);
+            if (requestId !== editAlternativeState.requestId) return;
+
+            // Read live-product links before validating the catalog response.
+            // A catalog error must not make saved links appear to be empty.
+            if (linksRes) {
+                if (!linksRes.ok) throw new Error('Could not load linked alternatives.');
+                const linked = editAlternativeLinksArray(await linksRes.json());
+                if (!linked) throw new Error('Invalid linked alternatives response from the server.');
+                if (requestId !== editAlternativeState.requestId) return;
+                editAlternativeState.original = parseEditForeignToolIds(linked);
+                editAlternativeState.sourceKnown = true;
+                if (keepSelection) editAlternativeState.selected = new Set(editAlternativeState.original);
+                updateEditAlternativeSummary();
+            }
+            if (!editAlternativeState.sourceKnown) throw new Error('Existing submission alternatives are unavailable.');
+            if (!toolsRes.ok) throw new Error('Could not load matching foreign tools.');
+            const tools = await toolsRes.json();
+            if (!Array.isArray(tools)) throw new Error('Invalid alternatives response from the server.');
+            if (requestId !== editAlternativeState.requestId) return;
+
+            const matching = [];
+            const seen = new Set();
+            for (const tool of tools) {
+                if (!tool || (tool.category && tool.category !== category)) continue;
+                const id = Number(tool.id);
+                if (!Number.isSafeInteger(id) || id <= 0) throw new Error('A foreign tool is missing its ID.');
+                if (!seen.has(id)) { matching.push(tool); seen.add(id); }
+            }
+            editAlternativeState.available = seen;
+            editAlternativeState.ready = true;
+            const missing = [...editAlternativeState.selected].filter(id => !seen.has(id));
+            if (missing.length) {
+                status.textContent = 'Saved alternatives not in this category list are still selected below. Uncheck one only if you want to remove it.';
+            } else if (linksRes && !editAlternativeState.original.size) {
+                status.textContent = 'This published product has no linked alternatives. If you selected one before approval, the product links may not have been carried over.';
+            }
+            if (!matching.length && !missing.length) {
+                summary.textContent = 'No foreign tools in this category';
+                status.textContent = 'No foreign tools are available here. Choose another category.';
+            } else {
+                const rows = document.createDocumentFragment();
+                missing.forEach(id => {
+                    const label = document.createElement('label');
+                    label.className = 'alternative-option is-unavailable';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.value = String(id);
+                    box.checked = true;
+                    const name = document.createElement('span');
+                    name.className = 'alternative-option-name';
+                    name.textContent = `Previously linked tool #${id} (not in this category list)`;
+                    label.append(box, name);
+                    rows.appendChild(label);
+                });
+                matching.forEach(tool => {
+                    const id = Number(tool.id);
+                    const label = document.createElement('label');
+                    label.className = 'alternative-option';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.value = String(id);
+                    box.checked = editAlternativeState.selected.has(id);
+                    const name = document.createElement('span');
+                    name.className = 'alternative-option-name';
+                    name.textContent = String(tool.name || tool.slug || `Tool ${id}`);
+                    label.append(box, makeEditAlternativeToolLogo(tool, name.textContent), name);
+                    rows.appendChild(label);
+                });
+                panel.appendChild(rows);
+                trigger.disabled = false;
+                updateEditAlternativeSummary();
+                if (!matching.length) status.textContent += ' No new foreign tools are available in this category.';
+            }
+        } catch (error) {
+            if (requestId !== editAlternativeState.requestId) return;
+            if (editAlternativeState.sourceKnown && editAlternativeState.selected.size) {
+                updateEditAlternativeSummary();
+                status.textContent = `${error.message} Saved tool IDs: ${[...editAlternativeState.selected].map(id => `#${id}`).join(', ')}. Retry to edit safely.`;
+            } else {
+                summary.textContent = 'Alternatives unavailable';
+                status.textContent = error.message;
+            }
+            retry.classList.remove('hidden');
+        }
+    }
+
+    function makeEditAlternativeToolLogo(tool, displayName) {
+        const fallback = document.createElement('span');
+        fallback.className = 'alternative-option-logo-fallback';
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.textContent = displayName.trim().charAt(0).toUpperCase() || '?';
+        const logoUrl = typeof tool.logo_url === 'string' ? tool.logo_url.trim() : '';
+        if (!/^(https?:\/\/|\/(?!\/))\S+/i.test(logoUrl)) return fallback;
+        const logo = document.createElement('img');
+        logo.className = 'alternative-option-logo';
+        logo.src = logoUrl;
+        logo.alt = '';
+        logo.loading = 'lazy';
+        logo.addEventListener('error', () => logo.replaceWith(fallback), { once: true });
+        return logo;
     }
 
     /* Keywords tag-input widget — same behavior as submit-tags.js, scoped to
@@ -599,9 +865,15 @@
         alertEl.textContent = '';
 
         document.getElementById('edit-item-modal').classList.remove('hidden');
+        prepareEditAlternatives(item, kind);
     }
 
     function closeEditModal() {
+        ++editAlternativeState.requestId; // Ignore any GET from a closed modal.
+        editAlternativeState.ready = false;
+        editAlternativeState.selected.clear();
+        setEditAlternativeOpen(false);
+        setEditAlternativeHelpOpen(false);
         editingItem = null;
         editingKind = null;
         document.getElementById('edit-item-modal').classList.add('hidden');
@@ -616,13 +888,24 @@
         const alertEl = document.getElementById('edit-modal-alert');
         alertEl.className = 'alert hidden';
 
-        // Pricing Details required only when Pricing = Paid (same rule as submit.html)
+        // Pricing details and alternatives are required for every pricing model.
         clearEditFieldError('edit_pricing_details');
         if (form.pricing_details.value.trim() === '') {
-            setEditFieldError('edit_pricing_details', 'Please specify pricing details for paid products.');
+            setEditFieldError('edit_pricing_details', 'Pricing details are required.');
             form.pricing_details.focus();
             return;
         }
+        if (!editAlternativeState.ready || !editAlternativeState.sourceKnown ||
+            editAlternativeState.category !== form.category.value) {
+            setEditAlternativeError('Wait for matching alternatives to load before saving.');
+            return;
+        }
+        if (!editAlternativeState.selected.size) {
+            setEditAlternativeError('Alternative is compulsory, pick one.');
+            document.getElementById('edit-alternative-trigger').focus();
+            return;
+        }
+        clearEditAlternativeError();
 
         // Only send fields that actually changed from what was loaded.
         const current = {};
@@ -634,10 +917,15 @@
             if (current[key] !== (editingOriginal[key] || '')) payload[key] = current[key];
         });
 
-        if (Object.keys(payload).length === 0) {
+        const selectedIds = Array.from(editAlternativeState.selected);
+        const alternativesChanged = selectedIds.length !== editAlternativeState.original.size ||
+            selectedIds.some(id => !editAlternativeState.original.has(id));
+        if (Object.keys(payload).length === 0 && !alternativesChanged) {
             closeEditModal();
             return;
         }
+        // Both existing edit endpoints accept this same array as the original submit form.
+        payload.foreign_tool_ids = selectedIds;
 
         // Wire-key mapping (confirmed): the products table column is
         // "company_name", the submissions table column is "company".

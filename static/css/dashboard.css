@@ -429,3 +429,202 @@
         width: 100%;
     }
 }
+
+#edit-alternatives-group { position: relative; }
+#edit-alternatives-group .help-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--color-blue);
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.85;
+}
+#edit-alternatives-group .help-trigger:hover,
+#edit-alternatives-group .help-trigger:focus-visible { opacity: 1; }
+#edit-alternatives-group .field-help-pop {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 8px);
+    left: 0;
+    width: min(100%, 360px);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-card);
+    box-shadow: var(--card-shadow);
+    padding: 1rem 1.1rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: left;
+}
+#edit-alternatives-group .field-help-pop h5 { margin: 0 0 0.35rem; font-size: 0.9rem; color: var(--text-main); }
+#edit-alternatives-group .field-help-pop p { margin: 0 0 0.4rem; }
+#edit-alternatives-group .field-help-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.6rem;
+    padding: 0.15rem;
+    background: none;
+    border: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+/* Alternative To: same dropdown/checklist as submit.html, scoped to the edit modal. */
+#edit-alternatives-group .alternative-label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+#edit-alternatives-group .alternative-label-row label { margin: 0; }
+#edit-alternatives-group .help-trigger { flex: none; margin-left: 0; }
+#edit-alternatives-group .alternative-dropdown { width: 100%; min-width: 0; }
+#edit-alternatives-group .alternative-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 46px;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+}
+#edit-alternatives-group .alternative-dropdown-trigger:hover:not(:disabled) { border-color: var(--color-blue); }
+#edit-alternatives-group .alternative-dropdown-trigger:focus-visible {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+#edit-alternatives-group .alternative-dropdown-trigger:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+#edit-alternatives-group .alternative-dropdown-trigger span {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#edit-alternatives-group .alternative-chevron { flex: none; transition: transform 0.15s; }
+#edit-alternative-trigger[aria-expanded="true"] .alternative-chevron { transform: rotate(180deg); }
+#edit-alternatives-group .alternative-options {
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-card);
+}
+#edit-alternatives-group .alternative-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    margin: 0;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    font-weight: 500;
+}
+#edit-alternatives-group .alternative-option:last-child { border-bottom: 0; }
+#edit-alternatives-group .alternative-option:hover { background-color: var(--hover-bg); }
+#edit-alternatives-group .alternative-option.is-unavailable { background-color: var(--bg-main); }
+#edit-alternatives-group .alternative-option.is-unavailable .alternative-option-name { color: var(--text-muted); }
+#edit-alternatives-group .alternative-option-name { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+#edit-alternatives-group .alternative-option-logo,
+#edit-alternatives-group .alternative-option-logo-fallback {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    object-fit: contain;
+    background: var(--bg-main);
+}
+#edit-alternatives-group .alternative-option-logo-fallback {
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Override the modal's full-width input rule only for these checkboxes. */
+#edit-item-form #edit-alternatives-group .alternative-option input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    flex: 0 0 20px;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    max-width: 20px;
+    min-height: 20px;
+    max-height: 20px;
+    padding: 0 !important;
+    margin: 0;
+    border: 1.5px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-main);
+    cursor: pointer;
+}
+#edit-alternatives-group .alternative-option input[type="checkbox"]:checked {
+    background-color: var(--color-blue) !important;
+    border-color: var(--color-blue) !important;
+}
+#edit-alternatives-group .alternative-option input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 11px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+#edit-alternatives-group .alternative-option input[type="checkbox"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+}
+#edit-alternatives-group.has-error .alternative-dropdown-trigger { border-color: #be123c; }
+#edit-alternatives-group .alternative-status { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
+#edit-alternatives-group .alternative-status:empty { display: none; }
+#edit-alternatives-group .alternative-retry {
+    align-self: flex-start !important;
+    min-height: 40px;
+    padding: 0.35rem 0;
+    border: 0;
+    background: none;
+    color: var(--color-blue);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+/* Keep this full-width field's tooltip inside the form card on wide screens. */
+#edit-alternatives-group .field-help-pop { left: 0; right: auto; top: calc(100% + 8px); width: min(100%, 360px); }
+@media (max-width: 600px) {
+    #edit-alternatives-group .help-trigger { width: 22px; height: 22px; font-size: 0.75rem; }
+    #edit-alternatives-group .alternative-dropdown-trigger { min-height: 48px; }
+    #edit-alternatives-group .alternative-option { min-height: 48px; padding: 0.75rem; }
+    #edit-alternatives-group .alternative-options { max-height: min(260px, 40vh); }
+}

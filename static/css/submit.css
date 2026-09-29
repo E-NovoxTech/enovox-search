@@ -808,3 +808,153 @@
 .form-group textarea::placeholder {
     text-align: left;
 }
+/* Alternative To: select-like disclosure with a scrollable checkbox panel. */
+#alternatives-group .alternative-label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+#alternatives-group .alternative-label-row label { margin: 0; }
+#alternatives-group .help-trigger { flex: none; margin-left: 0; }
+#alternatives-group .alternative-dropdown { width: 100%; min-width: 0; }
+#alternatives-group .alternative-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 46px;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-size: 0.95rem;
+    text-align: left;
+    cursor: pointer;
+}
+#alternatives-group .alternative-dropdown-trigger:hover:not(:disabled) { border-color: var(--color-blue); }
+#alternatives-group .alternative-dropdown-trigger:focus-visible {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+#alternatives-group .alternative-dropdown-trigger:disabled {
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+#alternatives-group .alternative-dropdown-trigger span {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#alternatives-group .alternative-chevron { flex: none; transition: transform 0.15s; }
+#alternative-trigger[aria-expanded="true"] .alternative-chevron { transform: rotate(180deg); }
+#alternatives-group .alternative-options {
+    width: 100%;
+    max-height: 250px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-card);
+}
+#alternatives-group .alternative-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    margin: 0;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    font-weight: 500;
+}
+#alternatives-group .alternative-option:last-child { border-bottom: 0; }
+#alternatives-group .alternative-option:hover { background-color: var(--hover-bg); }
+#alternatives-group .alternative-option-name { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+#alternatives-group .alternative-option-logo,
+#alternatives-group .alternative-option-logo-fallback {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 5px;
+    object-fit: contain;
+    background: var(--bg-main);
+}
+#alternatives-group .alternative-option-logo-fallback {
+    display: grid;
+    place-items: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+/* Override the submission form's general full-width input rule only for these checkboxes. */
+#submit-tool-form #alternatives-group .alternative-option input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    position: relative;
+    flex: 0 0 20px;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    max-width: 20px;
+    min-height: 20px;
+    max-height: 20px;
+    padding: 0 !important;
+    margin: 0;
+    border: 1.5px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-main);
+    cursor: pointer;
+}
+#alternatives-group .alternative-option input[type="checkbox"]:checked {
+    background-color: var(--color-blue) !important;
+    border-color: var(--color-blue) !important;
+}
+#alternatives-group .alternative-option input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 11px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+#alternatives-group .alternative-option input[type="checkbox"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+}
+#alternatives-group.has-error .alternative-dropdown-trigger { border-color: #be123c; }
+#alternatives-group .alternative-status { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
+#alternatives-group .alternative-status:empty { display: none; }
+#alternatives-group .alternative-retry {
+    align-self: flex-start !important;
+    min-height: 40px;
+    padding: 0.35rem 0;
+    border: 0;
+    background: none;
+    color: var(--color-blue);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+/* Keep this full-width field's tooltip inside the form card on wide screens. */
+#alternatives-group .field-help-pop { left: 0; right: auto; top: calc(100% + 8px); width: min(100%, 360px); }
+@media (max-width: 600px) {
+    /* The generic mobile form rule adds a second 1.5rem inset inside the card.
+       Keep all product fields aligned while giving dropdown labels room to wrap. */
+    .submit-page { padding: 1.5rem 0.75rem; }
+    .submit-page .form-container { padding: 1.25rem; }
+    #submit-tool-form { width: 100%; max-width: 100%; margin: 1rem 0 0; padding: 0 !important; overflow: visible; }
+    #alternatives-group .alternative-dropdown-trigger { min-height: 48px; }
+    #alternatives-group .alternative-option { min-height: 48px; padding: 0.75rem; }
+    #alternatives-group .alternative-options { max-height: min(260px, 40vh); }
+}

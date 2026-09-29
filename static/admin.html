@@ -85,6 +85,7 @@
                 </div>
                 <nav class="sidebar-nav">
                     <button class="nav-tab active" data-target="products-tab">Products</button>
+                    <button class="nav-tab" data-target="alternatives-tab">Alternatives</button>
                     <button class="nav-tab" data-target="submissions-tab">Submissions</button>
                     <button class="nav-tab" data-target="developers-tab">Developers</button>
                     <button class="nav-tab" data-target="claims-tab">Claims</button>
@@ -218,6 +219,40 @@
                         </table>
                     </div>
                     <div class="pagination-bar" id="products-pagination"></div>
+                </section>
+
+                <!-- ALTERNATIVES TAB -->
+                <section id="alternatives-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Foreign Tools</h2>
+                        <div class="section-header-actions">
+                            <button type="button" id="open-foreign-tool-btn" class="btn-primary">+ Add Foreign Tool</button>
+                        </div>
+                    </div>
+                    <div id="foreign-tools-error" class="alert error hidden" role="alert"></div>
+                    <div class="toolbar">
+                        <input type="text" id="foreign-tools-search" placeholder="Search by name..." aria-label="Search foreign tools by name">
+                        <select id="foreign-tools-category-filter" aria-label="Filter foreign tools by category">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th># Nigerian Tools</th>
+                                    <th>Category</th>
+                                    <th>Date Added</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="foreign-tools-table-body">
+                                <tr><td colspan="5" class="text-muted">Open this tab to load foreign tools.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-bar" id="foreign-tools-pagination"></div>
                 </section>
 
                 <!-- SUBMISSIONS TAB -->
@@ -624,8 +659,59 @@
                     <textarea name="description" rows="4" required></textarea>
                 </div>
 
+                <div id="product-alternatives-section" class="form-group full-width hidden">
+                    <label for="product-alternatives-trigger">Alternative To</label>
+                    <div class="product-alternative-control">
+                        <button type="button" id="product-alternatives-trigger" class="product-alternative-trigger"
+                                aria-expanded="false" aria-controls="product-alternatives-picker" disabled>
+                            <span id="product-alternatives-summary">Select foreign tools</span>
+                            <svg class="product-alternative-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div id="product-alternatives-picker" class="nl-product-picker hidden" role="group" aria-label="Foreign tools this product is an alternative to"></div>
+                    </div>
+                    <div id="product-alternatives-status" class="text-muted" role="status"></div>
+                    <div id="product-alternatives-error" class="alert error hidden" role="alert"></div>
+                    <div><button type="button" id="retry-product-alternatives" class="btn-secondary btn-small hidden">Retry loading alternatives</button></div>
+                </div>
+                <div id="product-modal-error" class="alert error hidden" role="alert"></div>
                 <div class="modal-actions">
                     <button type="submit" class="btn-primary" id="save-product-btn">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add / Edit Foreign Tool Modal -->
+    <div id="foreign-tool-modal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="foreign-tool-modal-title">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="foreign-tool-modal-title">Add Foreign Tool</h2>
+                <button type="button" id="close-foreign-tool-btn" class="close-btn" aria-label="Close foreign tool form">&times;</button>
+            </div>
+            <form id="foreign-tool-form">
+                <input type="hidden" id="foreign-tool-id">
+                <div class="form-group">
+                    <label for="foreign-tool-name">Name *</label>
+                    <input type="text" id="foreign-tool-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="foreign-tool-logo">Logo URL *</label>
+                    <input type="url" id="foreign-tool-logo" placeholder="https://example.com/logo.png" required>
+                </div>
+                <div class="form-group">
+                    <label for="foreign-tool-description">Short Description *</label>
+                    <textarea id="foreign-tool-description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="foreign-tool-category">Category *</label>
+                    <select id="foreign-tool-category" required>
+                        <option value="" disabled selected>Select a category</option>
+                    </select>
+                </div>
+                <div id="foreign-tool-form-error" class="alert error hidden" role="alert"></div>
+                <div class="modal-actions">
+                    <button type="button" id="cancel-foreign-tool-btn" class="btn-secondary">Cancel</button>
+                    <button type="submit" id="save-foreign-tool-btn" class="btn-primary">Save Foreign Tool</button>
                 </div>
             </form>
         </div>
