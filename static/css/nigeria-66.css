@@ -9,6 +9,102 @@
     min-height: 62vh;
 }
 
+/* Countdown replaces the showcase until the server confirms the release time. */
+.nigeria66-page [hidden] { display: none !important; }
+
+.nigeria66-countdown {
+    display: grid;
+    place-items: center;
+    min-height: clamp(460px, 70vh, 690px);
+    padding: clamp(3.5rem, 8vw, 6rem) 1.25rem;
+    text-align: center;
+    background:
+        radial-gradient(ellipse 58% 85% at 50% 0%, rgba(0, 135, 81, 0.12), transparent 100%),
+        linear-gradient(180deg, #f4faf6 0%, #ffffff 100%);
+    border-bottom: 1px solid var(--n66-border);
+}
+
+.nigeria66-countdown-inner {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.nigeria66-countdown h1 {
+    margin: 1.25rem auto 0.85rem;
+    color: var(--n66-ink);
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.14;
+    text-wrap: balance;
+}
+
+.nigeria66-countdown-intro {
+    max-width: 540px;
+    margin: 0 auto;
+    color: var(--n66-muted);
+    font-size: clamp(0.95rem, 1.3vw, 1.1rem);
+    line-height: 1.6;
+}
+
+.nigeria66-clock {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+    max-width: 590px;
+    margin: 2rem auto 0;
+}
+
+.nigeria66-clock-unit {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 110px;
+    padding: 1rem 0.4rem;
+    border: 1px solid var(--n66-border);
+    border-radius: 18px;
+    background: var(--n66-surface);
+    box-shadow: 0 4px 18px rgba(12, 72, 42, 0.04);
+}
+
+.nigeria66-clock-unit strong {
+    color: #008751;
+    font-size: clamp(1.7rem, 4vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.nigeria66-clock-unit span {
+    color: var(--n66-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.nigeria66-clock-status {
+    min-height: 1.5em;
+    margin: 1.25rem auto 0;
+    color: var(--n66-muted);
+    font-size: 0.88rem;
+}
+
+.dark-mode .nigeria66-countdown {
+    background:
+        radial-gradient(ellipse 58% 85% at 50% 0%, rgba(16, 185, 129, 0.13), transparent 100%),
+        linear-gradient(180deg, #163529, #10231d);
+}
+
+@media (max-width: 420px) {
+    .nigeria66-countdown { padding: 3.5rem 1rem; }
+    .nigeria66-clock { gap: 0.45rem; }
+    .nigeria66-clock-unit { min-height: 90px; border-radius: 13px; }
+    .nigeria66-clock-unit span { font-size: 0.62rem; letter-spacing: 0.035em; }
+}
+
 .nigeria66-hero {
     padding: clamp(3.5rem, 6vw, 5.75rem) 1.25rem clamp(3.2rem, 5vw, 4.75rem);
     text-align: center;

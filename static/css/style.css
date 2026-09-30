@@ -3211,3 +3211,88 @@ body {
     box-shadow: 0 0 0 1px rgba(0, 95, 52, 0.14);
 }
 .nav-links .nigeria66-flag-icon { margin-right: 0.35rem; }
+
+/* TEMPORARY INDEPENDENCE DAY PROMO — START
+   Remove this entire block and the matching section in index.html after Independence Day. */
+.independence-day-feature {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    width: calc(100% - 4rem);
+    max-width: 936px;
+    margin: 0 auto 3rem;
+    padding: clamp(1.4rem, 3vw, 2rem);
+    border: 1.5px solid rgba(0, 135, 81, 0.32);
+    border-radius: 22px;
+    background: linear-gradient(110deg, rgba(0, 135, 81, 0.075), var(--bg-card) 65%, rgba(37, 99, 235, 0.035));
+    box-shadow: var(--card-shadow);
+}
+
+.independence-day-feature-copy { min-width: 0; }
+.independence-day-feature-kicker {
+    margin-bottom: 0.4rem;
+    color: var(--color-green);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.independence-day-feature h2 {
+    margin: 0 0 0.4rem;
+    color: var(--text-main);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+}
+.independence-day-feature-copy > p:last-child {
+    color: var(--text-muted);
+    font-size: 0.94rem;
+    line-height: 1.5;
+}
+.independence-day-feature-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    gap: 0.55rem;
+    padding: 0.85rem 1rem;
+    border-radius: 11px;
+    background: var(--color-green);
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.independence-day-feature-link:hover {
+    background: #006c41;
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+.independence-day-feature-link:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 3px;
+}
+.independence-day-feature-link svg { flex-shrink: 0; }
+.dark-mode .independence-day-feature {
+    border-color: rgba(16, 185, 129, 0.46);
+    background: linear-gradient(110deg, rgba(16, 185, 129, 0.13), var(--bg-card) 75%);
+}
+
+@media (max-width: 700px) {
+    .independence-day-feature {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+        padding: 1.4rem;
+        border-radius: 18px;
+    }
+    .independence-day-feature-link { width: 100%; text-align: center; white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .independence-day-feature-link { transition: none; }
+    .independence-day-feature-link:hover { transform: none; }
+}
+/* TEMPORARY INDEPENDENCE DAY PROMO — END */
