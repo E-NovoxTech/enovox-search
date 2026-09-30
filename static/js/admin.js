@@ -68,6 +68,12 @@
     let productAlternativesRequest = 0;
     let productAlternativesState = { id: null, category: '', ready: false };
 
+    // Separate from the existing paginated Developers table and its search.
+    const developerUpdateSelected = new Set(); // Case-insensitive email keys.
+    const DEVELOPER_UPDATE_PAGE_SIZE = 10;
+    let developerUpdatePage = 1;
+    let developerUpdateSending = false;
+
     // Keywords/Tags entered in the manual "Add Product" modal. Reset on open.
     let productKeywordTags = [];
     const MAX_KEYWORD_TAGS = 10;
@@ -159,6 +165,7 @@
         setupNavigation();
         setupEventListeners();
         setupToolbars();
+        setupDeveloperUpdate();
         setupAlternatives();
         setupProductAlternatives();
         setupSubmissionDetailModal();
@@ -600,7 +607,10 @@
         if (tabId === 'products-tab') renderProducts();
         if (tabId === 'alternatives-tab') fetchForeignTools();
         if (tabId === 'submissions-tab') renderSubmissions();
-        if (tabId === 'developers-tab') renderDevelopers();
+        if (tabId === 'developers-tab') {
+            renderDevelopers();
+            renderDeveloperUpdatePicker();
+        }
         if (tabId === 'newsletter-tab') {
             renderNewsletterPicker();
             // Fetch the subscriber list once per session, not on every render.
@@ -2594,6 +2604,206 @@
             state.developersPage = page;
             renderDevelopers();
         });
+    }
+
+    /* ==========================================================================
+       Developer update composer — separate from the original Developers table.
+       Uses the full cached state.developers; its picker has its own pagination
+       and "Select all" spans every page, regardless of table search/filter.
+       ========================================================================== */
+    function developerUpdateRecipients() {
+        const seen = new Set();
+        const recipients = [];
+        state.developers.forEach(developer => {
+            const email = typeof developer?.email === 'string' ? developer.email.trim() : '';
+            if (!email) return;
+            const key = email.toLowerCase();
+            if (seen.has(key)) return; // Never send two copies to the same inbox.
+            seen.add(key);
+            recipients.push({ key, email });
+        });
+        return recipients;
+    }
+
+    function setupDeveloperUpdate() {
+        const list = document.getElementById('developer-update-list');
+        const form = document.getElementById('developer-update-form');
+        if (!list || !form) return;
+
+        list.addEventListener('change', event => {
+            const box = event.target.closest('input[data-developer-email]');
+            if (!box || developerUpdateSending) return;
+            const key = box.dataset.developerEmail;
+            if (!developerUpdateRecipients().some(recipient => recipient.key === key)) return;
+            if (box.checked) developerUpdateSelected.add(key);
+            else developerUpdateSelected.delete(key);
+            syncDeveloperUpdateControls();
+        });
+        document.getElementById('developer-update-select-all').addEventListener('change', event => {
+            if (developerUpdateSending) return;
+            if (event.target.checked) {
+                developerUpdateRecipients().forEach(recipient => developerUpdateSelected.add(recipient.key));
+            } else {
+                developerUpdateSelected.clear();
+            }
+            renderDeveloperUpdatePicker();
+        });
+        document.getElementById('developer-update-prev').addEventListener('click', () => {
+            if (developerUpdateSending) return;
+            --developerUpdatePage;
+            renderDeveloperUpdatePicker();
+        });
+        document.getElementById('developer-update-next').addEventListener('click', () => {
+            if (developerUpdateSending) return;
+            ++developerUpdatePage;
+            renderDeveloperUpdatePicker();
+        });
+        document.getElementById('developer-update-subject').addEventListener('input', syncDeveloperUpdateControls);
+        document.getElementById('developer-update-html').addEventListener('input', syncDeveloperUpdateControls);
+        form.addEventListener('submit', sendDeveloperUpdate);
+        renderDeveloperUpdatePicker();
+    }
+
+    function renderDeveloperUpdatePicker() {
+        const list = document.getElementById('developer-update-list');
+        if (!list) return;
+        const recipients = developerUpdateRecipients();
+        const available = new Set(recipients.map(recipient => recipient.key));
+        for (const key of developerUpdateSelected) {
+            if (!available.has(key)) developerUpdateSelected.delete(key);
+        }
+        const { pageItems, totalPages, safePage } = paginate(recipients, developerUpdatePage, DEVELOPER_UPDATE_PAGE_SIZE);
+        developerUpdatePage = safePage;
+        list.replaceChildren();
+        if (!recipients.length) {
+            const empty = document.createElement('p');
+            empty.className = 'developer-update-empty text-muted';
+            empty.textContent = 'No developer email addresses available.';
+            list.appendChild(empty);
+        } else {
+            pageItems.forEach(recipient => {
+                const row = document.createElement('label');
+                row.className = 'developer-update-row';
+                const box = document.createElement('input');
+                box.type = 'checkbox';
+                box.dataset.developerEmail = recipient.key;
+                box.checked = developerUpdateSelected.has(recipient.key);
+                box.disabled = developerUpdateSending;
+                const email = document.createElement('span');
+                email.textContent = recipient.email;
+                row.append(box, email);
+                list.appendChild(row);
+            });
+        }
+        const pager = document.getElementById('developer-update-pager');
+        pager.classList.toggle('hidden', totalPages <= 1);
+        document.getElementById('developer-update-page-label').textContent =
+            `Page ${safePage} of ${totalPages} · ${recipients.length} developers`;
+        document.getElementById('developer-update-prev').disabled = developerUpdateSending || safePage <= 1;
+        document.getElementById('developer-update-next').disabled = developerUpdateSending || safePage >= totalPages;
+        syncDeveloperUpdateControls();
+    }
+
+    function syncDeveloperUpdateControls() {
+        const recipients = developerUpdateRecipients();
+        const selectedCount = recipients.filter(recipient => developerUpdateSelected.has(recipient.key)).length;
+        const all = document.getElementById('developer-update-select-all');
+        const send = document.getElementById('developer-update-send');
+        if (!all || !send) return;
+        all.checked = recipients.length > 0 && selectedCount === recipients.length;
+        all.indeterminate = selectedCount > 0 && selectedCount < recipients.length;
+        all.disabled = developerUpdateSending || !recipients.length;
+        document.getElementById('developer-update-list').querySelectorAll('input[data-developer-email]').forEach(box => {
+            box.checked = developerUpdateSelected.has(box.dataset.developerEmail);
+            box.disabled = developerUpdateSending;
+        });
+        document.getElementById('developer-update-count').textContent = `${selectedCount} of ${recipients.length} selected`;
+        const subject = document.getElementById('developer-update-subject').value.trim();
+        const htmlBody = document.getElementById('developer-update-html').value.trim();
+        send.disabled = developerUpdateSending || selectedCount === 0 || !subject || !htmlBody;
+        send.textContent = developerUpdateSending ? `Sending to ${selectedCount}...` : 'Send Update';
+    }
+
+    function showDeveloperUpdateResult(type, message) {
+        const result = document.getElementById('developer-update-result');
+        result.textContent = message;
+        result.className = `alert ${type}`;
+    }
+
+    function renderDeveloperUpdateFailures(failed) {
+        const wrap = document.getElementById('developer-update-failed');
+        wrap.replaceChildren();
+        if (!Array.isArray(failed) || !failed.length) {
+            wrap.classList.add('hidden');
+            return;
+        }
+        const heading = document.createElement('strong');
+        heading.textContent = `${failed.length} failed send${failed.length === 1 ? '' : 's'}:`;
+        const list = document.createElement('ul');
+        failed.forEach(item => {
+            const row = document.createElement('li');
+            row.textContent = typeof item === 'string' ? item : item && typeof item === 'object'
+                ? [item.email || item.recipient, item.error || item.reason].filter(Boolean).join(' — ') || JSON.stringify(item)
+                : String(item);
+            list.appendChild(row);
+        });
+        wrap.append(heading, list);
+        wrap.classList.remove('hidden');
+    }
+
+    async function sendDeveloperUpdate(event) {
+        event.preventDefault();
+        if (developerUpdateSending) return;
+        const form = document.getElementById('developer-update-form');
+        const subjectEl = document.getElementById('developer-update-subject');
+        const htmlEl = document.getElementById('developer-update-html');
+        const subject = subjectEl.value.trim();
+        const htmlBody = htmlEl.value; // Send the raw pasted HTML/CSS unmodified.
+        const recipientEmails = developerUpdateRecipients()
+            .filter(recipient => developerUpdateSelected.has(recipient.key))
+            .map(recipient => recipient.email);
+        if (!recipientEmails.length || !subject || !htmlBody.trim()) {
+            showDeveloperUpdateResult('error', 'Select at least one developer and enter a subject and HTML content.');
+            syncDeveloperUpdateControls();
+            return;
+        }
+        const count = recipientEmails.length;
+        if (!window.confirm(`You are about to send this to ${count} developer${count === 1 ? '' : 's'}. Continue?`)) return;
+
+        developerUpdateSending = true;
+        subjectEl.disabled = true;
+        htmlEl.disabled = true;
+        document.getElementById('developer-update-result').className = 'alert hidden';
+        renderDeveloperUpdateFailures(null);
+        renderDeveloperUpdatePicker();
+        try {
+            const response = await fetch(`${API_URL}/products/admin/developers/send-update?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subject, html_body: htmlBody, recipient_emails: recipientEmails })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(typeof data.detail === 'string' ? data.detail
+                    : data.message || `Could not send developer update (status ${response.status}).`);
+            }
+            const failed = Array.isArray(data.failed) ? data.failed : [];
+            const sent = Number.isSafeInteger(Number(data.sent)) ? Number(data.sent) : Math.max(0, count - failed.length);
+            developerUpdateSelected.clear();
+            developerUpdatePage = 1;
+            form.reset();
+            renderDeveloperUpdatePicker();
+            showDeveloperUpdateResult(failed.length ? 'error' : 'success',
+                `${data.message || `Sent to ${sent} developers.`}${failed.length ? ` ${failed.length} failed.` : ''}`);
+            renderDeveloperUpdateFailures(failed);
+        } catch (error) {
+            showDeveloperUpdateResult('error', error.message);
+        } finally {
+            developerUpdateSending = false;
+            subjectEl.disabled = false;
+            htmlEl.disabled = false;
+            renderDeveloperUpdatePicker();
+        }
     }
 
     /* ==========================================================================

@@ -281,6 +281,11 @@ class ForeignToolCreate(BaseModel):
 class ProductAlternativesUpdate(BaseModel):
     foreign_tool_ids: List[int]
     
+class DeveloperUpdateSend(BaseModel):
+    subject: str
+    html_body: str
+    recipient_emails: List[str]
+    
     
 class SubmissionApproveEdits(BaseModel):
     name: Optional[str] = None

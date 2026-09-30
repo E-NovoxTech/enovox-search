@@ -2050,11 +2050,15 @@ body {
     }
 }
 
-/* Mobile slide-out menu is positioned from the top: keep it below the navbar */
+/* On mobile the navbar's backdrop-filter creates a containing block for its
+   menu. Anchor the drawer to the navbar's bottom so the banner offset is
+   applied once, not twice, and allow for the actual header height. */
 @media (max-width: 768px) {
     .nav-links {
-        top: calc(73px + var(--banner-h));
-        height: calc(100vh - 73px - var(--banner-h));
+        position: absolute;
+        top: 100%;
+        height: calc(100vh - var(--banner-h) - 100%);
+        height: calc(100dvh - var(--banner-h) - 100%);
     }
     .site-banner-track {
         font-size: 0.78rem;

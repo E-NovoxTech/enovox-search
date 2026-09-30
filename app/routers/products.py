@@ -596,6 +596,17 @@ def list_newsletter_subscribers(admin_key: str, db: Session = Depends(get_db)):
         "standalone_subscribers": [{"email": e, "subscribed_at": c, "source": "standalone"} for e, c in standalone]
     }
 
+@router.post("/admin/developers/send-update")
+def send_developer_update(admin_key: str, data: schemas.DeveloperUpdateSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    if not data.recipient_emails:
+        return {"message": "No developers selected.", "sent": 0}
+
+    html_body = wrap_in_template(data.subject, data.html_body)
+    results = send_newsletter(data.recipient_emails, data.subject, html_body)
+    return {"message": f"Update sent to {results['sent']} developers.", **results}
 
 @router.get("/unsubscribe")
 def unsubscribe(email: str, db: Session = Depends(get_db)):

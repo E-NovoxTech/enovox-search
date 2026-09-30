@@ -321,6 +321,45 @@
                         </table>
                     </div>
                     <div class="pagination-bar" id="developers-pagination"></div>
+
+                    <!-- Separate developer-email composer; does not affect the table above. -->
+                    <section class="developer-update-panel" id="developer-update-section" aria-labelledby="developer-update-heading">
+                        <div class="developer-update-header">
+                            <h3 id="developer-update-heading">Send Update to Developers</h3>
+                            <p class="text-muted">Choose developer inboxes below. Selection is separate from the table search and includes all pages.</p>
+                        </div>
+                        <div id="developer-update-result" class="alert hidden" role="status" aria-live="polite"></div>
+                        <div id="developer-update-failed" class="developer-update-failed hidden" aria-live="polite"></div>
+                        <div class="form-group">
+                            <div class="developer-update-recipient-heading">
+                                <span id="developer-update-recipient-label">Recipients *</span>
+                                <span id="developer-update-count" class="text-muted" aria-live="polite">0 selected</span>
+                            </div>
+                            <label class="developer-update-select-all">
+                                <input type="checkbox" id="developer-update-select-all" disabled>
+                                <span> Select all </span>
+                            </label>
+                            <div id="developer-update-list" class="developer-update-list" role="group" aria-labelledby="developer-update-recipient-label"></div>
+                            <div id="developer-update-pager" class="developer-update-pager hidden">
+                                <button type="button" class="btn-secondary btn-small" id="developer-update-prev">&laquo; Prev</button>
+                                <span id="developer-update-page-label" class="text-muted"></span>
+                                <button type="button" class="btn-secondary btn-small" id="developer-update-next">Next &raquo;</button>
+                            </div>
+                        </div>
+                        <form id="developer-update-form" novalidate>
+                            <div class="form-group">
+                                <label for="developer-update-subject">Subject *</label>
+                                <input type="text" id="developer-update-subject" placeholder="Email subject line" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="developer-update-html">Email Content (HTML) *</label>
+                                <textarea id="developer-update-html" rows="12" placeholder="<h2>Update for developers</h2>&#10;<p>Write your message here...</p>" required></textarea>
+                            </div>
+                            <div class="developer-update-actions">
+                                <button type="submit" id="developer-update-send" class="btn-primary" disabled>Send Update</button>
+                            </div>
+                        </form>
+                    </section>
                 </section>
                 <!-- CLAIMS TAB -->
                 <section id="claims-tab" class="tab-content hidden">

@@ -101,4 +101,4 @@ def send_newsletter(recipients: list, subject: str, html_body: str):
             results["sent"] += 1
         except Exception as e:
             results["failed"].append({"email": email, "error": str(e)})
-    return results
+    return results  
