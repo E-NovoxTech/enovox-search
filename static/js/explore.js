@@ -134,7 +134,9 @@
      */
     function clearAllFilters() {
         document.getElementById('filter-form').reset();
-        document.getElementById('explore-search').value = '';
+        const searchInput = document.getElementById('explore-search');
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('enovox:autocomplete-reset'));
 
         // Force sort back to default "newest"
         const defaultSort = document.querySelector('input[name="sort"][value="newest"]');
@@ -170,7 +172,9 @@
 
         // Search Input
         const query = params.get('query') || '';
-        document.getElementById('explore-search').value = query;
+        const searchInput = document.getElementById('explore-search');
+        searchInput.value = query;
+        searchInput.dispatchEvent(new Event('enovox:autocomplete-reset'));
 
         // Page Number
         currentPage = parseInt(params.get('page')) || 1;

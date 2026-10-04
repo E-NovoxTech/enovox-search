@@ -38,6 +38,8 @@ if (document.readyState === 'loading') {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initEnovoxProductAutocomplete();
+
     // Generate Home Category Pills with Progressive Reveal
     const pillsContainer = document.getElementById('home-category-pills');
     const toggleBtn = document.getElementById('pill-toggle-btn');
@@ -106,6 +108,389 @@ document.addEventListener('DOMContentLoaded', () => {
         loadGridData();
     }
 });
+
+/* ==========================================================================
+   Product autocomplete for homepage + Explore search bars
+   Uses the lightweight autocomplete endpoint when available, with a fallback
+   to the existing filtered products endpoint while the backend route is being
+   exposed ahead of the dynamic /products/{product_id} route.
+   ========================================================================== */
+function initEnovoxProductAutocomplete() {
+    const searchInputs = [
+        document.getElementById('hero-search-input'),
+        document.getElementById('explore-search')
+    ].filter(Boolean);
+
+    if (!searchInputs.length) return;
+
+    let autocompleteEndpointUnavailable = false;
+    let fallbackWarningShown = false;
+
+    function normalizeProducts(payload) {
+        const products = Array.isArray(payload)
+            ? payload
+            : (Array.isArray(payload && payload.suggestions)
+                ? payload.suggestions
+                : (Array.isArray(payload && payload.results) ? payload.results : []));
+
+        return products.filter(product =>
+            product && String(product.name || '').trim() && String(product.slug || '').trim()
+        ).slice(0, 8);
+    }
+
+    async function fetchAutocompleteProducts(query, signal) {
+        if (!autocompleteEndpointUnavailable) {
+            const params = new URLSearchParams({ query });
+            const response = await fetch(`${API_BASE_URL}/products/autocomplete?${params.toString()}`, {
+                signal,
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            });
+
+            // FastAPI may send this path to /products/{product_id} unless the
+            // dedicated route is registered before that dynamic route.
+            if ([404, 405, 422].includes(response.status)) {
+                autocompleteEndpointUnavailable = true;
+                if (!fallbackWarningShown) {
+                    console.warn('[product autocomplete] /products/autocomplete is not available yet; using the existing product-search endpoint until the route is exposed.');
+                    fallbackWarningShown = true;
+                }
+            } else {
+                if (!response.ok) throw new Error(`Autocomplete API failed (${response.status})`);
+                return normalizeProducts(await response.json());
+            }
+        }
+
+        const fallbackParams = new URLSearchParams({ query, limit: '8' });
+        const fallbackResponse = await fetch(`${API_BASE_URL}/products/?${fallbackParams.toString()}`, {
+            signal,
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!fallbackResponse.ok) throw new Error(`Product search API failed (${fallbackResponse.status})`);
+        return normalizeProducts(await fallbackResponse.json());
+    }
+
+    function safeLogoUrl(value) {
+        if (!value) return '';
+        try {
+            const url = new URL(String(value), window.location.origin);
+            return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    searchInputs.forEach(input => {
+        const wrapper = input.closest('.search-container, .search-wrapper');
+        if (!wrapper) return;
+
+        const panel = wrapper.querySelector('.product-autocomplete');
+        const clearButton = wrapper.querySelector('.autocomplete-clear-btn');
+        if (!panel || !clearButton) return;
+
+        let debounceTimer = null;
+        let requestController = null;
+        let requestVersion = 0;
+        let expanded = false;
+
+        function updateClearButton() {
+            clearButton.hidden = input.value.length === 0;
+        }
+
+        function cancelPendingRequest() {
+            if (debounceTimer !== null) {
+                clearTimeout(debounceTimer);
+                debounceTimer = null;
+            }
+            requestVersion += 1;
+            if (requestController) {
+                requestController.abort();
+                requestController = null;
+            }
+        }
+
+        function clearActiveOption() {
+            input.removeAttribute('aria-activedescendant');
+            panel.querySelectorAll('.product-autocomplete-option.is-active').forEach(option => {
+                option.classList.remove('is-active');
+                option.setAttribute('aria-selected', 'false');
+            });
+        }
+
+        function closePanel(cancelRequest = true) {
+            if (cancelRequest) cancelPendingRequest();
+            panel.hidden = true;
+            panel.replaceChildren();
+            input.setAttribute('aria-expanded', 'false');
+            clearActiveOption();
+            expanded = false;
+        }
+
+        function openPanel() {
+            panel.hidden = false;
+            input.setAttribute('aria-expanded', 'true');
+        }
+
+        function makeLogo(product) {
+            const name = String(product.name || '').trim();
+            const src = safeLogoUrl(product.logo_url);
+            if (!src) {
+                const fallback = document.createElement('span');
+                fallback.className = 'product-autocomplete-logo-fallback';
+                fallback.setAttribute('aria-hidden', 'true');
+                fallback.textContent = name.charAt(0).toUpperCase() || '?';
+                return fallback;
+            }
+
+            const image = document.createElement('img');
+            image.className = 'product-autocomplete-logo';
+            image.src = src;
+            image.alt = '';
+            image.loading = 'lazy';
+            image.decoding = 'async';
+            image.addEventListener('error', () => {
+                const fallback = document.createElement('span');
+                fallback.className = 'product-autocomplete-logo-fallback';
+                fallback.setAttribute('aria-hidden', 'true');
+                fallback.textContent = name.charAt(0).toUpperCase() || '?';
+                image.replaceWith(fallback);
+            }, { once: true });
+            return image;
+        }
+
+        function makeViewAllLink(query) {
+            const link = document.createElement('a');
+            link.className = 'product-autocomplete-view-all';
+            link.href = `/explore?query=${encodeURIComponent(query)}`;
+            link.setAttribute('aria-label', `View all search results for ${query}`);
+            link.textContent = 'View all results';
+            return link;
+        }
+
+        function renderPanel(query, products, message) {
+            panel.replaceChildren();
+            expanded = false;
+            clearActiveOption();
+
+            const heading = document.createElement('div');
+            heading.className = 'product-autocomplete-header';
+            const headingLabel = document.createElement('span');
+            headingLabel.textContent = 'Product suggestions';
+            const countLabel = document.createElement('span');
+            countLabel.className = 'product-autocomplete-count';
+            countLabel.textContent = products.length
+                ? `${products.length} match${products.length === 1 ? '' : 'es'}`
+                : '';
+            heading.append(headingLabel, countLabel);
+            panel.appendChild(heading);
+
+            if (products.length) {
+                const list = document.createElement('ul');
+                list.className = 'product-autocomplete-list';
+                list.id = `${panel.id}-list`;
+                list.setAttribute('role', 'listbox');
+                list.setAttribute('aria-label', 'Matching products');
+
+                const rows = [];
+                products.forEach((product, index) => {
+                    const name = String(product.name).trim();
+                    const row = document.createElement('li');
+                    row.hidden = index >= 3;
+
+                    const option = document.createElement('a');
+                    option.id = `${panel.id}-option-${index + 1}`;
+                    option.className = 'product-autocomplete-option';
+                    option.href = `/product/${encodeURIComponent(String(product.slug).trim())}`;
+                    option.setAttribute('role', 'option');
+                    option.setAttribute('aria-selected', 'false');
+                    option.tabIndex = -1;
+                    option.title = name;
+                    option.appendChild(makeLogo(product));
+
+                    const copy = document.createElement('span');
+                    copy.className = 'product-autocomplete-copy';
+                    const nameElement = document.createElement('span');
+                    nameElement.className = 'product-autocomplete-name';
+                    nameElement.textContent = name;
+                    copy.appendChild(nameElement);
+                    if (product.category) {
+                        const category = document.createElement('span');
+                        category.className = 'product-autocomplete-category';
+                        category.textContent = String(product.category);
+                        copy.appendChild(category);
+                    }
+                    option.appendChild(copy);
+                    option.addEventListener('mouseenter', () => setActiveOption(option));
+                    row.appendChild(option);
+                    list.appendChild(row);
+                    rows.push(row);
+                });
+                panel.appendChild(list);
+
+                const footer = document.createElement('div');
+                footer.className = 'product-autocomplete-footer';
+                if (products.length > 3) {
+                    const moreButton = document.createElement('button');
+                    moreButton.type = 'button';
+                    moreButton.className = 'product-autocomplete-more';
+                    moreButton.setAttribute('aria-controls', list.id);
+                    moreButton.setAttribute('aria-expanded', 'false');
+                    moreButton.textContent = `Show ${products.length - 3} more`;
+                    moreButton.addEventListener('click', () => {
+                        expanded = !expanded;
+                        rows.forEach((row, index) => {
+                            if (index >= 3) row.hidden = !expanded;
+                        });
+                        moreButton.setAttribute('aria-expanded', String(expanded));
+                        moreButton.textContent = expanded ? 'Show fewer' : `Show ${products.length - 3} more`;
+                        const activeOption = document.getElementById(input.getAttribute('aria-activedescendant') || '');
+                        if (!expanded && activeOption && activeOption.closest('li').hidden) clearActiveOption();
+                    });
+                    footer.appendChild(moreButton);
+                }
+                footer.appendChild(makeViewAllLink(query));
+                panel.appendChild(footer);
+            } else {
+                const empty = document.createElement('p');
+                empty.className = 'product-autocomplete-empty';
+                empty.textContent = message || 'No matching products found. You can still search all products.';
+                panel.appendChild(empty);
+                const footer = document.createElement('div');
+                footer.className = 'product-autocomplete-footer product-autocomplete-footer-end';
+                footer.appendChild(makeViewAllLink(query));
+                panel.appendChild(footer);
+            }
+
+            openPanel();
+        }
+
+        function setActiveOption(option) {
+            if (!option) return;
+            clearActiveOption();
+            option.classList.add('is-active');
+            option.setAttribute('aria-selected', 'true');
+            input.setAttribute('aria-activedescendant', option.id);
+        }
+
+        function visibleOptions() {
+            return Array.from(panel.querySelectorAll('.product-autocomplete-option')).filter(option => {
+                const row = option.closest('li');
+                return row && !row.hidden;
+            });
+        }
+
+        async function loadSuggestions(query) {
+            const version = ++requestVersion;
+            const controller = new AbortController();
+            requestController = controller;
+
+            try {
+                const products = await fetchAutocompleteProducts(query, controller.signal);
+                if (version !== requestVersion || input.value.trim() !== query) return;
+                renderPanel(query, products);
+            } catch (error) {
+                if (error && error.name === 'AbortError') return;
+                if (version !== requestVersion || input.value.trim() !== query) return;
+                console.error('[product autocomplete] Could not load suggestions:', error);
+                renderPanel(query, [], 'Suggestions are unavailable right now. You can still search all products.');
+            } finally {
+                if (requestController === controller) requestController = null;
+            }
+        }
+
+        input.addEventListener('input', () => {
+            updateClearButton();
+            closePanel();
+            const query = input.value.trim();
+            if (query.length < 2) return;
+            debounceTimer = setTimeout(() => {
+                debounceTimer = null;
+                loadSuggestions(query);
+            }, 200);
+        });
+
+        input.addEventListener('focus', () => {
+            const query = input.value.trim();
+            if (query.length >= 2 && panel.hidden) {
+                cancelPendingRequest();
+                loadSuggestions(query);
+            }
+        });
+
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                if (!panel.hidden) {
+                    event.preventDefault();
+                    closePanel();
+                }
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                const options = visibleOptions();
+                if (!options.length) return;
+                event.preventDefault();
+                const activeId = input.getAttribute('aria-activedescendant');
+                const currentIndex = options.findIndex(option => option.id === activeId);
+                const direction = event.key === 'ArrowDown' ? 1 : -1;
+                const nextIndex = currentIndex === -1
+                    ? (direction === 1 ? 0 : options.length - 1)
+                    : (currentIndex + direction + options.length) % options.length;
+                setActiveOption(options[nextIndex]);
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                const activeOption = document.getElementById(input.getAttribute('aria-activedescendant') || '');
+                if (activeOption && panel.contains(activeOption)) {
+                    event.preventDefault();
+                    window.location.assign(activeOption.href);
+                    return;
+                }
+
+                if (input.id === 'explore-search') {
+                    const runSearchButton = document.getElementById('explore-search-btn');
+                    if (runSearchButton) {
+                        event.preventDefault();
+                        closePanel();
+                        runSearchButton.click();
+                    }
+                }
+            }
+        });
+
+        clearButton.addEventListener('click', event => {
+            event.preventDefault();
+            input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.focus();
+        });
+
+        input.addEventListener('enovox:autocomplete-reset', () => {
+            updateClearButton();
+            closePanel();
+        });
+
+        const form = input.form;
+        if (form) form.addEventListener('submit', () => closePanel());
+
+        const runSearchButton = wrapper.querySelector('#explore-search-btn');
+        if (runSearchButton) runSearchButton.addEventListener('click', () => closePanel());
+
+        wrapper.addEventListener('focusout', () => {
+            window.setTimeout(() => {
+                if (!wrapper.contains(document.activeElement)) closePanel();
+            }, 0);
+        });
+
+        document.addEventListener('pointerdown', event => {
+            if (!wrapper.contains(event.target)) closePanel();
+        });
+
+        updateClearButton();
+    });
+}
 
 /* ==========================================================================
    Hero Text Rotation

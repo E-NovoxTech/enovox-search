@@ -3296,3 +3296,278 @@ body {
     .independence-day-feature-link:hover { transform: none; }
 }
 /* TEMPORARY INDEPENDENCE DAY PROMO — END */
+
+
+
+/* ==========================================================================
+   Product autocomplete dropdown + search clear controls
+   Shared by the homepage hero and the Explore search bar.
+   ========================================================================== */
+.search-container,
+.search-wrapper {
+    position: relative;
+}
+
+#hero-search-form input {
+    min-width: 0;
+}
+
+.autocomplete-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.autocomplete-clear-btn[hidden] {
+    display: none !important;
+}
+
+#hero-search-form .autocomplete-clear-btn {
+    margin: 0 0.15rem 0 0.1rem;
+}
+
+.autocomplete-clear-btn:hover,
+.autocomplete-clear-btn:focus-visible {
+    background: var(--hover-bg);
+    color: var(--text-main);
+    outline: none;
+}
+
+.autocomplete-clear-btn:focus-visible {
+    box-shadow: 0 0 0 2px rgba(0, 135, 81, 0.24);
+}
+
+.autocomplete-clear-btn svg {
+    width: 15px;
+    height: 15px;
+}
+
+.search-wrapper .autocomplete-clear-btn {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: 44px;
+    transform: translateY(-50%);
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+}
+
+.search-wrapper input#explore-search {
+    padding-right: 5.25rem;
+}
+
+.product-autocomplete {
+    position: absolute;
+    z-index: 80;
+    top: calc(100% + 0.65rem);
+    right: 0;
+    left: 0;
+    max-height: min(72vh, 480px);
+    overflow-y: auto;
+    padding: 0.4rem;
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    background: var(--bg-card);
+    color: var(--text-main);
+    box-shadow: 0 16px 42px rgba(15, 23, 42, 0.18);
+    text-align: left;
+}
+
+.product-autocomplete[hidden] {
+    display: none !important;
+}
+
+.product-autocomplete-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 0.7rem 0.45rem;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.075em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.product-autocomplete-count {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.product-autocomplete-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.product-autocomplete-list li[hidden] {
+    display: none !important;
+}
+
+.product-autocomplete-option {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    gap: 0.7rem;
+    padding: 0.42rem 0.7rem;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    color: var(--text-main);
+    text-decoration: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.product-autocomplete-option:hover,
+.product-autocomplete-option.is-active,
+.product-autocomplete-option:focus-visible {
+    border-color: rgba(0, 135, 81, 0.16);
+    background: var(--hover-bg);
+    outline: none;
+}
+
+.product-autocomplete-option:focus-visible {
+    box-shadow: inset 0 0 0 2px rgba(0, 135, 81, 0.26);
+}
+
+.product-autocomplete-logo,
+.product-autocomplete-logo-fallback {
+    display: inline-flex;
+    flex: 0 0 34px;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    background: #ffffff;
+    object-fit: contain;
+}
+
+.product-autocomplete-logo-fallback {
+    background: var(--bg-secondary);
+    color: var(--color-green);
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.product-autocomplete-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.08rem;
+    line-height: 1.3;
+}
+
+.product-autocomplete-name {
+    overflow: hidden;
+    color: var(--text-main);
+    font-size: 0.88rem;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-autocomplete-category {
+    overflow: hidden;
+    color: var(--text-muted);
+    font-size: 0.69rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.product-autocomplete-empty {
+    padding: 0.75rem 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.product-autocomplete-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-top: 0.35rem;
+    padding: 0.55rem 0.7rem 0.25rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.product-autocomplete-footer-end {
+    justify-content: flex-end;
+}
+
+.product-autocomplete-more,
+.product-autocomplete-view-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0.25rem 0.35rem;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-green);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.product-autocomplete-more:hover,
+.product-autocomplete-view-all:hover,
+.product-autocomplete-more:focus-visible,
+.product-autocomplete-view-all:focus-visible {
+    background: var(--hover-bg);
+    outline: none;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .search-wrapper .autocomplete-clear-btn {
+        right: 42px;
+        flex-basis: 27px;
+        width: 27px;
+        height: 27px;
+    }
+
+    .search-wrapper input#explore-search {
+        padding-right: 4.85rem;
+    }
+
+    .product-autocomplete {
+        top: calc(100% + 0.5rem);
+        border-radius: 14px;
+    }
+}
+
+@media (max-width: 360px) {
+    .product-autocomplete-option {
+        gap: 0.55rem;
+        padding-right: 0.55rem;
+        padding-left: 0.55rem;
+    }
+
+    .product-autocomplete-footer {
+        flex-wrap: wrap;
+    }
+}

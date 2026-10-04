@@ -6,7 +6,7 @@
     <title>Enovox Search - Discover Nigerian Tech</title>
     <link rel="canonical" href="https://search.enovoxtech.com" />
     <!-- Link to the shared stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=autocomplete-20261004-1">
     <!-- FontAwesome for footer icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
@@ -54,8 +54,9 @@
                 <a href="/about">About Us</a>
                 <a href="/submit">Submit Tool</a>
                 <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
-                <a href="/nigeria-66" class="nigeria66-nav-link"><svg class="nigeria66-flag-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="12" viewBox="0 0 30 20" role="img" aria-label="Nigerian flag" focusable="false"><rect width="30" height="20" fill="#ffffff"/><path d="M0 0h10v20H0zM20 0h10v20H20z" fill="#008751"/></svg>Nigeria @ 66</a>
                 <a href="/contact">Contact</a>
+                <a href="/nigeria-66" class="nigeria66-nav-link"><svg class="nigeria66-flag-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="12" viewBox="0 0 30 20" role="img" aria-label="Nigerian flag" focusable="false"><rect width="30" height="20" fill="#ffffff"/><path d="M0 0h10v20H0zM20 0h10v20H20z" fill="#008751"/></svg>Nigeria @ 66</a>
+
                 <div class="nav-auth-mobile">
                     <a href="#footer-subscribe-form" class="nav-subscribe-btn nav-subscribe-mobile" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
                     <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
@@ -100,7 +101,10 @@
             <!-- Search Bar -->
             <div class="search-container">
                 <form id="hero-search-form" action="/explore" method="GET">
-                    <input type="text" name="query" placeholder="Search or type 'AI' for Chat..." required>
+                    <input type="text" id="hero-search-input" name="query" placeholder="Search or type 'AI' for Chat..." required autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="hero-search-suggestions">
+                    <button type="button" id="hero-search-clear" class="autocomplete-clear-btn" aria-label="Clear search" title="Clear search" hidden>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
                     <!-- Clickable search: submits the GET form (no Enter needed) -->
                     <button type="submit" class="hero-search-submit" aria-label="Search">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -110,6 +114,7 @@
                         Ask AI
                     </button>
                 </form>
+                <div id="hero-search-suggestions" class="product-autocomplete" role="region" aria-label="Product suggestions" hidden></div>
             </div>
 
             <!-- Colorful Category Pills -->
@@ -398,7 +403,7 @@
         </div>
     </footer>
     <script src="/static/js/config.js"></script>
-    <script src="/static/js/home.js?v=pc-2d36e49940"></script>
+    <script src="/static/js/home.js?v=autocomplete-20261004-1"></script>
     <script src="/static/js/nav-auth.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a433b19a8853feb9',t:'MTc5MDc3NjE5Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a45784f2ca23fac0',t:'MTc5MTE1MTg1NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

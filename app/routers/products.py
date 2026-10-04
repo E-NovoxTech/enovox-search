@@ -23,19 +23,26 @@ from ..database import get_db
 from ..utils import generate_slug
 from ..indexnow_utils import submit_to_indexnow
 from ..routers.users import get_current_user
+from sqlalchemy import func
 
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
+
+def normalize_sql(column):
+    return func.replace(func.replace(func.lower(column), '-', ''), ' ', '')
+
 def apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival):
     if query:
+        normalized_query = query.lower().replace('-', '').replace(' ', '')
         words = query.split()
         word_filters = []
         for word in words:
-            word_filters.append(models.Product.name.ilike(f"%{word}%"))
-            word_filters.append(models.Product.description.ilike(f"%{word}%"))
-            word_filters.append(models.Product.category.ilike(f"%{word}%"))
-            word_filters.append(models.Product.keywords.ilike(f"%{word}%"))
+            normalized_word = word.lower().replace('-', '').replace(' ', '')
+            word_filters.append(normalize_sql(models.Product.name).ilike(f"%{normalized_word}%"))
+            word_filters.append(normalize_sql(models.Product.description).ilike(f"%{normalized_word}%"))
+            word_filters.append(normalize_sql(models.Product.category).ilike(f"%{normalized_word}%"))
+            word_filters.append(normalize_sql(models.Product.keywords).ilike(f"%{normalized_word}%"))
         q = q.filter(or_(*word_filters))
 
     if category:
@@ -62,30 +69,65 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
 
     return q
 
+
 def score_product_relevance(product, query: str) -> int:
     if not query:
         return 0
 
-    query_lower = query.lower()
-    words = query_lower.split()
+    def normalize(text):
+        return (text or "").lower().replace('-', '').replace(' ', '')
+
+    words = query.lower().split()
     score = 0
 
-    name_lower = (product.name or "").lower()
-    category_lower = (product.category or "").lower()
-    keywords_lower = (product.keywords or "").lower()
-    description_lower = (product.description or "").lower()
+    name_norm = normalize(product.name)
+    category_norm = normalize(product.category)
+    keywords_norm = normalize(product.keywords)
+    description_norm = normalize(product.description)
 
     for word in words:
-        if word in category_lower or category_lower in word:
+        normalized_word = normalize(word)
+        if normalized_word in category_norm or category_norm in normalized_word:
             score += 10
-        if word in name_lower:
+        if normalized_word in name_norm:
             score += 7
-        if word in keywords_lower:
+        if normalized_word in keywords_norm:
             score += 5
-        if word in description_lower:
+        if normalized_word in description_norm:
             score += 1
 
     return score
+@router.get("/autocomplete")
+def autocomplete_search(query: str, db: Session = Depends(get_db)):
+    if len(query) < 2:
+        return []
+
+    normalized_query = query.lower().replace('-', '').replace(' ', '')
+
+    products = (
+        db.query(models.Product)
+        .filter(models.Product.status == True)
+        .filter(
+            or_(
+                normalize_sql(models.Product.name).ilike(f"%{normalized_query}%"),
+                normalize_sql(models.Product.category).ilike(f"%{normalized_query}%"),
+                normalize_sql(models.Product.keywords).ilike(f"%{normalized_query}%")
+            )
+        )
+        .limit(8)
+        .all()
+    )
+
+    return [
+        {
+            "name": p.name,
+            "slug": p.slug,
+            "category": p.category,
+            "logo_url": p.logo_url
+        }
+        for p in products
+    ]
+    
 @router.get("/banner")
 def get_banner(db: Session = Depends(get_db)):
     banner = db.query(models.SiteBanner).first()
