@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Guidelines | Enovox Search</title>
+    <meta name="description" content="Learn how to submit, manage, and update your Nigerian-built product on Enovox Search.">
+    <link rel="canonical" href="https://search.enovoxtech.com/guidelines" />
+    <!-- Global stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/static/assets/site.webmanifest">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KWLYDKBTN2"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-KWLYDKBTN2');
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {"@type": "Question", "name": "Can I submit multiple products?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Each product must meet our guidelines."}},
+        {"@type": "Question", "name": "Can I submit a beta product?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, if it's sufficiently developed for users to understand or access it. Clearly indicate its beta status."}},
+        {"@type": "Question", "name": "Can I edit my listing after approval?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Use your Developer Dashboard to update supported details."}},
+        {"@type": "Question", "name": "Does listing guarantee sales?", "acceptedAnswer": {"@type": "Answer", "text": "No. Enovox Search helps people discover products but cannot guarantee customers or revenue."}},
+        {"@type": "Question", "name": "What if my product is rejected?", "acceptedAnswer": {"@type": "Answer", "text": "Review the requirements, correct any issues, and resubmit if the option is available."}},
+        {"@type": "Question", "name": "Can international users discover my product?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Nigerian-built products serving global markets are welcome."}}
+      ]
+    }
+    </script>
+
+    <style>
+        /* =====================================================
+           Developer Guidelines page
+           All selectors are prefixed with .gl- so nothing here
+           can leak into the rest of the site.
+           ===================================================== */
+
+        /* ---------- Colour tokens (light) ---------- */
+        .gl-page {
+            --gl-bg: #f5f8fc;
+            --gl-surface: #ffffff;
+            --gl-surface-2: #f0f4fa;
+            --gl-text: #0a1f44;
+            --gl-muted: #5a6882;
+            --gl-border: #e1e8f2;
+            --gl-primary: #1d6fe8;
+            --gl-primary-strong: #1558bd;
+            --gl-primary-soft: #e8f1fe;
+            --gl-on-primary: #ffffff;
+            --gl-green: #12994a;
+            --gl-green-soft: #e4f6ec;
+            --gl-amber: #b7791f;
+            --gl-amber-soft: #fdf3dc;
+            --gl-red: #c53030;
+            --gl-red-soft: #fde8e8;
+            --gl-shadow: 0 6px 24px rgba(10, 31, 68, 0.08);
+
+            background: var(--gl-bg);
+            color: var(--gl-text);
+            font-family: inherit;
+            line-height: 1.65;
+        }
+
+        /* ---------- Colour tokens (dark) ----------
+           Covers the common ways a site flags dark mode, so it follows
+           whichever one your theme toggle uses. */
+        :is(html, body)[data-theme="dark"] .gl-page,
+        :is(html, body)[data-bs-theme="dark"] .gl-page,
+        :is(html, body).dark .gl-page,
+        :is(html, body).dark-mode .gl-page,
+        :is(html, body).dark-theme .gl-page,
+        :is(html, body).theme-dark .gl-page {
+            --gl-bg: #0b1220;
+            --gl-surface: #111b2e;
+            --gl-surface-2: #16223a;
+            --gl-text: #e7edf8;
+            --gl-muted: #9aa9c4;
+            --gl-border: #23324d;
+            --gl-primary: #4c94ff;
+            --gl-primary-strong: #78adff;
+            --gl-primary-soft: rgba(76, 148, 255, 0.14);
+            --gl-on-primary: #08122a;
+            --gl-green: #3ecf7a;
+            --gl-green-soft: rgba(62, 207, 122, 0.14);
+            --gl-amber: #f0b955;
+            --gl-amber-soft: rgba(240, 185, 85, 0.14);
+            --gl-red: #f28b8b;
+            --gl-red-soft: rgba(242, 139, 139, 0.14);
+            --gl-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            html { scroll-behavior: smooth; }
+        }
+
+        .gl-page *, .gl-page *::before, .gl-page *::after { box-sizing: border-box; }
+        .gl-page a { color: inherit; }
+
+        /* ---------- Hero ---------- */
+        .gl-hero {
+            padding: 64px 20px 44px;
+            text-align: center;
+            background: linear-gradient(180deg, var(--gl-primary-soft) 0%, transparent 100%);
+        }
+        .gl-hero-inner { max-width: 720px; margin: 0 auto; }
+        .gl-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: var(--gl-surface);
+            border: 1px solid var(--gl-border);
+            color: var(--gl-primary);
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .gl-hero h1 {
+            margin: 18px 0 10px;
+            font-size: clamp(2rem, 5.4vw, 3.1rem);
+            line-height: 1.12;
+            letter-spacing: -0.02em;
+            color: var(--gl-text);
+        }
+        .gl-hero h1 span { color: var(--gl-primary); }
+        .gl-tagline {
+            margin: 0 auto 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gl-text);
+        }
+        .gl-lead {
+            margin: 0 auto;
+            max-width: 600px;
+            color: var(--gl-muted);
+            font-size: 1rem;
+        }
+        .gl-actions {
+            margin-top: 26px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .gl-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none !important;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: transform .15s ease, background .15s ease, border-color .15s ease;
+        }
+        .gl-btn:hover { transform: translateY(-1px); }
+        .gl-btn-primary { background: var(--gl-primary); color: var(--gl-on-primary) !important; }
+        .gl-btn-primary:hover { background: var(--gl-primary-strong); }
+        .gl-btn-ghost { background: var(--gl-surface); color: var(--gl-text) !important; border-color: var(--gl-border); }
+        .gl-btn-ghost:hover { border-color: var(--gl-primary); }
+
+        /* ---------- Layout ---------- */
+        .gl-layout {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 8px 20px 72px;
+            display: grid;
+            grid-template-columns: 244px minmax(0, 1fr);
+            gap: 48px;
+            align-items: start;
+        }
+
+        /* ---------- Desktop sidebar ---------- */
+        .gl-sidebar {
+            position: sticky;
+            top: calc(var(--gl-offset, 72px) + 20px);
+            max-height: calc(100vh - var(--gl-offset, 72px) - 40px);
+            overflow-y: auto;
+        }
+        .gl-sidebar-title {
+            margin: 0 0 10px;
+            padding-left: 14px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--gl-muted);
+        }
+        .gl-toc { list-style: none; margin: 0; padding: 0; }
+        .gl-toc li { margin: 0; }
+        .gl-toc a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px;
+            border-left: 2px solid var(--gl-border);
+            color: var(--gl-muted);
+            font-size: 0.92rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: color .15s ease, background .15s ease, border-color .15s ease;
+        }
+        .gl-toc a .gl-toc-num {
+            flex: none;
+            width: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            opacity: .7;
+        }
+        .gl-toc a:hover { color: var(--gl-text); background: var(--gl-surface-2); }
+        .gl-toc a.is-active {
+            color: var(--gl-primary);
+            border-left-color: var(--gl-primary);
+            background: var(--gl-primary-soft);
+            font-weight: 600;
+        }
+        .gl-toc a.is-active .gl-toc-num { opacity: 1; }
+
+        .gl-page a:focus-visible, .gl-page button:focus-visible, .gl-page summary:focus-visible {
+            outline: 2px solid var(--gl-primary);
+            outline-offset: 2px;
+            border-radius: 8px;
+        }
+
+        /* ---------- Mobile "On this page" bar ---------- */
+        .gl-mobile-toc { display: none; }
+        .gl-toc-spacer { display: none; }
+
+        /* ---------- Content ---------- */
+        .gl-content { min-width: 0; }
+        .gl-section {
+            padding-bottom: 44px;
+            scroll-margin-top: calc(var(--gl-offset, 72px) + 24px);
+        }
+        .gl-section h2 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0 0 14px;
+            font-size: clamp(1.3rem, 3vw, 1.6rem);
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+            color: var(--gl-text);
+        }
+        .gl-num {
+            flex: none;
+            display: inline-grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: var(--gl-primary-soft);
+            color: var(--gl-primary);
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+        .gl-section p { margin: 0 0 14px; color: var(--gl-muted); }
+        .gl-section p strong { color: var(--gl-text); }
+
+        .gl-card {
+            background: var(--gl-surface);
+            border: 1px solid var(--gl-border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        /* Note / callout */
+        .gl-note {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            margin: 16px 0 0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: var(--gl-surface-2);
+            border: 1px solid var(--gl-border);
+            font-size: 0.92rem;
+            color: var(--gl-muted);
+        }
+        .gl-note i { margin-top: 4px; color: var(--gl-primary); }
+        .gl-note-warn { background: var(--gl-amber-soft); border-color: transparent; }
+        .gl-note-warn i { color: var(--gl-amber); }
+
+        /* Benefit cards */
+        .gl-benefits { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .gl-benefit { display: flex; gap: 14px; align-items: flex-start; }
+        .gl-benefit-icon {
+            flex: none;
+            display: grid;
+            place-items: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--gl-primary-soft);
+            color: var(--gl-primary);
+        }
+        .gl-benefit h3 { margin: 0 0 2px; font-size: 1rem; color: var(--gl-text); }
+        .gl-benefit p { margin: 0; font-size: 0.92rem; }
+
+        /* Table */
+        .gl-table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--gl-border);
+            border-radius: 16px;
+            background: var(--gl-surface);
+        }
+        .gl-table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+        .gl-table th, .gl-table td { padding: 12px 18px; text-align: left; vertical-align: top; }
+        .gl-table thead th {
+            background: var(--gl-surface-2);
+            color: var(--gl-muted);
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .gl-table tbody tr + tr td { border-top: 1px solid var(--gl-border); }
+        .gl-table td:first-child { font-weight: 600; color: var(--gl-text); white-space: nowrap; }
+        .gl-table td:last-child { color: var(--gl-muted); }
+
+        /* Steps */
+        .gl-steps { list-style: none; margin: 0; padding: 0; counter-reset: gl-step; }
+        .gl-steps li {
+            position: relative;
+            counter-increment: gl-step;
+            padding: 0 0 18px 52px;
+            color: var(--gl-text);
+            font-weight: 500;
+        }
+        .gl-steps li:last-child { padding-bottom: 0; }
+        .gl-steps li::before {
+            content: counter(gl-step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--gl-primary);
+            color: var(--gl-on-primary);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        .gl-steps li::after {
+            content: "";
+            position: absolute;
+            left: 16px;
+            top: 38px;
+            bottom: 4px;
+            width: 2px;
+            background: var(--gl-border);
+        }
+        .gl-steps li:last-child::after { display: none; }
+        .gl-steps li span { display: block; padding-top: 5px; }
+        .gl-steps small { display: block; font-weight: 400; color: var(--gl-muted); margin-top: 2px; }
+
+        /* Checklists */
+        .gl-checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+        .gl-checks li { display: flex; gap: 12px; align-items: flex-start; color: var(--gl-text); }
+        .gl-checks li i {
+            flex: none;
+            margin-top: 3px;
+            display: grid;
+            place-items: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gl-green-soft);
+            color: var(--gl-green);
+            font-size: 0.65rem;
+        }
+        .gl-sub { margin: 18px 0 10px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gl-muted); }
+
+        /* Status chips */
+        .gl-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+        .gl-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+        .gl-chip-ok { background: var(--gl-green-soft); color: var(--gl-green); }
+        .gl-chip-wait { background: var(--gl-amber-soft); color: var(--gl-amber); }
+        .gl-chip-no { background: var(--gl-red-soft); color: var(--gl-red); }
+
+        /* Two-column list for "editable details" */
+        .gl-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; }
+
+        /* FAQ */
+        .gl-faq { display: grid; gap: 10px; }
+        .gl-faq details {
+            background: var(--gl-surface);
+            border: 1px solid var(--gl-border);
+            border-radius: 14px;
+            transition: border-color .15s ease;
+        }
+        .gl-faq details[open] { border-color: var(--gl-primary); }
+        .gl-faq summary {
+            list-style: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 15px 18px;
+            font-weight: 600;
+            color: var(--gl-text);
+        }
+        .gl-faq summary::-webkit-details-marker { display: none; }
+        .gl-faq summary::after {
+            content: "";
+            flex: none;
+            width: 9px;
+            height: 9px;
+            border-right: 2px solid var(--gl-muted);
+            border-bottom: 2px solid var(--gl-muted);
+            transform: rotate(45deg);
+            transition: transform .2s ease;
+            margin-top: -3px;
+        }
+        .gl-faq details[open] summary::after { transform: rotate(-135deg); margin-top: 3px; }
+        .gl-faq details p { margin: 0; padding: 0 18px 16px; }
+
+        /* Help card */
+        .gl-help { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+        .gl-help p { margin: 0; flex: 1 1 260px; }
+
+        /* Closing CTA */
+        .gl-cta {
+            margin-top: 8px;
+            padding: 40px 24px;
+            text-align: center;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #0a1f44 0%, #123c85 100%);
+            color: #ffffff;
+        }
+        .gl-cta h2 { justify-content: center; margin: 0 0 8px; color: #ffffff; }
+        .gl-cta p { margin: 0 auto 20px; max-width: 460px; color: rgba(255, 255, 255, 0.82); }
+        .gl-cta .gl-btn-primary { background: #ffffff; color: #0a1f44 !important; }
+        .gl-cta .gl-btn-primary:hover { background: #e8f1fe; }
+        .gl-cta small { display: block; margin-top: 18px; color: rgba(255, 255, 255, 0.65); }
+
+        /* ---------- Tablet / mobile ---------- */
+        @media (max-width: 900px) {
+            /* display:block (instead of grid) so the sticky "On this page" bar can
+               stay pinned for the whole length of the page. In a grid, the bar's
+               containing block was only its own row, so it could never stick. */
+            .gl-layout { display: block; grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: 0; }
+            .gl-sidebar { display: none; }
+
+            .gl-mobile-toc {
+                display: block;
+                position: sticky;
+                top: var(--gl-offset, 64px);
+                z-index: 30;
+                margin: 0 -20px 22px;
+                padding: 10px 20px;
+                background: var(--gl-bg);
+                border-bottom: 1px solid var(--gl-border);
+            }
+            .gl-toc-spacer { display: block; }
+
+            /* Applied by script once the bar reaches the top of the screen */
+            .gl-mobile-toc.is-stuck {
+                position: fixed;
+                top: var(--gl-offset, 64px);
+                left: 0;
+                right: 0;
+                margin: 0;
+            }
+            .gl-mobile-toc-btn {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 11px 14px;
+                border-radius: 12px;
+                border: 1px solid var(--gl-border);
+                background: var(--gl-surface);
+                color: var(--gl-text);
+                font: inherit;
+                font-size: 0.92rem;
+                cursor: pointer;
+                text-align: left;
+            }
+            .gl-mobile-toc-btn .gl-mobile-label { display: flex; flex-direction: column; min-width: 0; }
+            .gl-mobile-toc-btn small {
+                font-size: 0.68rem;
+                font-weight: 700;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--gl-muted);
+            }
+            .gl-mobile-toc-btn strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .gl-mobile-toc-btn i { color: var(--gl-muted); transition: transform .2s ease; }
+            .gl-mobile-toc-btn[aria-expanded="true"] i { transform: rotate(180deg); }
+
+            .gl-mobile-panel {
+                position: absolute;
+                left: 20px;
+                right: 20px;
+                top: calc(100% - 2px);
+                max-height: min(60vh, 420px);
+                overflow-y: auto;
+                padding: 8px;
+                border-radius: 14px;
+                background: var(--gl-surface);
+                border: 1px solid var(--gl-border);
+                box-shadow: var(--gl-shadow);
+            }
+            .gl-mobile-panel[hidden] { display: none; }
+            .gl-mobile-panel .gl-toc a { border-left: 0; border-radius: 10px; padding: 11px 12px; }
+
+            .gl-section { scroll-margin-top: calc(var(--gl-offset, 64px) + 78px); padding-bottom: 36px; }
+        }
+
+        @media (max-width: 640px) {
+            .gl-hero { padding: 44px 20px 30px; }
+            .gl-benefits, .gl-split { grid-template-columns: minmax(0, 1fr); }
+            .gl-card { padding: 16px; }
+            .gl-table th, .gl-table td { padding: 11px 14px; }
+            .gl-table td:first-child { white-space: normal; }
+            .gl-btn { flex: 1 1 100%; }
+            .gl-help .gl-btn { flex: 1 1 100%; }
+        }
+    </style>
+</head>
+<body>
+     <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
+    <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
+        <div class="site-banner-inner">
+            <div class="site-banner-content" id="site-banner-content">
+                <span class="site-banner-track" id="site-banner-track">
+                    <span class="site-banner-text" id="site-banner-text"></span>
+                    <a class="site-banner-link hidden" id="site-banner-link" href="#" target="_blank" rel="noopener"></a>
+                </span>
+            </div>
+            <button type="button" class="site-banner-close" id="site-banner-close" aria-label="Dismiss announcement">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Navigation Bar — matches every other page -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                <span class="brand-name">Enovox <span>Search</span></span>
+            </a>
+
+            <nav class="nav-links" id="primary-navigation" aria-label="Primary navigation">
+                <div class="mobile-nav-header">
+                    <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                        <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                        <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                        <span class="brand-name">Enovox <span>Search</span></span>
+                    </a>
+                    <button type="button" class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <div class="nav-menu-list">
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-explore-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m16.2 7.8-2.8 6.4-5.6 2.8 2.8-6.4 5.6-2.8Z"></path></svg><span>Explore</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu" id="header-explore-menu">
+                            <a class="nav-dropdown-item nav-dropdown-featured" href="/explore">
+                                <span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">All Products</span><span class="nav-dropdown-description">Explore products built by Nigerians.</span></span>
+                                <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                            </a>
+                            <a class="nav-dropdown-item" href="/collection"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Collection</span><span class="nav-dropdown-description">Curated product lists by category.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/spotlight"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Spotlight <span class="nav-badge-new">NEW</span></span><span class="nav-dropdown-description">Founder stories and how they built it.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/alternative" data-alternative-nav><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Nigeria Alternatives</span><span class="nav-dropdown-description">Local alternatives to popular global tools.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-categories-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Categories</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
+                            <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
+                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-developers-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Developers</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-developers-menu" id="header-developers-menu">
+                            <div class="developer-menu-links" data-developer-links hidden>
+                                <a class="nav-dropdown-item" href="/dashboard"><span class="nav-dropdown-title">Developer Dashboard</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/submit"><span class="nav-dropdown-title">Submit Product</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/guidelines"><span class="nav-dropdown-title">Developer Guidelines</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                            <div class="developer-menu-guest" data-developer-guest>
+                                <a class="nav-dropdown-item" href="/signup?type=developer"><span class="nav-dropdown-title">Join as a Developer</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/login?type=developer"><span class="nav-dropdown-title">Developer Login</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/submit" class="header-submit-product">Submit Product</a>
+                </div>
+
+                <a class="mobile-submit-product" href="/submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M20 16.5v2A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5v-2"></path></svg>
+                    <span>Submit Product</span>
+                </a>
+                <div class="mobile-nav-divider" aria-hidden="true"></div>
+                <a href="/ai" class="mobile-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="mobile-ask-ai-copy"><strong>Ask AI</strong><small>Need help finding a product?</small></span>
+                    <svg class="mobile-row-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+                <button type="button" id="mobile-theme-toggle" class="mobile-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <span class="mobile-theme-label"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>Dark Mode</span>
+                    <span class="mobile-theme-switch" aria-hidden="true"><span></span></span>
+                </button>
+                <div class="nav-auth-mobile">
+                    <a href="/login" class="mobile-auth-link auth-login-slot">Log in</a>
+                    <a href="/signup" class="mobile-auth-link mobile-auth-signup auth-signup-slot"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg><span>Sign up</span></a>
+                </div>
+            </nav>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="icon-btn header-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <a href="/explore" class="icon-btn header-search-icon" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+                <a href="/ai" class="header-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="header-ask-ai-copy"><strong>Ask AI <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></strong><small>Need help finding a product?</small></span>
+                </a>
+                <div class="header-auth-desktop">
+                    <a href="/login" class="header-auth-login auth-login-slot">Log in</a>
+                    <a href="/signup" class="header-auth-signup auth-signup-slot">Sign up</a>
+                </div>
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Open navigation" aria-controls="primary-navigation" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
+        <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
+    </header>
+
+
+    <main class="gl-page">
+
+        <!-- Hero -->
+        <section class="gl-hero">
+            <div class="gl-hero-inner">
+                <span class="gl-eyebrow">Developer Guidelines</span>
+                <h1>Build it. Submit it. <span>Get discovered.</span></h1>
+                <p class="gl-lead">Enovox Search helps people discover Nigerian-built apps, AI tools, software, and digital products. These guidelines explain how to list and manage your product on our platform.</p>
+                <div class="gl-actions">
+                    <a href="/submit" class="gl-btn gl-btn-primary"><i class="fa-solid fa-arrow-up-from-bracket"></i> Submit Your Product</a>
+                    <a href="/explore" class="gl-btn gl-btn-ghost"><i class="fa-regular fa-compass"></i> Explore Products</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="gl-layout">
+
+            <!-- Mobile: "On this page" bar (filled by script from the sidebar list) -->
+            <div class="gl-mobile-toc" id="gl-mobile-toc">
+                <button type="button" class="gl-mobile-toc-btn" id="gl-mobile-btn" aria-expanded="false" aria-controls="gl-mobile-panel">
+                    <span class="gl-mobile-label"><small>On this page</small><strong id="gl-mobile-current">Why List Your Product</strong></span>
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+                <nav class="gl-mobile-panel" id="gl-mobile-panel" aria-label="Guideline sections" hidden>
+                    <ul class="gl-toc" id="gl-mobile-list"></ul>
+                </nav>
+            </div>
+
+            <!-- Desktop: sticky section sidebar -->
+            <aside class="gl-sidebar" aria-label="Guideline sections">
+                <p class="gl-sidebar-title">On this page</p>
+                <ul class="gl-toc" id="gl-sidebar-list">
+                    <li><a href="#why-list"><span class="gl-toc-num">1</span>Why List Your Product</a></li>
+                    <li><a href="#who-can-submit"><span class="gl-toc-num">2</span>Who Can Submit</a></li>
+                    <li><a href="#what-to-submit"><span class="gl-toc-num">3</span>Product Categories</a></li>
+                    <li><a href="#how-to-submit"><span class="gl-toc-num">4</span>How to Submit</a></li>
+                    <li><a href="#review-approval"><span class="gl-toc-num">5</span>Review &amp; Approval</a></li>
+                    <li><a href="#managing-product"><span class="gl-toc-num">6</span>Managing Your Product</a></li>
+                    <li><a href="#listing-guidelines"><span class="gl-toc-num">7</span>Listing Guidelines</a></li>
+                    <li><a href="#faqs"><span class="gl-toc-num">8</span>FAQs</a></li>
+                    <li><a href="#need-help"><span class="gl-toc-num">9</span>Need Help</a></li>
+                </ul>
+            </aside>
+
+            <!-- Content -->
+            <div class="gl-content">
+
+                <section class="gl-section" id="why-list" data-title="Why List Your Product">
+                    <h2><span class="gl-num">1</span>Why List Your Product?</h2>
+                    <div class="gl-benefits">
+                        <div class="gl-card gl-benefit">
+                            <span class="gl-benefit-icon"><i class="fa-solid fa-eye"></i></span>
+                            <div><h3>Increase Visibility</h3><p>Help more people discover your product.</p></div>
+                        </div>
+                        <div class="gl-card gl-benefit">
+                            <span class="gl-benefit-icon"><i class="fa-solid fa-user-plus"></i></span>
+                            <div><h3>Reach New Users</h3><p>Connect your solution with potential users.</p></div>
+                        </div>
+                        <div class="gl-card gl-benefit">
+                            <span class="gl-benefit-icon"><i class="fa-solid fa-rocket"></i></span>
+                            <div><h3>Showcase Your Work</h3><p>Put your product in front of people interested in Nigerian technology.</p></div>
+                        </div>
+                        <div class="gl-card gl-benefit">
+                            <span class="gl-benefit-icon"><i class="fa-solid fa-people-group"></i></span>
+                            <div><h3>Join the Ecosystem</h3><p>Be part of Nigeria's growing technology community.</p></div>
+                        </div>
+                    </div>
+                    <div class="gl-note"><i class="fa-solid fa-circle-info"></i><span>Listing does not guarantee traffic, customers, or sales.</span></div>
+                </section>
+
+                <section class="gl-section" id="who-can-submit" data-title="Who Can Submit">
+                    <h2><span class="gl-num">2</span>Who Can Submit?</h2>
+                    <p>We welcome Nigerian developers, founders, startups, and companies building products for local or international markets.</p>
+                    <p>Your product doesn't have to serve only Nigerians, but it should meet our <strong>Nigerian-built technology</strong> focus.</p>
+                </section>
+
+                <section class="gl-section" id="what-to-submit" data-title="Product Categories">
+                    <h2><span class="gl-num">3</span>What Products Can You Submit?</h2>
+                    <div class="gl-table-wrap">
+                        <table class="gl-table">
+                            <thead><tr><th>Category</th><th>Examples</th></tr></thead>
+                            <tbody>
+                                <tr><td>AI &amp; Automation</td><td>AI assistants, automation tools</td></tr>
+                                <tr><td>Fintech</td><td>Payment and financial tools</td></tr>
+                                <tr><td>Education</td><td>Learning platforms, edtech apps</td></tr>
+                                <tr><td>Health</td><td>Healthcare technology</td></tr>
+                                <tr><td>Agriculture</td><td>Farming and agritech tools</td></tr>
+                                <tr><td>E-commerce</td><td>Online stores and marketplaces</td></tr>
+                                <tr><td>Business</td><td>Business management software</td></tr>
+                                <tr><td>Developer Tools</td><td>APIs and coding tools</td></tr>
+                                <tr><td>Productivity</td><td>Task and project management</td></tr>
+                                <tr><td>Other Technology</td><td>Relevant apps and digital products</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="gl-note gl-note-warn"><i class="fa-solid fa-triangle-exclamation"></i><span>We don't accept fraudulent, misleading, harmful, or irrelevant submissions.</span></div>
+                </section>
+
+                <section class="gl-section" id="how-to-submit" data-title="How to Submit">
+                    <h2><span class="gl-num">4</span>How to Submit Your Product</h2>
+                    <div class="gl-card">
+                        <ol class="gl-steps">
+                            <li><span>Visit the <a href="/submit" style="color: var(--gl-primary); font-weight: 600;">Submit Product</a> page.</span></li>
+                            <li><span>Complete the form with accurate product information.</span></li>
+                            <li><span>Submit your product for review.</span></li>
+                            <li><span>Wait for the review decision.</span></li>
+                            <li><span>Once approved, your product becomes discoverable on Enovox Search.</span></li>
+                        </ol>
+                    </div>
+                    <div class="gl-note"><i class="fa-solid fa-circle-info"></i><span>Submitting a product does not guarantee approval.</span></div>
+                </section>
+
+                <section class="gl-section" id="review-approval" data-title="Review &amp; Approval">
+                    <h2><span class="gl-num">5</span>Review &amp; Approval</h2>
+                    <p>Every submission is reviewed before publication.</p>
+                    <div class="gl-card">
+                        <p class="gl-sub" style="margin-top: 0;">We consider</p>
+                        <ul class="gl-checks">
+                            <li><i class="fa-solid fa-check"></i><span>Relevance to Enovox Search.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Accuracy of submitted information.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Accessibility of the product website.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Compliance with our guidelines.</span></li>
+                        </ul>
+                        <p class="gl-sub">Possible outcomes</p>
+                        <div class="gl-chips">
+                            <span class="gl-chip gl-chip-ok"><i class="fa-solid fa-circle-check"></i>Approved</span>
+                            <span class="gl-chip gl-chip-wait"><i class="fa-regular fa-clock"></i>Pending</span>
+                            <span class="gl-chip gl-chip-no"><i class="fa-solid fa-circle-xmark"></i>Rejected</span>
+                        </div>
+                    </div>
+                    <div class="gl-note"><i class="fa-solid fa-circle-info"></i><span>Review times may vary.</span></div>
+                </section>
+
+                <section class="gl-section" id="managing-product" data-title="Managing Your Product">
+                    <h2><span class="gl-num">6</span>Managing Your Product</h2>
+                    <p>Already listed? Use the <a href="/dashboard" style="color: var(--gl-primary); font-weight: 600;">Developer Dashboard</a> to manage your product. You can update supported information, including:</p>
+                    <div class="gl-card">
+                        <ul class="gl-checks gl-split">
+                            <li><i class="fa-solid fa-check"></i><span>Product name and description.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Website and pricing.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Category and platform.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Other editable listing details.</span></li>
+                        </ul>
+                    </div>
+                    <div class="gl-note gl-note-warn"><i class="fa-solid fa-triangle-exclamation"></i><span>Keep your listing accurate. Misleading information or repeated violations may result in changes to your listing or its removal.</span></div>
+                </section>
+
+                <section class="gl-section" id="listing-guidelines" data-title="Listing Guidelines">
+                    <h2><span class="gl-num">7</span>Product Listing Guidelines</h2>
+                    <p>To maintain a useful discovery platform:</p>
+                    <div class="gl-card">
+                        <ul class="gl-checks">
+                            <li><i class="fa-solid fa-check"></i><span>Provide truthful and accurate information.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Use your official product name and website.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Choose the most relevant category.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Keep your product description clear.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Update outdated information through your dashboard.</span></li>
+                            <li><i class="fa-solid fa-check"></i><span>Don't submit duplicate listings for the same product without a valid reason.</span></li>
+                        </ul>
+                    </div>
+                    <div class="gl-note gl-note-warn"><i class="fa-solid fa-triangle-exclamation"></i><span>Enovox Search may reject or remove listings that violate these guidelines.</span></div>
+                </section>
+
+                <section class="gl-section" id="faqs" data-title="FAQs">
+                    <h2><span class="gl-num">8</span>Frequently Asked Questions</h2>
+                    <div class="gl-faq">
+                        <details>
+                            <summary>Can I submit multiple products?</summary>
+                            <p>Yes. Each product must meet our guidelines.</p>
+                        </details>
+                        <details>
+                            <summary>Can I submit a beta product?</summary>
+                            <p>Yes, if it's sufficiently developed for users to understand or access it. Clearly indicate its beta status.</p>
+                        </details>
+                        <details>
+                            <summary>Can I edit my listing after approval?</summary>
+                            <p>Yes. Use your Developer Dashboard to update supported details.</p>
+                        </details>
+                        <details>
+                            <summary>Does listing guarantee sales?</summary>
+                            <p>No. Enovox Search helps people discover products but cannot guarantee customers or revenue.</p>
+                        </details>
+                        <details>
+                            <summary>What if my product is rejected?</summary>
+                            <p>Review the requirements, correct any issues, and resubmit if the option is available.</p>
+                        </details>
+                        <details>
+                            <summary>Can international users discover my product?</summary>
+                            <p>Yes. Nigerian-built products serving global markets are welcome.</p>
+                        </details>
+                    </div>
+                </section>
+
+                <section class="gl-section" id="need-help" data-title="Need Help">
+                    <h2><span class="gl-num">9</span>Need Help?</h2>
+                    <div class="gl-card gl-help">
+                        <p>Having trouble submitting or managing your product? Contact the Enovox Search team through our official contact channels.</p>
+                        <a href="/contact" class="gl-btn gl-btn-primary"><i class="fa-regular fa-envelope"></i> Contact Us</a>
+                    </div>
+                </section>
+
+                <!-- Closing CTA -->
+                <div class="gl-cta">
+                    <h2>Ready to Be Discovered?</h2>
+                    <p>Building something worth discovering? Submit your product and help the world discover what Nigerians are building.</p>
+                    <a href="/submit" class="gl-btn gl-btn-primary">Submit Your Product <i class="fa-solid fa-arrow-right"></i></a>
+                    <small>Enovox Search — Discover What Nigeria Is Building.</small>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+   <!-- Footer Section -->
+    <footer>
+        <div class="footer-top">
+            <!-- Column 1: Brand & Social -->
+            <div class="footer-col brand-col">
+                <a href="/" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div class="footer-subscribe">
+                    <h4 class="footer-subscribe-title">Discover more. Stay updated.</h4>
+                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, updates, and news from Enovox Search.</p>
+                    <form id="footer-subscribe-form" class="footer-subscribe-form" novalidate>
+                        <div class="footer-subscribe-row">
+                            <input type="email" id="footer-subscribe-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+                            <button type="submit" class="footer-subscribe-btn">Subscribe</button>
+                        </div>
+                        <p class="footer-subscribe-msg" id="footer-subscribe-msg" role="status" aria-live="polite"></p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Column 2: Quick Links -->
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="/">Home</a>
+                <a href="/explore">Explore</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
+                <a href="/submit">Submit Product</a>
+                <a href="/about">About</a>
+                <a href="/contact">Contact</a>
+            </div>
+
+            <!-- Column 3: Community -->
+            <div class="footer-col">
+                <h4>Community</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+            </div>
+
+            <!-- Column 4: Legal -->
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/term">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </footer>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js"></script>
+    <script src="/static/js/nav-auth.js"></script>
+
+    <!-- Guidelines page: section navigation (sidebar + mobile bar + active highlighting) -->
+    <script>
+    (function () {
+        var header = document.querySelector('.navbar');
+        var sections = Array.prototype.slice.call(document.querySelectorAll('.gl-section'));
+        var sideList = document.getElementById('gl-sidebar-list');
+        var mobileList = document.getElementById('gl-mobile-list');
+        var mobileBtn = document.getElementById('gl-mobile-btn');
+        var mobilePanel = document.getElementById('gl-mobile-panel');
+        var mobileCurrent = document.getElementById('gl-mobile-current');
+        if (!sections.length || !sideList) return;
+
+        /* Keep sticky elements just below the site header, whether or not it is sticky */
+        function setOffset() {
+            var h = 0;
+            if (header) {
+                var pos = window.getComputedStyle(header).position;
+                if (pos === 'sticky' || pos === 'fixed') h = header.offsetHeight;
+            }
+            document.documentElement.style.setProperty('--gl-offset', h + 'px');
+        }
+        setOffset();
+        window.addEventListener('resize', setOffset);
+        window.addEventListener('load', setOffset);
+
+        /* Build the mobile list from the sidebar list so the two never drift apart */
+        Array.prototype.forEach.call(sideList.querySelectorAll('li'), function (li) {
+            mobileList.appendChild(li.cloneNode(true));
+        });
+        var links = Array.prototype.slice.call(document.querySelectorAll('.gl-toc a'));
+
+        function closePanel() {
+            mobilePanel.hidden = true;
+            mobileBtn.setAttribute('aria-expanded', 'false');
+        }
+        mobileBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = mobilePanel.hidden;
+            mobilePanel.hidden = !open;
+            mobileBtn.setAttribute('aria-expanded', String(open));
+        });
+        mobilePanel.addEventListener('click', function (e) {
+            if (e.target.closest('a')) closePanel();
+        });
+        document.addEventListener('click', function (e) {
+            if (!mobilePanel.hidden && !e.target.closest('#gl-mobile-toc')) closePanel();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !mobilePanel.hidden) { closePanel(); mobileBtn.focus(); }
+        });
+
+        /* Highlight the section currently being read */
+        var activeId = null;
+        function setActive(id, title) {
+            if (id === activeId) return;
+            activeId = id;
+            links.forEach(function (a) {
+                var on = a.getAttribute('href') === '#' + id;
+                a.classList.toggle('is-active', on);
+                if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+            });
+            if (title) mobileCurrent.textContent = title;
+        }
+        /* Pin the mobile bar once it reaches the top (works even if an ancestor blocks CSS sticky) */
+        var mobileToc = document.getElementById('gl-mobile-toc');
+        var spacer = document.createElement('div');
+        spacer.className = 'gl-toc-spacer';
+        spacer.setAttribute('aria-hidden', 'true');
+        mobileToc.parentNode.insertBefore(spacer, mobileToc);
+        function updateStuck() {
+            var isMobile = window.matchMedia('(max-width: 900px)').matches;
+            var offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gl-offset')) || 0;
+            var stuck = isMobile && spacer.getBoundingClientRect().top <= offset;
+            if (stuck === mobileToc.classList.contains('is-stuck')) return;
+            if (stuck) {
+                spacer.style.height = mobileToc.offsetHeight + 'px';
+                spacer.style.marginBottom = '22px';
+                mobileToc.classList.add('is-stuck');
+            } else {
+                mobileToc.classList.remove('is-stuck');
+                spacer.style.height = '0';
+                spacer.style.marginBottom = '0';
+            }
+        }
+
+        function update() {
+            updateStuck();
+            var offset = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gl-offset')) || 0;
+            var isMobile = window.matchMedia('(max-width: 900px)').matches;
+            var line = offset + (isMobile ? 100 : 60);
+            var current = sections[0];
+            sections.forEach(function (s) {
+                if (s.getBoundingClientRect().top <= line) current = s;
+            });
+            if (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight - 4) {
+                current = sections[sections.length - 1];
+            }
+            setActive(current.id, current.getAttribute('data-title'));
+        }
+        var ticking = false;
+        window.addEventListener('scroll', function () {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(function () { update(); ticking = false; });
+        }, { passive: true });
+        window.addEventListener('resize', update);
+        update();
+    })();
+    </script>
+</body>
+</html>

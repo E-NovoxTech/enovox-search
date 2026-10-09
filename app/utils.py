@@ -13,12 +13,13 @@ import resend
 resend.api_key = os.getenv("RESEND_API_KEY")
 
 
-def generate_slug(name: str, db: Session) -> str:
-    base_slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+def generate_slug(name: str, db: Session, model=None) -> str:
+    model = model or models.Product
+    base_slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-') or "item"
     slug = base_slug
     counter = 1
 
-    while db.query(models.Product).filter(models.Product.slug == slug).first():
+    while db.query(model).filter(model.slug == slug).first():
         counter += 1
         slug = f"{base_slug}-{counter}"
 

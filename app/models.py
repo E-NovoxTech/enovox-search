@@ -171,4 +171,28 @@ class ProductAlternative(Base):
     id = Column(Integer, primary_key=True, index=True)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     foreign_tool_id = Column(Integer, ForeignKey("foreign_tools.id"), nullable=False)
+    created_at = Column(Date, default=date.today) 
+    
+class Collection(Base):
+    __tablename__ = "collections"
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    emoji = Column(String, nullable=True)
+    description = Column(String, nullable=True)
+    section_type = Column(String, nullable=False, default="manual")  # "manual" or "auto"
+    auto_rule = Column(String, nullable=True)                        # "newest" for now
+    is_published = Column(Boolean, default=False)
+    is_archived = Column(Boolean, default=False)
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    display_order = Column(Integer, default=0)
     created_at = Column(Date, default=date.today)
+
+
+class CollectionProduct(Base):
+    __tablename__ = "collection_products"
+    id = Column(Integer, primary_key=True, index=True)
+    collection_id = Column(Integer, ForeignKey("collections.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    position = Column(Integer, default=0)

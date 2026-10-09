@@ -1,5 +1,41 @@
 const API_BASE_URL = '';
 
+// Shared category icon/color system used by both the category grid and header menu.
+window.ENOVOX_CATEGORY_PRESENTATION = Object.freeze({
+    'ai & automation': { icon: 'fa-microchip', accent: '#2563eb', soft: 'rgba(37, 99, 235, 0.14)' },
+    'fintech': { icon: 'fa-credit-card', accent: '#059669', soft: 'rgba(5, 150, 105, 0.14)' },
+    'education': { icon: 'fa-graduation-cap', accent: '#7c3aed', soft: 'rgba(124, 58, 237, 0.14)' },
+    'business': { icon: 'fa-briefcase', accent: '#d97706', soft: 'rgba(217, 119, 6, 0.16)' },
+    'productivity': { icon: 'fa-list-check', accent: '#2563eb', soft: 'rgba(37, 99, 235, 0.14)' },
+    'e-commerce': { icon: 'fa-cart-shopping', accent: '#ea580c', soft: 'rgba(234, 88, 12, 0.14)' },
+    'web3 & blockchain': { icon: 'fa-cube', accent: '#7c3aed', soft: 'rgba(124, 58, 237, 0.14)' },
+    'design & creative': { icon: 'fa-palette', accent: '#db2777', soft: 'rgba(219, 39, 119, 0.14)' },
+    'transportation & logistics': { icon: 'fa-truck', accent: '#dc2626', soft: 'rgba(220, 38, 38, 0.14)' },
+    'health & wellness': { icon: 'fa-heart-pulse', accent: '#16a34a', soft: 'rgba(22, 163, 74, 0.14)' },
+    'entertainment & media': { icon: 'fa-circle-play', accent: '#9333ea', soft: 'rgba(147, 51, 234, 0.14)' },
+    'agriculture': { icon: 'fa-seedling', accent: '#65a30d', soft: 'rgba(101, 163, 13, 0.15)' },
+    'social & community': { icon: 'fa-users', accent: '#db2777', soft: 'rgba(219, 39, 119, 0.14)' },
+    'developer tools': { icon: 'fa-code', accent: '#2563eb', soft: 'rgba(37, 99, 235, 0.14)' },
+    'gaming & esports': { icon: 'fa-gamepad', accent: '#7c3aed', soft: 'rgba(124, 58, 237, 0.14)' },
+    'freelance & gig work': { icon: 'fa-briefcase', accent: '#ea580c', soft: 'rgba(234, 88, 12, 0.14)' },
+    'real estate & housing': { icon: 'fa-house', accent: '#0284c7', soft: 'rgba(2, 132, 199, 0.14)' },
+    'legal & compliance': { icon: 'fa-scale-balanced', accent: '#6d28d9', soft: 'rgba(109, 40, 217, 0.14)' },
+    'energy & utilities': { icon: 'fa-bolt', accent: '#d97706', soft: 'rgba(217, 119, 6, 0.16)' },
+    'travel & tourism': { icon: 'fa-plane', accent: '#0284c7', soft: 'rgba(2, 132, 199, 0.14)' },
+    'security': { icon: 'fa-shield-halved', accent: '#059669', soft: 'rgba(5, 150, 105, 0.14)' },
+    'other': { icon: 'fa-ellipsis', accent: '#64748b', soft: 'rgba(100, 116, 139, 0.14)' }
+});
+
+window.getEnovoxCategoryPresentation = function (category) {
+    const name = String(category || '').trim().toLowerCase();
+    const aliases = {
+        'design & creatives': 'design & creative',
+        'energy & utility': 'energy & utilities'
+    };
+    const key = aliases[name] || name;
+    return window.ENOVOX_CATEGORY_PRESENTATION[key] || window.ENOVOX_CATEGORY_PRESENTATION.other;
+};
+
 // Start the category section independently of the other homepage widgets.
 // A failure in hero/theme/bookmark setup must never strand its initial
 // "Finding popular categories..." state without making the counts request.
@@ -39,10 +75,11 @@ if (document.readyState === 'loading') {
 
 document.addEventListener('DOMContentLoaded', () => {
     initEnovoxProductAutocomplete();
+    initForeignAlternativesBrowse();
+    initForeignAlternativeDetail();
 
-    // Generate Home Category Pills with Progressive Reveal
+    // Generate the fixed top category row from the configured category list.
     const pillsContainer = document.getElementById('home-category-pills');
-    const toggleBtn = document.getElementById('pill-toggle-btn');
     
     if (pillsContainer && typeof ENOVOX_CONFIG !== 'undefined') {
         pillsContainer.innerHTML = '';
@@ -59,55 +96,634 @@ document.addEventListener('DOMContentLoaded', () => {
             pillElements.push(pill);
         });
 
-        const isMobile = window.innerWidth <= 768;
-        let currentStage = 0;
-
         function updatePillVisibility() {
-            let visibleCount;
-            if (isMobile) {
-                if (currentStage === 0) visibleCount = 4;
-                else if (currentStage === 1) visibleCount = 7;
-                else visibleCount = pillElements.length;
-            } else {
-                if (currentStage === 0) visibleCount = 6;
-                else visibleCount = pillElements.length;
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            let visibleCount = Math.min(isMobile ? 4 : 6, pillElements.length);
+
+            if (isMobile && visibleCount === 4) {
+                // Measure the first four chips after their active responsive styles apply.
+                pillElements.forEach((pill, index) => {
+                    pill.style.display = index < 4 ? 'inline-block' : 'none';
+                });
+                const rowStyle = window.getComputedStyle(pillsContainer);
+                const gap = parseFloat(rowStyle.columnGap || rowStyle.gap) || 0;
+                const fourPillWidth = pillElements.slice(0, 4).reduce(
+                    (total, pill) => total + pill.getBoundingClientRect().width,
+                    0
+                ) + gap * 3;
+                const comfortableSpacing = 24;
+                if (fourPillWidth + comfortableSpacing > pillsContainer.clientWidth) {
+                    visibleCount = 3;
+                }
             }
 
             pillElements.forEach((pill, index) => {
                 pill.style.display = index < visibleCount ? 'inline-block' : 'none';
             });
-
-            const maxStage = isMobile ? 2 : 1;
-            if (toggleBtn) {
-                toggleBtn.innerHTML = currentStage === maxStage
-                    ? '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>'
-                    : '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-            }
         }
 
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                const maxStage = isMobile ? 2 : 1;
-                currentStage = currentStage >= maxStage ? 0 : currentStage + 1;
-                updatePillVisibility();
-            });
-        }
-
+        window.addEventListener('resize', updatePillVisibility, { passive: true });
         updatePillVisibility();
     }
 
     initHeroRotation();
     initThemeToggle();
+    initHeaderNavigation();
     initMobileMenu();
     initFooterSubscribe();
     initSubscribeHeaderButton();
     initSiteBanner();
-    EnovoxBookmarks.init();
+    if (!document.body.hasAttribute('data-category-page')) EnovoxBookmarks.init();
     
     if (document.getElementById('newly-launched-list')) {
         loadGridData();
     }
 });
+
+/* ==========================================================================
+   Nigerian Alternatives — browse, name-only autocomplete, and detail page
+   ========================================================================== */
+const FOREIGN_TOOLS_API_BASE = '/products/alternatives/foreign-tools';
+let foreignToolsCache = null;
+let foreignToolsFetchPromise = null;
+let foreignToolsAutocompleteUnavailable = false;
+let foreignToolsAutocompleteWarningShown = false;
+
+function normalizeForeignTools(payload) {
+    const items = Array.isArray(payload)
+        ? payload
+        : (Array.isArray(payload && payload.foreign_tools)
+            ? payload.foreign_tools
+            : (Array.isArray(payload && payload.items) ? payload.items : []));
+    return items.filter(item => item && String(item.name || '').trim() && String(item.slug || '').trim());
+}
+
+function getForeignTools(force = false) {
+    if (foreignToolsCache && !force) return Promise.resolve(foreignToolsCache);
+    if (foreignToolsFetchPromise && !force) return foreignToolsFetchPromise;
+
+    const request = fetch(`${API_BASE_URL}${FOREIGN_TOOLS_API_BASE}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+    }).then(response => {
+        if (!response.ok) throw new Error(`Foreign tools API failed (${response.status})`);
+        return response.json();
+    }).then(normalizeForeignTools).then(items => {
+        foreignToolsCache = items;
+        return items;
+    }).catch(error => {
+        foreignToolsFetchPromise = null;
+        throw error;
+    });
+
+    foreignToolsFetchPromise = request;
+    return request;
+}
+
+function safeForeignToolLogoUrl(value) {
+    if (!value) return '';
+    try {
+        const url = new URL(String(value), window.location.origin);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function createForeignToolLogo(tool, className = 'foreign-tool-logo') {
+    const name = String(tool.name || '').trim();
+    const src = safeForeignToolLogoUrl(tool.logo_url);
+    if (!src) {
+        const fallback = document.createElement('span');
+        fallback.className = `${className} ${className}-fallback`;
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.textContent = name.charAt(0).toUpperCase() || '?';
+        return fallback;
+    }
+
+    const image = document.createElement('img');
+    image.className = className;
+    image.src = src;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    image.addEventListener('error', () => {
+        const fallback = document.createElement('span');
+        fallback.className = `${className} ${className}-fallback`;
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.textContent = name.charAt(0).toUpperCase() || '?';
+        image.replaceWith(fallback);
+    }, { once: true });
+    return image;
+}
+
+function truncateAlternativeCardDescription(value, maxLength = 112) {
+    const text = String(value || '').trim().replace(/\s+/g, ' ');
+    if (text.length <= maxLength) return text;
+
+    let excerpt = text.slice(0, maxLength - 3);
+    const lastSpace = excerpt.lastIndexOf(' ');
+    if (lastSpace > maxLength * 0.65) excerpt = excerpt.slice(0, lastSpace);
+    return `${excerpt.trimEnd()}...`;
+}
+
+function createForeignToolCard(tool) {
+    const name = String(tool.name || '').trim();
+    const slug = String(tool.slug || '').trim();
+    const card = document.createElement('a');
+    card.className = 'product-card foreign-tool-card';
+    card.href = `/alternative/${encodeURIComponent(slug)}`;
+    card.setAttribute('aria-label', `See Nigerian alternatives to ${name}`);
+
+    card.appendChild(createForeignToolLogo(tool, 'product-logo'));
+
+    const content = document.createElement('div');
+    content.className = 'product-info';
+
+    const title = document.createElement('h3');
+    title.className = 'product-name';
+    title.textContent = name;
+    content.appendChild(title);
+
+    if (tool.description) {
+        const description = document.createElement('p');
+        description.className = 'product-desc';
+        description.title = String(tool.description);
+        description.textContent = truncateAlternativeCardDescription(tool.description);
+        content.appendChild(description);
+    }
+
+    const count = Number(tool.alternative_count) || 0;
+    const countLabel = document.createElement('span');
+    countLabel.className = 'product-badge foreign-tool-card-count';
+    countLabel.textContent = `${count} Nigerian alternative${count === 1 ? '' : 's'}`;
+    content.appendChild(countLabel);
+
+    if (tool.category) {
+        const categoryName = String(tool.category).trim();
+        const categoryClass = categoryName.toLowerCase()
+            .replace(/ & /g, '-')
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '');
+        const category = document.createElement('span');
+        category.className = `category-pill pill-${categoryClass} pill-sm`;
+        category.textContent = categoryName;
+        content.appendChild(category);
+    }
+
+    card.appendChild(content);
+
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    arrow.setAttribute('class', 'card-arrow');
+    arrow.setAttribute('width', '18');
+    arrow.setAttribute('height', '18');
+    arrow.setAttribute('viewBox', '0 0 24 24');
+    arrow.setAttribute('fill', 'none');
+    arrow.setAttribute('stroke', 'currentColor');
+    arrow.setAttribute('stroke-width', '2');
+    arrow.setAttribute('stroke-linecap', 'round');
+    arrow.setAttribute('stroke-linejoin', 'round');
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', '5');
+    line.setAttribute('y1', '12');
+    line.setAttribute('x2', '19');
+    line.setAttribute('y2', '12');
+    const point = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    point.setAttribute('points', '12 5 19 12 12 19');
+    arrow.append(line, point);
+    card.appendChild(arrow);
+
+    return card;
+}
+function initForeignAlternativesBrowse() {
+    const grid = document.getElementById('foreign-tools-grid');
+    if (!grid) return;
+
+    const status = document.getElementById('foreign-tools-status');
+    initForeignToolAutocomplete();
+    grid.setAttribute('aria-busy', 'true');
+
+    getForeignTools().then(tools => {
+        grid.replaceChildren();
+        if (!tools.length) {
+            const empty = document.createElement('p');
+            empty.className = 'foreign-tools-empty';
+            empty.textContent = 'Foreign products will appear here soon.';
+            grid.appendChild(empty);
+        } else {
+            tools.forEach(tool => grid.appendChild(createForeignToolCard(tool)));
+        }
+        grid.setAttribute('aria-busy', 'false');
+        if (status) status.textContent = `${tools.length} foreign products loaded.`;
+    }).catch(error => {
+        console.error('[foreign alternatives] Could not load the foreign tools list:', error);
+        grid.setAttribute('aria-busy', 'false');
+        grid.replaceChildren();
+        const message = document.createElement('div');
+        message.className = 'foreign-tools-load-error';
+        const copy = document.createElement('p');
+        copy.textContent = 'We could not load the foreign products right now.';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'foreign-tools-retry';
+        retry.textContent = 'Try again';
+        retry.addEventListener('click', () => {
+            foreignToolsCache = null;
+            getForeignTools(true).then(tools => {
+                grid.replaceChildren(...tools.map(createForeignToolCard));
+                grid.setAttribute('aria-busy', 'false');
+                if (status) status.textContent = `${tools.length} foreign products loaded.`;
+            }).catch(retryError => {
+                console.error('[foreign alternatives] Retry failed:', retryError);
+            });
+        });
+        message.append(copy, retry);
+        grid.appendChild(message);
+        if (status) status.textContent = 'Unable to load foreign products.';
+    });
+}
+
+function normalizeForeignAutocomplete(payload) {
+    const items = Array.isArray(payload)
+        ? payload
+        : (Array.isArray(payload && payload.suggestions)
+            ? payload.suggestions
+            : (Array.isArray(payload && payload.results) ? payload.results : []));
+    return items.filter(item => item && String(item.name || '').trim() && String(item.slug || '').trim()).slice(0, 8);
+}
+
+function normalizeForeignSearchText(value) {
+    return String(value || '').trim().toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+async function searchForeignToolsByName(query, signal) {
+    if (!foreignToolsAutocompleteUnavailable) {
+        try {
+            const params = new URLSearchParams({ query });
+            const response = await fetch(`${API_BASE_URL}${FOREIGN_TOOLS_API_BASE}/autocomplete?${params.toString()}`, {
+                signal,
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            });
+            if (response.ok) return normalizeForeignAutocomplete(await response.json());
+
+            // If FastAPI routes this static path as a foreign-tool slug, use the
+            // already-loaded list as a name-only fallback until routing is fixed.
+            foreignToolsAutocompleteUnavailable = true;
+            if (!foreignToolsAutocompleteWarningShown) {
+                console.warn(`[foreign alternatives] Autocomplete endpoint returned ${response.status}; filtering the foreign-tools list by name instead.`);
+                foreignToolsAutocompleteWarningShown = true;
+            }
+        } catch (error) {
+            if (error && error.name === 'AbortError') throw error;
+            foreignToolsAutocompleteUnavailable = true;
+            if (!foreignToolsAutocompleteWarningShown) {
+                console.warn('[foreign alternatives] Autocomplete endpoint unavailable; filtering the foreign-tools list by name instead.', error);
+                foreignToolsAutocompleteWarningShown = true;
+            }
+        }
+    }
+
+    const foreignTools = await getForeignTools();
+    const normalizedQuery = normalizeForeignSearchText(query);
+    return foreignTools
+        .filter(tool => normalizeForeignSearchText(tool.name).includes(normalizedQuery))
+        .sort((a, b) => {
+            const aStarts = normalizeForeignSearchText(a.name).startsWith(normalizedQuery);
+            const bStarts = normalizeForeignSearchText(b.name).startsWith(normalizedQuery);
+            return Number(bStarts) - Number(aStarts);
+        })
+        .slice(0, 8)
+        .map(({ name, slug, logo_url }) => ({ name, slug, logo_url }));
+}
+
+function initForeignToolAutocomplete() {
+    const input = document.getElementById('foreign-tool-search');
+    const wrapper = input && input.closest('.foreign-tool-search-wrapper');
+    const panel = wrapper && wrapper.querySelector('.foreign-tool-suggestions');
+    if (!input || !wrapper || !panel) return;
+
+    let timer = null;
+    let controller = null;
+    let requestVersion = 0;
+
+    function clearActive() {
+        input.removeAttribute('aria-activedescendant');
+        panel.querySelectorAll('.product-autocomplete-option.is-active').forEach(option => {
+            option.classList.remove('is-active');
+            option.setAttribute('aria-selected', 'false');
+        });
+    }
+
+    function cancelPending() {
+        if (timer !== null) {
+            clearTimeout(timer);
+            timer = null;
+        }
+        requestVersion += 1;
+        if (controller) {
+            controller.abort();
+            controller = null;
+        }
+    }
+
+    function closePanel(cancel = true) {
+        if (cancel) cancelPending();
+        panel.hidden = true;
+        panel.replaceChildren();
+        input.setAttribute('aria-expanded', 'false');
+        clearActive();
+    }
+
+    function setActive(option) {
+        if (!option) return;
+        clearActive();
+        option.classList.add('is-active');
+        option.setAttribute('aria-selected', 'true');
+        input.setAttribute('aria-activedescendant', option.id);
+    }
+
+    function showMatches(query, matches) {
+        const items = normalizeForeignAutocomplete(matches).slice(0, 8);
+        panel.replaceChildren();
+        clearActive();
+        if (!items.length) {
+            closePanel(false);
+            return;
+        }
+
+        const heading = document.createElement('div');
+        heading.className = 'product-autocomplete-header';
+        const label = document.createElement('span');
+        label.textContent = 'Foreign products';
+        const count = document.createElement('span');
+        count.className = 'product-autocomplete-count';
+        count.textContent = `${items.length} match${items.length === 1 ? '' : 'es'}`;
+        heading.append(label, count);
+        panel.appendChild(heading);
+
+        const list = document.createElement('ul');
+        list.className = 'product-autocomplete-list';
+        list.id = 'foreign-tool-suggestion-list';
+        list.setAttribute('role', 'listbox');
+        list.setAttribute('aria-label', 'Foreign product matches');
+        const rows = [];
+        items.forEach((tool, index) => {
+            const row = document.createElement('li');
+            row.hidden = index >= 3;
+            const option = document.createElement('a');
+            option.id = `foreign-tool-suggestion-${index + 1}`;
+            option.className = 'product-autocomplete-option';
+            option.href = `/alternative/${encodeURIComponent(String(tool.slug).trim())}`;
+            option.setAttribute('role', 'option');
+            option.setAttribute('aria-selected', 'false');
+            option.tabIndex = -1;
+            option.title = String(tool.name).trim();
+            option.appendChild(createForeignToolLogo(tool, 'product-autocomplete-logo'));
+            const copy = document.createElement('span');
+            copy.className = 'product-autocomplete-copy';
+            const name = document.createElement('span');
+            name.className = 'product-autocomplete-name';
+            name.textContent = String(tool.name).trim();
+            copy.appendChild(name);
+            option.appendChild(copy);
+            option.addEventListener('mouseenter', () => setActive(option));
+            row.appendChild(option);
+            list.appendChild(row);
+            rows.push(row);
+        });
+        panel.appendChild(list);
+
+        if (items.length > 3) {
+            const footer = document.createElement('div');
+            footer.className = 'product-autocomplete-footer product-autocomplete-footer-end';
+            const more = document.createElement('button');
+            more.type = 'button';
+            more.className = 'product-autocomplete-more';
+            more.setAttribute('aria-controls', list.id);
+            more.setAttribute('aria-expanded', 'false');
+            more.textContent = `Show ${items.length - 3} more`;
+            let expanded = false;
+            more.addEventListener('click', () => {
+                expanded = !expanded;
+                rows.forEach((row, index) => {
+                    if (index >= 3) row.hidden = !expanded;
+                });
+                more.setAttribute('aria-expanded', String(expanded));
+                more.textContent = expanded ? 'Show fewer' : `Show ${items.length - 3} more`;
+                const active = document.getElementById(input.getAttribute('aria-activedescendant') || '');
+                if (!expanded && active && active.closest('li').hidden) clearActive();
+            });
+            footer.appendChild(more);
+            panel.appendChild(footer);
+        }
+
+        panel.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+    }
+
+    async function load(query) {
+        const version = ++requestVersion;
+        const currentController = new AbortController();
+        controller = currentController;
+        try {
+            const matches = await searchForeignToolsByName(query, currentController.signal);
+            if (version !== requestVersion || input.value.trim() !== query) return;
+            showMatches(query, matches);
+        } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            if (version !== requestVersion || input.value.trim() !== query) return;
+            console.error('[foreign alternatives] Autocomplete lookup failed:', error);
+            closePanel(false);
+        } finally {
+            if (controller === currentController) controller = null;
+        }
+    }
+
+    input.addEventListener('input', () => {
+        closePanel();
+        const query = input.value.trim();
+        if (query.length < 2) return;
+        timer = setTimeout(() => {
+            timer = null;
+            load(query);
+        }, 180);
+    });
+
+    input.addEventListener('focus', () => {
+        const query = input.value.trim();
+        if (query.length >= 2 && panel.hidden) {
+            cancelPending();
+            load(query);
+        }
+    });
+
+    input.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            if (!panel.hidden) {
+                event.preventDefault();
+                closePanel();
+            }
+            return;
+        }
+        if (event.key === 'Enter') {
+            const active = document.getElementById(input.getAttribute('aria-activedescendant') || '');
+            if (active && panel.contains(active)) {
+                event.preventDefault();
+                window.location.assign(active.href);
+            }
+            return;
+        }
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+        const options = Array.from(panel.querySelectorAll('.product-autocomplete-option')).filter(option => {
+            const row = option.closest('li');
+            return row && !row.hidden;
+        });
+        if (!options.length) return;
+        event.preventDefault();
+        const activeId = input.getAttribute('aria-activedescendant');
+        const current = options.findIndex(option => option.id === activeId);
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        const next = current === -1
+            ? (direction > 0 ? 0 : options.length - 1)
+            : (current + direction + options.length) % options.length;
+        setActive(options[next]);
+    });
+
+    wrapper.addEventListener('focusout', () => {
+        window.setTimeout(() => {
+            if (!wrapper.contains(document.activeElement)) closePanel();
+        }, 0);
+    });
+    document.addEventListener('pointerdown', event => {
+        if (!wrapper.contains(event.target)) closePanel();
+    });
+}
+
+function initForeignAlternativeDetail() {
+    const root = document.getElementById('foreign-alternative-detail');
+    if (!root) return;
+
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    let slug = pathParts.length ? pathParts[pathParts.length - 1] : '';
+    try { slug = decodeURIComponent(slug); } catch (error) { /* keep the raw route slug */ }
+
+    const nameElement = document.getElementById('foreign-tool-name');
+    const descriptionElement = document.getElementById('foreign-tool-description');
+    const logoContainer = document.getElementById('foreign-tool-logo-container');
+    const loading = document.getElementById('alternatives-detail-loading');
+    const grid = document.getElementById('alternatives-products-grid');
+    const emptyState = document.getElementById('alternatives-empty-state');
+    const errorState = document.getElementById('alternatives-detail-error');
+    const intro = document.getElementById('alternatives-detail-intro');
+    const count = document.getElementById('alternatives-detail-count');
+
+    function setMeta(selector, content, attribute = 'content') {
+        let element = document.querySelector(selector);
+        if (!element) {
+            element = document.createElement('meta');
+            if (selector.startsWith('meta[name=')) element.name = selector.match(/name="([^"]+)"/)[1];
+            else if (selector.startsWith('meta[property=')) element.setAttribute('property', selector.match(/property="([^"]+)"/)[1]);
+            document.head.appendChild(element);
+        }
+        element.setAttribute(attribute, content);
+    }
+
+    function setCanonical(url) {
+        let link = document.querySelector('link[rel="canonical"]');
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'canonical';
+            document.head.appendChild(link);
+        }
+        link.href = url;
+    }
+
+    function updateAlternativeSEO(tool) {
+        const toolName = String(tool.name || 'this product').trim();
+        const canonical = `https://search.enovoxtech.com/alternative/${encodeURIComponent(String(tool.slug || slug))}`;
+        const title = `Nigerian Alternatives to ${toolName} | Enovox Search`;
+        const description = `Discover Nigerian-built alternatives to ${toolName}. Compare locally developed products that solve similar problems for the Nigerian market.`;
+        document.title = title;
+        setMeta('meta[name="description"]', description);
+        setMeta('meta[name="robots"]', 'index,follow');
+        setMeta('meta[property="og:title"]', title);
+        setMeta('meta[property="og:description"]', description);
+        setMeta('meta[property="og:url"]', canonical);
+        if (tool.logo_url) setMeta('meta[property="og:image"]', String(tool.logo_url));
+        setCanonical(canonical);
+    }
+
+    function showLogo(tool) {
+        if (!logoContainer) return;
+        logoContainer.replaceChildren(createForeignToolLogo(tool, 'foreign-alternative-logo'));
+    }
+
+    if (!slug) {
+        if (loading) loading.hidden = true;
+        if (errorState) {
+            errorState.hidden = false;
+            errorState.textContent = 'This foreign product page could not be found.';
+        }
+        return;
+    }
+
+    fetch(`${API_BASE_URL}${FOREIGN_TOOLS_API_BASE}/${encodeURIComponent(slug)}`, {
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' }
+    }).then(response => {
+        if (!response.ok) throw new Error(`Foreign tool detail API failed (${response.status})`);
+        return response.json();
+    }).then(payload => {
+        const tool = payload && payload.foreign_tool;
+        const alternatives = payload && Array.isArray(payload.alternatives) ? payload.alternatives : [];
+        if (!tool || !tool.name) throw new Error('The foreign tool was not found.');
+
+        updateAlternativeSEO(tool);
+        if (nameElement) nameElement.textContent = String(tool.name);
+        if (descriptionElement) descriptionElement.textContent = String(tool.description || '');
+        if (intro) intro.textContent = `Looking for a Nigerian-built alternative to ${tool.name}? Here are locally developed tools that solve the same problem, built for the Nigerian market.`;
+        const detailHeading = document.getElementById('alternatives-detail-heading');
+        if (detailHeading) detailHeading.textContent = `Nigerian Alternatives to ${tool.name}`;
+        showLogo(tool);
+
+        if (loading) loading.hidden = true;
+        if (alternatives.length) {
+            grid.replaceChildren();
+            alternatives.forEach(product => {
+                const cardProduct = Object.assign({}, product, {
+                    category: product.category || 'Other',
+                    description: product.description || ''
+                });
+                const productCard = createProductCard(cardProduct);
+                const exploreLabel = productCard.querySelector('.card-explore-text');
+                if (exploreLabel) exploreLabel.remove();
+                const cardDescription = productCard.querySelector('.product-desc');
+                if (cardDescription) {
+                    cardDescription.title = String(product.description || '');
+                    cardDescription.textContent = truncateAlternativeCardDescription(product.description || '');
+                }
+                grid.appendChild(productCard);
+            });
+            grid.hidden = false;
+            if (count) {
+                count.hidden = false;
+                count.textContent = `${alternatives.length} Nigerian alternative${alternatives.length === 1 ? '' : 's'}`;
+            }
+        } else if (emptyState) {
+            emptyState.hidden = false;
+            emptyState.textContent = `No Nigerian alternatives listed yet for ${tool.name} — check back soon.`;
+        }
+    }).catch(error => {
+        console.error('[foreign alternatives] Could not load the selected foreign tool:', error);
+        if (loading) loading.hidden = true;
+        if (errorState) {
+            errorState.hidden = false;
+            errorState.textContent = 'We could not load this foreign product right now. Please try again shortly.';
+        }
+    });
+}
+
 
 /* ==========================================================================
    Product autocomplete for homepage + Explore search bars
@@ -526,38 +1142,37 @@ function initHeroRotation() {
    Dark Mode Toggle
    ========================================================================== */
 function initThemeToggle() {
-    const themeToggle = document.getElementById('theme-toggle');
-    const sunIcon = document.querySelector('.sun-icon');
-    const moonIcon = document.querySelector('.moon-icon');
-    
-    if (!themeToggle || !sunIcon || !moonIcon) return;
+    const themeToggles = [
+        document.getElementById('theme-toggle'),
+        document.getElementById('mobile-theme-toggle')
+    ].filter(Boolean);
+    if (!themeToggles.length) return;
 
-    // Check system preference or localStorage
     const savedTheme = localStorage.getItem('enovox_theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-        document.body.classList.add('dark-mode');
-        sunIcon.style.display = 'none';
-        moonIcon.style.display = 'block';
-    } else {
-        sunIcon.style.display = 'block';
-        moonIcon.style.display = 'none';
+    const shouldUseDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+
+    function applyTheme(isDark) {
+        document.body.classList.toggle('dark-mode', isDark);
+        document.querySelectorAll('.sun-icon').forEach(icon => {
+            icon.style.display = isDark ? 'none' : 'block';
+        });
+        document.querySelectorAll('.moon-icon').forEach(icon => {
+            icon.style.display = isDark ? 'block' : 'none';
+        });
+        themeToggles.forEach(toggle => {
+            toggle.setAttribute('aria-pressed', String(isDark));
+            toggle.classList.toggle('is-on', isDark);
+        });
     }
 
-    themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const isDark = document.body.classList.contains('dark-mode');
-        
-        if (isDark) {
-            sunIcon.style.display = 'none';
-            moonIcon.style.display = 'block';
-            localStorage.setItem('enovox_theme', 'dark');
-        } else {
-            sunIcon.style.display = 'block';
-            moonIcon.style.display = 'none';
-            localStorage.setItem('enovox_theme', 'light');
-        }
+    applyTheme(shouldUseDark);
+    themeToggles.forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            const isDark = !document.body.classList.contains('dark-mode');
+            applyTheme(isDark);
+            localStorage.setItem('enovox_theme', isDark ? 'dark' : 'light');
+        });
     });
 }
 
@@ -880,21 +1495,181 @@ function escapeHTML(str) {
 /* ==========================================================================
    Mobile Navigation Slider
    ========================================================================== */
-function initMobileMenu() {
-    const hamburgerBtn = document.getElementById('hamburger-menu');
-    const navLinks = document.querySelector('.nav-links');
+function initHeaderNavigation() {
+    const nav = document.getElementById('primary-navigation');
+    const categoryLinks = document.getElementById('header-category-links');
 
-    if (hamburgerBtn && navLinks) {
-        hamburgerBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('active-slider');
+    function createIconCircle(className, iconClass, accent, soft) {
+        const circle = document.createElement('span');
+        circle.className = className;
+        circle.setAttribute('aria-hidden', 'true');
+        circle.style.setProperty('--icon-accent', accent);
+        circle.style.setProperty('--icon-soft', soft);
+        const icon = document.createElement('i');
+        icon.className = `fa-solid ${iconClass}`;
+        circle.appendChild(icon);
+        return circle;
+    }
+
+    if (nav) {
+        const exploreIcons = {
+            '/explore': { icon: 'fa-boxes-stacked', accent: '#2563eb', soft: 'rgba(37, 99, 235, 0.14)' },
+            '/collection': { icon: 'fa-layer-group', accent: '#7c3aed', soft: 'rgba(124, 58, 237, 0.14)' },
+            '/spotlight': { icon: 'fa-fire', accent: '#ea580c', soft: 'rgba(234, 88, 12, 0.16)' },
+            '/alternative': { icon: 'fa-shuffle', accent: '#0f766e', soft: 'rgba(15, 118, 110, 0.14)' }
+        };
+        const exploreMenu = nav.querySelector('#header-explore-menu');
+        if (exploreMenu) {
+            exploreMenu.querySelectorAll('.nav-dropdown-item').forEach(item => {
+                const route = (item.getAttribute('href') || '').split('?')[0].replace(/\/+$/, '') || '/';
+                const visual = exploreIcons[route];
+                const copy = item.querySelector('.nav-dropdown-item-copy');
+                if (!visual || !copy || item.querySelector('.nav-menu-icon-circle')) return;
+                item.insertBefore(createIconCircle('nav-menu-icon-circle', visual.icon, visual.accent, visual.soft), copy);
+            });
+        }
+
+        const categoryTriggerIcon = nav.querySelector('[aria-controls="header-categories-menu"] .nav-trigger-icon');
+        if (categoryTriggerIcon && !categoryTriggerIcon.parentElement.classList.contains('nav-category-trigger-icon')) {
+            const circle = document.createElement('span');
+            circle.className = 'nav-category-trigger-icon';
+            circle.setAttribute('aria-hidden', 'true');
+            categoryTriggerIcon.parentNode.insertBefore(circle, categoryTriggerIcon);
+            circle.appendChild(categoryTriggerIcon);
+        }
+    }
+
+    if (categoryLinks && typeof ENOVOX_CONFIG !== 'undefined' && Array.isArray(ENOVOX_CONFIG.CATEGORIES)) {
+        const fragment = document.createDocumentFragment();
+        ENOVOX_CONFIG.CATEGORIES.forEach(category => {
+            const link = document.createElement('a');
+            link.className = 'header-category-link';
+            link.href = `/explore?category=${encodeURIComponent(category)}`;
+            const visual = window.getEnovoxCategoryPresentation(category);
+            link.appendChild(createIconCircle('nav-category-icon-circle', visual.icon, visual.accent, visual.soft));
+            const label = document.createElement('span');
+            label.className = 'header-category-label';
+            label.textContent = category;
+            link.appendChild(label);
+            fragment.appendChild(link);
+        });
+        categoryLinks.replaceChildren(fragment);
+    }
+
+    const isDeveloper = !!localStorage.getItem('enovox_dev_token')
+        && localStorage.getItem('enovox_account_type') === 'developer';
+    document.documentElement.classList.toggle('is-developer-authenticated', isDeveloper);
+    document.querySelectorAll('[data-developer-links]').forEach(section => { section.hidden = !isDeveloper; });
+    document.querySelectorAll('[data-developer-guest]').forEach(section => { section.hidden = isDeveloper; });
+
+    if (nav) {
+        const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+        const alternativeLink = nav.querySelector('[data-alternative-nav]');
+        if (alternativeLink && (pathname === '/alternative' || pathname.startsWith('/alternative/'))) {
+            alternativeLink.classList.add('active');
+            alternativeLink.setAttribute('aria-current', 'page');
+        }
+
+        const dropdowns = Array.from(nav.querySelectorAll('[data-nav-dropdown]'));
+        function setDropdownOpen(dropdown, isOpen) {
+            dropdown.classList.toggle('is-open', isOpen);
+            const trigger = dropdown.querySelector('.nav-dropdown-trigger');
+            if (trigger) trigger.setAttribute('aria-expanded', String(isOpen));
+        }
+        function closeDropdowns(except = null) {
+            dropdowns.forEach(dropdown => {
+                if (dropdown !== except) setDropdownOpen(dropdown, false);
+            });
+        }
+
+        dropdowns.forEach(dropdown => {
+            const trigger = dropdown.querySelector('.nav-dropdown-trigger');
+            if (trigger) {
+                trigger.addEventListener('click', event => {
+                    event.stopPropagation();
+                    const shouldOpen = !dropdown.classList.contains('is-open');
+                    closeDropdowns();
+                    setDropdownOpen(dropdown, shouldOpen);
+                });
+            }
+            dropdown.addEventListener('pointerenter', () => {
+                if (window.matchMedia('(min-width: 1280px)').matches) setDropdownOpen(dropdown, true);
+            });
+            dropdown.addEventListener('pointerleave', () => {
+                if (window.matchMedia('(min-width: 1280px)').matches && !dropdown.contains(document.activeElement)) {
+                    setDropdownOpen(dropdown, false);
+                }
+            });
+            dropdown.addEventListener('focusout', event => {
+                if (window.matchMedia('(min-width: 1280px)').matches && !dropdown.contains(event.relatedTarget)) {
+                    setDropdownOpen(dropdown, false);
+                }
+            });
+            dropdown.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => closeDropdowns());
+            });
         });
 
-        document.addEventListener('click', (event) => {
-            if (!navLinks.contains(event.target) && !hamburgerBtn.contains(event.target)) {
-                navLinks.classList.remove('active-slider');
-            }
+        document.addEventListener('click', event => {
+            if (!nav.contains(event.target)) closeDropdowns();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeDropdowns();
         });
     }
+}
+
+function initMobileMenu() {
+    const hamburgerBtn = document.getElementById('hamburger-menu');
+    const navLinks = document.getElementById('primary-navigation');
+    const closeBtn = document.getElementById('mobile-nav-close');
+    const overlay = document.getElementById('nav-overlay');
+    if (!hamburgerBtn || !navLinks) return;
+
+    const mobileQuery = window.matchMedia('(max-width: 1279px)');
+    function setMenuOpen(isOpen) {
+        navLinks.classList.toggle('active-slider', isOpen);
+        hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
+        hamburgerBtn.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+        if (overlay) overlay.classList.toggle('is-visible', isOpen);
+        document.body.classList.toggle('mobile-nav-open', isOpen);
+        if (mobileQuery.matches) navLinks.setAttribute('aria-hidden', String(!isOpen));
+        else navLinks.removeAttribute('aria-hidden');
+        if (!isOpen) {
+            navLinks.querySelectorAll('[data-nav-dropdown].is-open').forEach(dropdown => {
+                dropdown.classList.remove('is-open');
+                const trigger = dropdown.querySelector('.nav-dropdown-trigger');
+                if (trigger) trigger.setAttribute('aria-expanded', 'false');
+            });
+        }
+    }
+
+    hamburgerBtn.addEventListener('click', event => {
+        event.stopPropagation();
+        setMenuOpen(!navLinks.classList.contains('active-slider'));
+    });
+    if (closeBtn) closeBtn.addEventListener('click', () => setMenuOpen(false));
+    if (overlay) overlay.addEventListener('click', () => setMenuOpen(false));
+    navLinks.addEventListener('click', event => {
+        if (mobileQuery.matches && event.target.closest('a')) setMenuOpen(false);
+    });
+    document.addEventListener('click', event => {
+        if (navLinks.classList.contains('active-slider')
+            && !navLinks.contains(event.target)
+            && !hamburgerBtn.contains(event.target)) {
+            setMenuOpen(false);
+        }
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && navLinks.classList.contains('active-slider')) {
+            setMenuOpen(false);
+            hamburgerBtn.focus();
+        }
+    });
+    const handleBreakpointChange = () => setMenuOpen(false);
+    if (typeof mobileQuery.addEventListener === 'function') mobileQuery.addEventListener('change', handleBreakpointChange);
+    else if (typeof mobileQuery.addListener === 'function') mobileQuery.addListener(handleBreakpointChange);
+    setMenuOpen(false);
 }
 /* ==========================================================================
    Footer Newsletter Subscribe

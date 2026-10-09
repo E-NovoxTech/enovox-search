@@ -128,6 +128,22 @@ def autocomplete_search(query: str, db: Session = Depends(get_db)):
         for p in products
     ]
     
+@router.get("/alternatives/foreign-tools/autocomplete")
+def autocomplete_foreign_tools(query: str, db: Session = Depends(get_db)):
+    if len(query) < 2:
+        return []
+
+    normalized_query = query.lower().replace('-', '').replace(' ', '')
+
+    tools = (
+        db.query(models.ForeignTool)
+        .filter(normalize_sql(models.ForeignTool.name).ilike(f"%{normalized_query}%"))
+        .limit(8)
+        .all()
+    )
+
+    return [{"name": t.name, "slug": t.slug, "logo_url": t.logo_url} for t in tools]
+
 @router.get("/banner")
 def get_banner(db: Session = Depends(get_db)):
     banner = db.query(models.SiteBanner).first()
@@ -796,7 +812,7 @@ def create_foreign_tool(admin_key: str, data: schemas.ForeignToolCreate, db: Ses
     if admin_key != os.getenv("ADMIN_KEY"):
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
-    slug = generate_slug(data.name, db)
+    slug = generate_slug(data.name, db, models.ForeignTool)
     new_tool = models.ForeignTool(
         name=data.name,
         slug=slug,
@@ -923,3 +939,17 @@ def update_foreign_tool(tool_id: int, admin_key: str, data: schemas.ForeignToolC
     db.commit()
     db.refresh(tool)
     return tool
+
+@router.get("/admin/dashboard-summary")
+def dashboard_summary(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    return {
+        "total_products": db.query(models.Product).filter(models.Product.status == True).count(),
+        "pending_submissions": db.query(models.Submission).filter(models.Submission.status == "pending").count(),
+        "pending_claims": db.query(models.ClaimRequest).filter(models.ClaimRequest.status == "pending").count(),
+        "developers": db.query(models.Developer).count(),
+        "newsletter_subscribers": len(get_all_recipients(db)),
+        "total_searches": db.query(models.SearchLog).count(),
+    }

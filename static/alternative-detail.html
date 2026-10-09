@@ -3,28 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In - Enovox Search</title>
-    <link rel="canonical" href="https://search.enovoxtech.com/login" />
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/auth.css">
+    <title>{% if foreign_tool is defined and foreign_tool %}Nigerian Alternatives to {{ foreign_tool.name }} | Enovox Search{% else %}Nigerian Alternatives | Enovox Search{% endif %}</title>
+    <meta name="description" content="{% if foreign_tool is defined and foreign_tool %}Discover Nigerian-built alternatives to {{ foreign_tool.name }}. Compare locally developed products made for the Nigerian market.{% else %}Discover Nigerian-built alternatives to popular foreign products. Compare locally developed tools made for the Nigerian market.{% endif %}">
+    <link rel="canonical" href="https://search.enovoxtech.com/alternative/{% if foreign_tool is defined and foreign_tool %}{{ foreign_tool.slug }}{% endif %}">
+    <meta property="og:title" content="{% if foreign_tool is defined and foreign_tool %}Nigerian Alternatives to {{ foreign_tool.name }} | Enovox Search{% else %}Nigerian Alternatives | Enovox Search{% endif %}">
+    <meta property="og:description" content="{% if foreign_tool is defined and foreign_tool %}Discover Nigerian-built alternatives to {{ foreign_tool.name }}. Compare locally developed products made for the Nigerian market.{% else %}Discover Nigerian-built alternatives to popular foreign products. Compare locally developed tools made for the Nigerian market.{% endif %}">
+    <meta property="og:url" content="https://search.enovoxtech.com/alternative/{% if foreign_tool is defined and foreign_tool %}{{ foreign_tool.slug }}{% endif %}">
+    <meta name="robots" content="index,follow">
+    <link rel="stylesheet" href="/static/css/style.css?v=category-grid-20261008-1">
+    <link rel="stylesheet" href="/static/css/explore.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
     <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
     <link rel="manifest" href="/static/assets/site.webmanifest">
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-KWLYDKBTN2"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-KWLYDKBTN2');
     </script>
 </head>
 <body>
-     <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
+    <!-- Navigation Bar -->
+    <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
     <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
         <div class="site-banner-inner">
             <div class="site-banner-content" id="site-banner-content">
@@ -38,7 +42,6 @@
             </button>
         </div>
     </div>
-    <!-- Navigation Bar — matches every other page -->
     <header class="navbar">
         <div class="nav-container">
             <a href="/" class="brand-logo" aria-label="Enovox Search home">
@@ -151,189 +154,38 @@
         <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
     </header>
 
-
-    
-    <main class="auth-page">
-        <div class="auth-card">
-            <div id="auth-form-view">
-
-            <!-- Account type toggle: User (default) vs Developer.
-                 Changes which endpoint auth.js posts to, and drives the
-                 redirect/nav logic after success. -->
-            <div class="account-type-toggle" role="tablist" aria-label="Account type">
-                <button type="button" class="account-type-btn active" data-type="user" role="tab" aria-selected="true">
-                    User
-                    <span class="account-type-sub">Just here to search</span>
-                </button>
-                <button type="button" class="account-type-btn" data-type="developer" role="tab" aria-selected="false">
-                    Developer
-                    <span class="account-type-sub">I want to list my product</span>
-                </button>
+    <main class="foreign-alternative-detail-page" id="foreign-alternative-detail">
+        <section class="foreign-alternative-hero" aria-labelledby="foreign-tool-name">
+            <div class="foreign-alternative-logo-wrap" id="foreign-tool-logo-container" aria-hidden="true">
+                <span class="foreign-alternative-logo-fallback">F</span>
             </div>
-            <input type="hidden" id="account_type" value="user">
-
-            <h2 id="auth-title" data-user-text="Welcome Back" data-dev-text="Welcome Back">Welcome Back</h2>
-            <p class="auth-subtitle" id="auth-subtitle" data-user-text="Log in to continue searching" data-dev-text="Log in to manage your products">Log in to continue searching</p>
-
-            <div id="auth-alert" class="alert hidden"></div>
-
-            <form id="login-form" novalidate>
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="you@example.com">
-                    <span class="field-error" id="email-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="password-field">
-                        <input type="password" id="password" name="password" required placeholder="••••••••">
-                        <button type="button" class="password-toggle-btn" data-target="password" aria-label="Show password" aria-pressed="false">
-                            <i class="fa-regular fa-eye"></i>
-                        </button>
-                    </div>
-                    <span class="field-error" id="password-error"></span>
-                    <a href="#" id="forgot-password-link" class="auth-link forgot-password-link">Forgot password?</a>
-                </div>
-                <button type="submit" id="login-btn" class="btn-primary full-width">Log In</button>
-            </form>
-
-            <div class="auth-footer">
-                <p>New here? <a href="/signup" class="auth-link">Sign up</a></p>
+            <div class="foreign-alternative-hero-copy">
+                <span class="alternatives-eyebrow">Foreign product</span>
+                <h1 id="foreign-tool-name">Loading foreign product…</h1>
+                <p id="foreign-tool-description" class="foreign-alternative-description">Loading product details…</p>
             </div>
+        </section>
 
-            <div class="gsi-divider"><span>or</span></div>
-            <div id="google-signin-button"></div>
-            <div id="google-signin-error" class="alert hidden" style="margin-top:0.75rem;"></div>
-
-            </div><!-- /auth-form-view -->
-
-            <!-- Choose-account-type modal — only shown when Google sign-in
-                 hits a brand-new email with no account_type yet. -->
-            <div id="google-account-type-modal" class="gsi-modal-overlay hidden">
-                <div class="gsi-modal">
-                    <button type="button" class="gsi-modal-close" id="gsi-modal-close" aria-label="Close">&times;</button>
-                    <h3>Choose your account type</h3>
-                    <p class="auth-subtitle" style="margin-bottom:1.25rem;">One more step — tell us how you'll use Enovox Search.</p>
-                    <div class="gsi-modal-choices">
-                        <button type="button" class="account-type-btn gsi-choice-btn" data-type="user">
-                            User
-                            <span class="account-type-sub">Just here to search</span>
-                        </button>
-                        <button type="button" class="account-type-btn gsi-choice-btn" data-type="developer">
-                            Developer
-                            <span class="account-type-sub">I want to list my product</span>
-                        </button>
-                    </div>
-                    <div class="gsi-modal-checks">
-                        <label class="checkbox-label" for="gsi-terms">
-                            <input type="checkbox" id="gsi-terms">
-                            <span>I have read and agree to the <a href="/term" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
-                        </label>
-                        <label class="checkbox-label" for="gsi-newsletter">
-                            <input type="checkbox" id="gsi-newsletter">
-                            <span>Send me updates about new tools</span>
-                        </label>
-                    </div>
-                    <button type="button" id="gsi-continue-btn" class="gsi-continue-btn" disabled>Continue</button>
-                    <div id="gsi-modal-error" class="alert hidden" style="margin-top:1rem;"></div>
+        <section class="foreign-alternative-results" aria-labelledby="alternatives-detail-heading">
+            <div class="foreign-alternative-results-heading">
+                <div>
+                    <span class="alternatives-eyebrow">Built for Nigeria</span>
+                    <h2 id="alternatives-detail-heading">Nigerian alternatives</h2>
+                    <p id="alternatives-detail-intro">Explore Nigerian-built products that solve similar problems and are designed for the Nigerian market.</p>
                 </div>
+                <span id="alternatives-detail-count" class="alternatives-detail-count" hidden></span>
             </div>
-
-            <!-- Email verification screen — shown after signup, or after a
-                 403 "not verified" login attempt. Same markup/ids on both
-                 login.html and signup.html so auth.js's verify logic works
-                 identically on either page. -->
-            <div id="verify-screen" class="hidden">
-                <h2>Verify Your Email</h2>
-                <p class="auth-subtitle" id="verify-message">We sent a 6-digit code to your email. Enter it below to continue.</p>
-
-                <div id="verify-alert" class="alert hidden"></div>
-
-                <form id="verify-form" novalidate>
-                    <div class="form-group">
-                        <label for="verify-code">Verification Code</label>
-                        <input type="text" id="verify-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
-                        <span class="field-error" id="verify-code-error"></span>
-                    </div>
-                    <button type="submit" id="verify-btn" class="btn-primary full-width">Verify</button>
-                </form>
-
-                <div class="auth-footer">
-                    <p>Didn't get a code? <a href="#" id="resend-code-link" class="auth-link">Resend</a></p>
-                    <p class="field-error" id="resend-message"></p>
-                </div>
-            </div>
-
-            <!-- Forgot password — request a reset code -->
-            <div id="forgot-password-screen" class="hidden">
-                <h2>Forgot Password</h2>
-                <p class="auth-subtitle">Enter your email and we'll send you a code to reset your password.</p>
-
-                <div id="forgot-password-alert" class="alert hidden"></div>
-
-                <form id="forgot-password-form" novalidate>
-                    <div class="form-group">
-                        <label for="forgot-email">Email Address</label>
-                        <input type="email" id="forgot-email" name="email" required placeholder="you@example.com">
-                        <span class="field-error" id="forgot-email-error"></span>
-                    </div>
-                    <button type="submit" id="forgot-password-btn" class="btn-primary full-width">Send Reset Code</button>
-                </form>
-
-                <div class="auth-footer">
-                    <p><a href="#" id="back-to-login-link" class="auth-link">Back to login</a></p>
-                </div>
-            </div>
-
-            <!-- Reset password — enter code + new password -->
-            <div id="reset-password-screen" class="hidden">
-                <h2>Reset Password</h2>
-                <p class="auth-subtitle" id="reset-password-message">Enter the code we sent to your email and choose a new password.</p>
-
-                <div id="reset-password-alert" class="alert hidden"></div>
-
-                <form id="reset-password-form" novalidate>
-                    <div class="form-group">
-                        <label for="reset-code">Verification Code</label>
-                        <input type="text" id="reset-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
-                        <span class="field-error" id="reset-code-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-password">New Password</label>
-                        <div class="password-field">
-                            <input type="password" id="new-password" name="new_password" required placeholder="••••••••">
-                            <button type="button" class="password-toggle-btn" data-target="new-password" aria-label="Show password" aria-pressed="false">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                        </div>
-                        <span class="field-error" id="new-password-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm-new-password">Confirm New Password</label>
-                        <div class="password-field">
-                            <input type="password" id="confirm-new-password" name="confirm_new_password" required placeholder="••••••••">
-                            <button type="button" class="password-toggle-btn" data-target="confirm-new-password" aria-label="Show password" aria-pressed="false">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                        </div>
-                        <span class="field-error" id="confirm-new-password-error"></span>
-                    </div>
-                    <button type="submit" id="reset-password-btn" class="btn-primary full-width">Reset Password</button>
-                </form>
-
-                <div class="auth-footer">
-                    <p>Didn't get a code? <a href="#" id="resend-reset-code-link" class="auth-link">Resend</a></p>
-                    <p class="field-error" id="resend-reset-message"></p>
-                </div>
-            </div>
-        </div>
+            <div id="alternatives-detail-loading" class="loading-state" role="status">Finding Nigerian alternatives…</div>
+            <div id="alternatives-products-grid" class="explore-grid alternatives-products-grid" hidden></div>
+            <div id="alternatives-empty-state" class="alternatives-empty-state" role="status" hidden></div>
+            <div id="alternatives-detail-error" class="alternatives-detail-error" role="alert" hidden></div>
+        </section>
     </main>
-
-    <!-- Footer -->
     <footer>
         <div class="footer-top">
+            <!-- Column 1: Brand & Social -->
             <div class="footer-col brand-col">
-                <a href="/" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <a href="/" class="logo" style="text-decoration: none; ">Enovox <span class="logo-accent" style="color: rgb(13, 132, 243);">Search</span></a>
                 <p>Discover what Nigeria is building.</p>
                 <div class="footer-social">
                     <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
@@ -351,35 +203,35 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Column 2: Quick Links -->
             <div class="footer-col">
                 <h4>Quick Links</h4>
                 <a href="/">Home</a>
                 <a href="/explore">Explore</a>
-                <a href="#">Ask AI</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/submit">Submit Product</a>
                 <a href="/about">About</a>
                 <a href="/contact">Contact</a>
             </div>
+
+            <!-- Column 3: Community -->
             <div class="footer-col">
                 <h4>Community</h4>
                 <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
                 <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
             </div>
+
+            <!-- Column 4: Legal -->
             <div class="footer-col">
                 <h4>Legal</h4>
                 <a href="/privacy">Privacy Policy</a>
-                <a href="/term">Terms &amp; Conditions</a>
+                <a href="/term">Terms & Conditions</a>
             </div>
         </div>
     </footer>
-
-    <!-- Scripts -->
-    <script src="/static/js/home.js"></script>
-    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
     <script src="/static/js/nav-auth.js"></script>
-
-    <!-- Google Sign-In. client_id below is a placeholder — swap in the real
-         one when you send it over. handleGoogleResponse is defined (and
-         exposed on window) in auth.js. -->
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e48a70d94ab918',t:'MTc4OTk0NjIxNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a474daaa7e43c148',t:'MTc5MTQ1OTQ1Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

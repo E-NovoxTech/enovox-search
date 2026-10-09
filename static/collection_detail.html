@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In - Enovox Search</title>
-    <link rel="canonical" href="https://search.enovoxtech.com/login" />
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/auth.css">
+    {% set page_desc = (collection.description or ('Nigerian products in ' ~ collection.title))|striptags|trim %}
+    <title>{{ collection.title }} | Enovox Search</title>
+    <meta name="description" content="{{ page_desc }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Enovox Search">
+    <meta property="og:title" content="{{ collection.title }} | Enovox Search">
+    <meta property="og:description" content="{{ page_desc }}">
+    <meta property="og:url" content="https://search.enovoxtech.com/collection/{{ collection.slug }}">
+    <link rel="canonical" href="https://search.enovoxtech.com/collection/{{ collection.slug }}" />
+    <link rel="stylesheet" href="/static/css/style.css?v=collections-20261009-1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
@@ -22,9 +28,148 @@
 
     gtag('config', 'G-KWLYDKBTN2');
     </script>
+
+    <script type="application/ld+json">
+    {{ {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": collection.title,
+        "description": page_desc,
+        "url": "https://search.enovoxtech.com/collection/" ~ collection.slug,
+        "mainEntity": {
+            "@type": "ItemList",
+            "numberOfItems": products|length,
+            "itemListElement": products|map(attribute='slug')|list
+        }
+    }|tojson }}
+    </script>
+
+    <style>
+        /* Collection detail page: only what the shared collection CSS doesn't cover. */
+        .collection-detail-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin: 0 0 1.25rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .collection-detail-back:hover { color: var(--color-blue); }
+        .collection-detail-back:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 3px; border-radius: 6px; }
+
+        .collection-detail-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1.25rem;
+            margin: 0 0 1.75rem;
+            padding: 1.6rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+        }
+        .collection-detail-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.1rem;
+            min-width: 0;
+        }
+        .collection-detail-emoji {
+            flex: 0 0 auto;
+            display: grid;
+            place-items: center;
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            font-size: 2rem;
+            line-height: 1;
+        }
+        .collection-detail-text { min-width: 0; }
+        .collection-detail-title {
+            margin: 0;
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', Inter, sans-serif;
+            font-size: clamp(1.7rem, 4vw, 2.5rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.12;
+            overflow-wrap: anywhere;
+        }
+        .collection-detail-desc {
+            margin: 0.55rem 0 0;
+            max-width: 640px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.55;
+        }
+        .collection-detail-count {
+            display: inline-block;
+            margin-top: 0.8rem;
+            padding: 0.32rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.09);
+            color: #2563eb;
+            font-size: 0.8rem;
+            font-weight: 650;
+        }
+        .dark-mode .collection-detail-count { color: #93c5fd; background: rgba(59, 130, 246, 0.16); }
+
+        /* Full grid (not the swipeable carousel the overview page uses) */
+        .collection-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            min-width: 0;
+        }
+        .collection-detail-grid .collection-card { align-items: center; }
+        .collection-card-category {
+            align-self: flex-start;
+            max-width: 100%;
+            margin-top: 0.2rem;
+            padding: 0.12rem 0.55rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border-radius: 999px;
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .collection-card-logo.is-fallback { background: var(--hover-bg); }
+
+        @media (max-width: 960px) {
+            .collection-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            .collection-detail-header { flex-direction: column; padding: 1.1rem 0.95rem; gap: 0.9rem; border-radius: 18px; }
+            .collection-detail-main { gap: 0.8rem; }
+            .collection-detail-emoji { width: 48px; height: 48px; border-radius: 14px; font-size: 1.5rem; }
+            .collection-detail-desc { font-size: 0.9rem; }
+            .collection-detail-grid { gap: 0.55rem; }
+            .collection-detail-grid .collection-card {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 0.55rem;
+                padding: 0.7rem 0.7rem 0.75rem;
+            }
+            .collection-detail-grid .collection-card-info { width: 100%; }
+            .collection-detail-grid .collection-card-bookmark { top: 0.5rem; right: 0.4rem; transform: none; }
+        }
+        @media (max-width: 320px) {
+            .collection-detail-grid { grid-template-columns: minmax(0, 1fr); }
+        }
+    </style>
 </head>
 <body>
-     <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
+    <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
     <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
         <div class="site-banner-inner">
             <div class="site-banner-content" id="site-banner-content">
@@ -38,7 +183,8 @@
             </button>
         </div>
     </div>
-    <!-- Navigation Bar — matches every other page -->
+
+    <!-- Navigation Bar (Identical to Homepage) -->
     <header class="navbar">
         <div class="nav-container">
             <a href="/" class="brand-logo" aria-label="Enovox Search home">
@@ -67,7 +213,7 @@
                         </button>
                         <div class="nav-dropdown-menu" id="header-explore-menu">
                             <a class="nav-dropdown-item nav-dropdown-featured" href="/explore">
-                                <span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">All Products</span><span class="nav-dropdown-description">Explore products built by Nigerians.</span></span>
+                                <span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">All Products</span><span class="nav-dropdown-description">Explore products built by Nigerian.</span></span>
                                 <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                             </a>
                             <a class="nav-dropdown-item" href="/collection"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Collection</span><span class="nav-dropdown-description">Curated product lists by category.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
@@ -83,7 +229,6 @@
                         </button>
                         <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
                             <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
-                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
                         </div>
                     </div>
 
@@ -151,180 +296,53 @@
         <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
     </header>
 
+    <main id="main-content" class="collection-page" aria-labelledby="collection-detail-title">
+        <div class="collection-page-container">
+            <a href="/collection" class="collection-detail-back"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i>All collections</a>
 
-    
-    <main class="auth-page">
-        <div class="auth-card">
-            <div id="auth-form-view">
-
-            <!-- Account type toggle: User (default) vs Developer.
-                 Changes which endpoint auth.js posts to, and drives the
-                 redirect/nav logic after success. -->
-            <div class="account-type-toggle" role="tablist" aria-label="Account type">
-                <button type="button" class="account-type-btn active" data-type="user" role="tab" aria-selected="true">
-                    User
-                    <span class="account-type-sub">Just here to search</span>
+            <header class="collection-detail-header">
+                <div class="collection-detail-main">
+                    {% if collection.emoji %}
+                    <span class="collection-detail-emoji" aria-hidden="true">{{ collection.emoji }}</span>
+                    {% endif %}
+                    <div class="collection-detail-text">
+                        <h1 id="collection-detail-title" class="collection-detail-title">{{ collection.title }}</h1>
+                        {% if collection.description %}
+                        <p class="collection-detail-desc">{{ collection.description }}</p>
+                        {% endif %}
+                        <span class="collection-detail-count">{{ products|length }} products</span>
+                    </div>
+                </div>
+                <button type="button" class="collection-copy" id="collection-share-btn" data-base-label="Share" aria-label="Share {{ collection.title }}">
+                    <svg class="collection-copy-icon collection-copy-icon-link" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                    <svg class="collection-copy-icon collection-copy-icon-check" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span class="collection-copy-text">Share</span>
                 </button>
-                <button type="button" class="account-type-btn" data-type="developer" role="tab" aria-selected="false">
-                    Developer
-                    <span class="account-type-sub">I want to list my product</span>
-                </button>
-            </div>
-            <input type="hidden" id="account_type" value="user">
+            </header>
 
-            <h2 id="auth-title" data-user-text="Welcome Back" data-dev-text="Welcome Back">Welcome Back</h2>
-            <p class="auth-subtitle" id="auth-subtitle" data-user-text="Log in to continue searching" data-dev-text="Log in to manage your products">Log in to continue searching</p>
-
-            <div id="auth-alert" class="alert hidden"></div>
-
-            <form id="login-form" novalidate>
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="you@example.com">
-                    <span class="field-error" id="email-error"></span>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="password-field">
-                        <input type="password" id="password" name="password" required placeholder="••••••••">
-                        <button type="button" class="password-toggle-btn" data-target="password" aria-label="Show password" aria-pressed="false">
-                            <i class="fa-regular fa-eye"></i>
-                        </button>
-                    </div>
-                    <span class="field-error" id="password-error"></span>
-                    <a href="#" id="forgot-password-link" class="auth-link forgot-password-link">Forgot password?</a>
-                </div>
-                <button type="submit" id="login-btn" class="btn-primary full-width">Log In</button>
-            </form>
-
-            <div class="auth-footer">
-                <p>New here? <a href="/signup" class="auth-link">Sign up</a></p>
-            </div>
-
-            <div class="gsi-divider"><span>or</span></div>
-            <div id="google-signin-button"></div>
-            <div id="google-signin-error" class="alert hidden" style="margin-top:0.75rem;"></div>
-
-            </div><!-- /auth-form-view -->
-
-            <!-- Choose-account-type modal — only shown when Google sign-in
-                 hits a brand-new email with no account_type yet. -->
-            <div id="google-account-type-modal" class="gsi-modal-overlay hidden">
-                <div class="gsi-modal">
-                    <button type="button" class="gsi-modal-close" id="gsi-modal-close" aria-label="Close">&times;</button>
-                    <h3>Choose your account type</h3>
-                    <p class="auth-subtitle" style="margin-bottom:1.25rem;">One more step — tell us how you'll use Enovox Search.</p>
-                    <div class="gsi-modal-choices">
-                        <button type="button" class="account-type-btn gsi-choice-btn" data-type="user">
-                            User
-                            <span class="account-type-sub">Just here to search</span>
-                        </button>
-                        <button type="button" class="account-type-btn gsi-choice-btn" data-type="developer">
-                            Developer
-                            <span class="account-type-sub">I want to list my product</span>
-                        </button>
-                    </div>
-                    <div class="gsi-modal-checks">
-                        <label class="checkbox-label" for="gsi-terms">
-                            <input type="checkbox" id="gsi-terms">
-                            <span>I have read and agree to the <a href="/term" target="_blank" rel="noopener">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</span>
-                        </label>
-                        <label class="checkbox-label" for="gsi-newsletter">
-                            <input type="checkbox" id="gsi-newsletter">
-                            <span>Send me updates about new tools</span>
-                        </label>
-                    </div>
-                    <button type="button" id="gsi-continue-btn" class="gsi-continue-btn" disabled>Continue</button>
-                    <div id="gsi-modal-error" class="alert hidden" style="margin-top:1rem;"></div>
-                </div>
-            </div>
-
-            <!-- Email verification screen — shown after signup, or after a
-                 403 "not verified" login attempt. Same markup/ids on both
-                 login.html and signup.html so auth.js's verify logic works
-                 identically on either page. -->
-            <div id="verify-screen" class="hidden">
-                <h2>Verify Your Email</h2>
-                <p class="auth-subtitle" id="verify-message">We sent a 6-digit code to your email. Enter it below to continue.</p>
-
-                <div id="verify-alert" class="alert hidden"></div>
-
-                <form id="verify-form" novalidate>
-                    <div class="form-group">
-                        <label for="verify-code">Verification Code</label>
-                        <input type="text" id="verify-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
-                        <span class="field-error" id="verify-code-error"></span>
-                    </div>
-                    <button type="submit" id="verify-btn" class="btn-primary full-width">Verify</button>
-                </form>
-
-                <div class="auth-footer">
-                    <p>Didn't get a code? <a href="#" id="resend-code-link" class="auth-link">Resend</a></p>
-                    <p class="field-error" id="resend-message"></p>
-                </div>
-            </div>
-
-            <!-- Forgot password — request a reset code -->
-            <div id="forgot-password-screen" class="hidden">
-                <h2>Forgot Password</h2>
-                <p class="auth-subtitle">Enter your email and we'll send you a code to reset your password.</p>
-
-                <div id="forgot-password-alert" class="alert hidden"></div>
-
-                <form id="forgot-password-form" novalidate>
-                    <div class="form-group">
-                        <label for="forgot-email">Email Address</label>
-                        <input type="email" id="forgot-email" name="email" required placeholder="you@example.com">
-                        <span class="field-error" id="forgot-email-error"></span>
-                    </div>
-                    <button type="submit" id="forgot-password-btn" class="btn-primary full-width">Send Reset Code</button>
-                </form>
-
-                <div class="auth-footer">
-                    <p><a href="#" id="back-to-login-link" class="auth-link">Back to login</a></p>
-                </div>
-            </div>
-
-            <!-- Reset password — enter code + new password -->
-            <div id="reset-password-screen" class="hidden">
-                <h2>Reset Password</h2>
-                <p class="auth-subtitle" id="reset-password-message">Enter the code we sent to your email and choose a new password.</p>
-
-                <div id="reset-password-alert" class="alert hidden"></div>
-
-                <form id="reset-password-form" novalidate>
-                    <div class="form-group">
-                        <label for="reset-code">Verification Code</label>
-                        <input type="text" id="reset-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
-                        <span class="field-error" id="reset-code-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-password">New Password</label>
-                        <div class="password-field">
-                            <input type="password" id="new-password" name="new_password" required placeholder="••••••••">
-                            <button type="button" class="password-toggle-btn" data-target="new-password" aria-label="Show password" aria-pressed="false">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                        </div>
-                        <span class="field-error" id="new-password-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm-new-password">Confirm New Password</label>
-                        <div class="password-field">
-                            <input type="password" id="confirm-new-password" name="confirm_new_password" required placeholder="••••••••">
-                            <button type="button" class="password-toggle-btn" data-target="confirm-new-password" aria-label="Show password" aria-pressed="false">
-                                <i class="fa-regular fa-eye"></i>
-                            </button>
-                        </div>
-                        <span class="field-error" id="confirm-new-password-error"></span>
-                    </div>
-                    <button type="submit" id="reset-password-btn" class="btn-primary full-width">Reset Password</button>
-                </form>
-
-                <div class="auth-footer">
-                    <p>Didn't get a code? <a href="#" id="resend-reset-code-link" class="auth-link">Resend</a></p>
-                    <p class="field-error" id="resend-reset-message"></p>
-                </div>
+            <div class="collection-detail-grid" role="group" aria-label="{{ collection.title }} products">
+                {% for product in products %}
+                {% set category = product.category %}
+                <a class="collection-card" href="/product/{{ product.slug }}" title="{{ product.name }}" data-product-id="{{ product.id }}">
+                    <span class="collection-card-logo{% if not product.logo_url %} is-fallback{% endif %}">
+                        {%- if product.logo_url -%}
+                        <img src="{{ product.logo_url }}" alt="" loading="lazy" data-initial="{{ (product.name or 'E')[:1]|upper }}">
+                        {%- else -%}
+                        {{ (product.name or 'E')[:1]|upper }}
+                        {%- endif -%}
+                    </span>
+                    <span class="collection-card-info">
+                        <span class="collection-card-name">{{ product.name|truncate(26, True, '…') }}</span>
+                        {% if product.description %}
+                        <span class="collection-card-desc">{{ product.description|striptags|truncate(58, True, '…') }}</span>
+                        {% endif %}
+                        {% if category %}
+                        <span class="collection-card-category">{{ category }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="collection-card-bookmark" data-bookmark-slot data-product-id="{{ product.id }}"></span>
+                </a>
+                {% endfor %}
             </div>
         </div>
     </main>
@@ -355,7 +373,7 @@
                 <h4>Quick Links</h4>
                 <a href="/">Home</a>
                 <a href="/explore">Explore</a>
-                <a href="#">Ask AI</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
                 <a href="/submit">Submit Product</a>
                 <a href="/about">About</a>
                 <a href="/contact">Contact</a>
@@ -372,14 +390,69 @@
             </div>
         </div>
     </footer>
-
-    <!-- Scripts -->
-    <script src="/static/js/home.js"></script>
-    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
     <script src="/static/js/nav-auth.js"></script>
+    <script>
+    (function () {
+        /* Logo fallback: swap a broken image for the first letter. */
+        document.querySelectorAll('.collection-card-logo img').forEach(function (img) {
+            img.addEventListener('error', function () {
+                var wrap = img.parentNode;
+                wrap.textContent = img.getAttribute('data-initial') || 'E';
+                wrap.classList.add('is-fallback');
+            }, { once: true });
+        });
 
-    <!-- Google Sign-In. client_id below is a placeholder — swap in the real
-         one when you send it over. handleGoogleResponse is defined (and
-         exposed on window) in auth.js. -->
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e48a70d94ab918',t:'MTc4OTk0NjIxNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+        /* Bookmark buttons: same markup/behaviour as the other cards. */
+        function fillBookmarks() {
+            if (!window.EnovoxBookmarks || typeof window.EnovoxBookmarks.cardButtonHtml !== 'function') return;
+            document.querySelectorAll('[data-bookmark-slot]').forEach(function (slot) {
+                var id = slot.getAttribute('data-product-id');
+                if (id) slot.innerHTML = window.EnovoxBookmarks.cardButtonHtml(id);
+            });
+        }
+        fillBookmarks();
+        window.addEventListener('load', fillBookmarks);
+
+        /* Share / copy this page's link. */
+        var btn = document.getElementById('collection-share-btn');
+        if (!btn) return;
+        var textEl = btn.querySelector('.collection-copy-text');
+        var timer = null;
+        var url = window.location.origin + window.location.pathname;
+        var title = document.getElementById('collection-detail-title').textContent.trim();
+
+        function feedback(state) {
+            btn.classList.toggle('is-copied', state === 'copied');
+            btn.classList.toggle('is-failed', state === 'failed');
+            textEl.textContent = state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : 'Share';
+            clearTimeout(timer);
+            if (state) timer = setTimeout(function () { feedback(''); }, 1800);
+        }
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+            return new Promise(function (resolve, reject) {
+                var t = document.createElement('textarea');
+                t.value = text; t.setAttribute('readonly', '');
+                t.style.position = 'fixed'; t.style.opacity = '0';
+                document.body.appendChild(t); t.select();
+                var ok = document.execCommand('copy');
+                t.remove();
+                ok ? resolve() : reject(new Error('copy failed'));
+            });
+        }
+        btn.addEventListener('click', function () {
+            var done = function () { copyText(url).then(function () { feedback('copied'); }, function () { feedback('failed'); }); };
+            if (typeof navigator.share === 'function') {
+                navigator.share({ title: title, url: url }).catch(function (e) {
+                    if (!e || e.name !== 'AbortError') done();
+                });
+            } else {
+                done();
+            }
+        });
+    })();
+    </script>
+</body>
 </html>

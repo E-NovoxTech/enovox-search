@@ -7,6 +7,19 @@
     const API_URL = "";
     let adminKey = localStorage.getItem('enovox_admin_key');
     const PAGE_SIZE = 8;
+    const ADMIN_NAV_ITEMS = Object.freeze([
+        { group: 'OVERVIEW', label: 'Dashboard', icon: 'fa-solid fa-gauge-high', sectionId: 'dashboard-tab' },
+        { group: 'PRODUCT MANAGEMENT', label: 'Products', icon: 'fa-solid fa-box-open', sectionId: 'products-tab' },
+        { group: 'PRODUCT MANAGEMENT', label: 'Collections', icon: 'fa-solid fa-layer-group', sectionId: 'collections-tab' },
+        { group: 'PRODUCT MANAGEMENT', label: 'Alternatives', icon: 'fa-solid fa-shuffle', sectionId: 'alternatives-tab' },
+        { group: 'PRODUCT MANAGEMENT', label: 'Submissions', icon: 'fa-solid fa-inbox', sectionId: 'submissions-tab' },
+        { group: 'PRODUCT MANAGEMENT', label: 'Claims', icon: 'fa-solid fa-circle-check', sectionId: 'claims-tab' },
+        { group: 'COMMUNITY', label: 'Developers', icon: 'fa-solid fa-users', sectionId: 'developers-tab' },
+        { group: 'COMMUNITY', label: 'Newsletter', icon: 'fa-solid fa-envelope', sectionId: 'newsletter-tab' },
+        { group: 'INSIGHTS', label: 'Search Analytics', icon: 'fa-solid fa-chart-line', sectionId: 'analytics-tab' },
+        { group: 'WEBSITE', label: 'Announcements', icon: 'fa-solid fa-bullhorn', sectionId: 'banner-tab' },
+        { group: 'PINNED', label: 'Settings', icon: 'fa-solid fa-gear', sectionId: 'settings-tab', pinned: true }
+    ]);
 
     // Fields shown/editable in the submission detail modal, and their input type.
     // 'select' fields pull their option list from SELECT_OPTIONS below.
@@ -67,6 +80,21 @@
     let foreignToolsRequest = 0;
     let productAlternativesRequest = 0;
     let productAlternativesState = { id: null, category: '', ready: false };
+    let dashboardSummaryRequest = 0;
+    const collectionsPageState = { rows: [], counts: {}, filter: 'all', loaded: false };
+    let collectionsListRequest = 0;
+    let collectionsMutationBusy = false;
+    let collectionProductCatalogReady = false;
+    let collectionProductCatalogError = null;
+    let collectionProductCatalogPromise = null;
+    let coreProductsLoadPromise = null;
+    let collectionEditorId = null;
+    let collectionEditorRequest = 0;
+    let collectionEditorReady = false;
+    let collectionEditorSaving = false;
+    let collectionSelectedProducts = [];
+    let collectionEditorReturnFocus = null;
+    let collectionSuccessTimer = null;
 
     // Separate from the existing paginated Developers table and its search.
     const developerUpdateSelected = new Set(); // Case-insensitive email keys.
@@ -135,31 +163,24 @@
             }
         });
 
-        // Admin Mobile Sidebar Toggle Logic
+        renderAdminNavigation();
+        setupDashboard();
+        setupSettings();
+        setupCollections();
+
+        // Mobile sidebar drawer controls.
         const hamburgerBtn = document.getElementById('admin-hamburger');
         const adminSidebar = document.getElementById('admin-sidebar');
         const sidebarOverlay = document.getElementById('admin-sidebar-overlay');
-
         if (hamburgerBtn && adminSidebar && sidebarOverlay) {
-            hamburgerBtn.addEventListener('click', () => {
-                adminSidebar.classList.add('open');
-                sidebarOverlay.classList.add('active');
+            hamburgerBtn.addEventListener('click', () => setSidebarDrawerOpen(!adminSidebar.classList.contains('open')));
+            sidebarOverlay.addEventListener('click', () => setSidebarDrawerOpen(false));
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && adminSidebar.classList.contains('open')) setSidebarDrawerOpen(false);
             });
-
-            sidebarOverlay.addEventListener('click', () => {
-                adminSidebar.classList.remove('open');
-                sidebarOverlay.classList.remove('active');
-            });
-
-            // Auto-close sidebar when clicking a tab on mobile
-            document.querySelectorAll('.nav-tab').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (window.innerWidth <= 768) {
-                        adminSidebar.classList.remove('open');
-                        sidebarOverlay.classList.remove('active');
-                    }
-                });
-            });
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) setSidebarDrawerOpen(false);
+            }, { passive: true });
         }
 
         setupNavigation();
@@ -296,6 +317,7 @@
                 document.getElementById('edit_product_id').value = '';
                 document.getElementById('modal-title').textContent = 'Create New Product';
                 resetProductAlternatives();
+                document.getElementById('product-alternatives-section').classList.remove('hidden');
                 hideProductModalError();
                 resetKeywordsTagInput();
                 clearProductFormErrors();
@@ -321,18 +343,22 @@
                     return;
                 }
 
-                const id = document.getElementById('edit_product_id').value;
+                let id = document.getElementById('edit_product_id').value;
+                const isEditing = Boolean(id);
                 hideProductModalError();
-                // A failed/unfinished GET must not turn existing links into an empty PUT.
-                if (id && (productAlternativesState.id !== id ||
-                           productAlternativesState.category !== productForm.category.value ||
-                           !productAlternativesState.ready)) {
+                const productCategory = productForm.category.value;
+                const alternativesSection = document.getElementById('product-alternatives-section');
+                const alternativesReady = productAlternativesState.category === productCategory &&
+                    productAlternativesState.ready &&
+                    (isEditing ? productAlternativesState.id === id : productAlternativesState.id === null);
+                if (productCategory && alternativesSection && !alternativesSection.classList.contains('hidden') && !alternativesReady) {
                     showProductModalError('Wait for matching alternatives to load (or retry the load) before saving this product.');
                     return;
                 }
-                const foreignToolIds = id
-                    ? Array.from(document.querySelectorAll('#product-alternatives-picker input[type="checkbox"]:checked'), box => Number(box.value))
-                    : [];
+                const foreignToolIds = Array.from(
+                    document.querySelectorAll('#product-alternatives-picker input[type="checkbox"]:checked'),
+                    box => Number(box.value)
+                );
                 const formData = new FormData(productForm);
                 const payload = Object.fromEntries(formData.entries());
                 delete payload.id; // The hidden ID selects the endpoint, not a product field.
@@ -378,7 +404,23 @@
                     await requireAdminResponse(res, 'Failed to save product');
                     detailsSaved = true;
 
-                    if (id) {
+                    // New products need their ID before Alternative To links can be attached.
+                    if (!isEditing && foreignToolIds.length > 0) {
+                        let createdProductId = extractCreatedProductId(await res.clone().json().catch(() => null));
+                        if (!createdProductId) {
+                            await refreshProducts();
+                            createdProductId = findCreatedProductId(payload);
+                        }
+                        if (!createdProductId) {
+                            throw new Error('The product was created, but its ID could not be found to save Alternative To links.');
+                        }
+                        id = createdProductId;
+                        document.getElementById('edit_product_id').value = id;
+                        document.getElementById('modal-title').textContent = 'Edit Product';
+                        productAlternativesState.id = id;
+                    }
+
+                    if (isEditing || foreignToolIds.length > 0) {
                         const linksRes = await fetch(`${API_URL}/products/admin/${encodeURIComponent(id)}/alternatives?admin_key=${encodeURIComponent(adminKey)}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
@@ -388,9 +430,15 @@
                     }
                 } catch (error) {
                     if (detailsSaved) await refreshProducts();
-                    showProductModalError(detailsSaved
-                        ? `Product details were saved, but Alternative To links were not saved. ${error.message} Retry saving this form.`
-                        : `Could not save product: ${error.message}`);
+                    if (detailsSaved && !isEditing && !id) {
+                        productModal.classList.add('hidden');
+                        resetProductAlternatives();
+                        showAlert('error', `Product was created, but Alternative To links were not saved. ${error.message} Find the product in the list and edit it to retry.`);
+                    } else {
+                        showProductModalError(detailsSaved
+                            ? `Product details were saved, but Alternative To links were not saved. ${error.message} Retry saving this form.`
+                            : `Could not save product: ${error.message}`);
+                    }
                     return;
                 } finally {
                     saveBtn.disabled = false;
@@ -400,7 +448,9 @@
                 productModal.classList.add('hidden');
                 resetProductAlternatives();
                 await refreshProducts();
-                showAlert('success', id ? 'Product and alternatives updated successfully.' : 'Product created successfully.');
+                showAlert('success', isEditing
+                    ? 'Product and alternatives updated successfully.'
+                    : (foreignToolIds.length ? 'Product created with Alternative To links.' : 'Product created successfully.'));
             });
         }
     }
@@ -580,30 +630,1091 @@
     /* ==========================================================================
        Navigation & Tab Switching
        ========================================================================== */
-    function setupNavigation() {
-        document.querySelectorAll('.nav-tab').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    function renderAdminNavigation() {
+        const mainNav = document.getElementById('admin-sidebar-nav');
+        const pinnedNav = document.getElementById('admin-sidebar-pinned-nav');
+        if (!mainNav || !pinnedNav) return;
+        mainNav.replaceChildren();
+        pinnedNav.replaceChildren();
 
-                const targetId = e.target.getAttribute('data-target');
-                e.target.classList.add('active');
-                // Guarded: a stale HTML/JS pair (section missing) must never
-                // throw here and leave the content area blank.
-                const targetSection = document.getElementById(targetId);
-                if (targetSection) targetSection.classList.remove('hidden');
-
-                renderActiveTab(targetId);
-            });
+        const activeSectionId = getActiveTabId();
+        const groups = new Map();
+        ADMIN_NAV_ITEMS.forEach(item => {
+            if (item.pinned) {
+                pinnedNav.appendChild(createAdminNavButton(item, activeSectionId));
+                return;
+            }
+            if (!groups.has(item.group)) {
+                const group = document.createElement('section');
+                group.className = 'sidebar-nav-group';
+                group.dataset.group = item.group;
+                const heading = document.createElement('h2');
+                heading.className = 'sidebar-nav-heading';
+                heading.textContent = item.group;
+                const items = document.createElement('div');
+                items.className = 'sidebar-nav-items';
+                group.append(heading, items);
+                groups.set(item.group, items);
+                mainNav.appendChild(group);
+            }
+            groups.get(item.group).appendChild(createAdminNavButton(item, activeSectionId));
         });
+    }
+
+    function createAdminNavButton(item, activeSectionId) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `nav-tab${item.sectionId === activeSectionId ? ' active' : ''}`;
+        button.dataset.target = item.sectionId;
+        button.setAttribute('aria-controls', item.sectionId);
+        button.setAttribute('aria-current', item.sectionId === activeSectionId ? 'page' : 'false');
+        const icon = document.createElement('i');
+        icon.className = item.icon;
+        icon.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.textContent = item.label;
+        button.append(icon, label);
+        return button;
+    }
+
+    function setupNavigation() {
+        const sidebar = document.getElementById('admin-sidebar');
+        if (sidebar) {
+            sidebar.addEventListener('click', event => {
+                const button = event.target.closest('.nav-tab[data-target]');
+                if (!button) return;
+                switchAdminPage(button.dataset.target);
+                if (window.innerWidth <= 768) setSidebarDrawerOpen(false);
+            });
+        }
+
+        const cards = document.getElementById('dashboard-cards');
+        if (cards) {
+            cards.addEventListener('click', event => {
+                const card = event.target.closest('[data-dashboard-target]');
+                if (card) switchAdminPage(card.dataset.dashboardTarget);
+            });
+        }
+    }
+
+    function switchAdminPage(sectionId) {
+        const navItem = ADMIN_NAV_ITEMS.find(item => item.sectionId === sectionId);
+        const section = document.getElementById(sectionId);
+        if (!navItem || !section) return false;
+
+        document.querySelectorAll('.tab-content').forEach(page => {
+            const active = page.id === sectionId;
+            page.classList.toggle('active', active);
+            page.classList.toggle('hidden', !active);
+        });
+        const adminMain = document.getElementById('admin-main');
+        if (adminMain) adminMain.classList.toggle('collections-page-active', sectionId === 'collections-tab');
+        document.querySelectorAll('.nav-tab[data-target]').forEach(button => {
+            const active = button.dataset.target === sectionId;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-current', active ? 'page' : 'false');
+        });
+        renderActiveTab(sectionId);
+        return true;
+    }
+
+    function setSidebarDrawerOpen(open) {
+        const sidebar = document.getElementById('admin-sidebar');
+        const overlay = document.getElementById('admin-sidebar-overlay');
+        const hamburger = document.getElementById('admin-hamburger');
+        if (!sidebar || !overlay) return;
+        sidebar.classList.toggle('open', Boolean(open));
+        overlay.classList.toggle('active', Boolean(open));
+        if (hamburger) hamburger.setAttribute('aria-expanded', String(Boolean(open)));
+    }
+
+    function setupDashboard() {
+        ['dashboard-refresh-btn', 'dashboard-retry-btn'].forEach(id => {
+            const button = document.getElementById(id);
+            if (button) button.addEventListener('click', loadDashboardSummary);
+        });
+    }
+
+    async function loadDashboardSummary() {
+        const requestId = ++dashboardSummaryRequest;
+        const loading = document.getElementById('dashboard-loading');
+        const errorBox = document.getElementById('dashboard-error');
+        const errorMessage = document.getElementById('dashboard-error-message');
+        const cards = document.getElementById('dashboard-cards');
+        const refreshButton = document.getElementById('dashboard-refresh-btn');
+        if (!loading || !errorBox || !cards) return;
+
+        loading.classList.remove('hidden');
+        errorBox.classList.add('hidden');
+        cards.classList.add('hidden');
+        cards.replaceChildren();
+        if (refreshButton) refreshButton.disabled = true;
+
+        try {
+            const response = await fetch(`${API_URL}/products/admin/dashboard-summary?admin_key=${encodeURIComponent(adminKey)}`, {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            await requireAdminResponse(response, 'Could not load dashboard summary');
+            const data = await response.json();
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                throw new Error('The dashboard summary response was invalid.');
+            }
+            if (requestId !== dashboardSummaryRequest) return;
+            renderDashboardCards(data);
+            cards.classList.remove('hidden');
+        } catch (error) {
+            if (requestId !== dashboardSummaryRequest) return;
+            if (errorMessage) errorMessage.textContent = error.message || 'Please try again.';
+            errorBox.classList.remove('hidden');
+        } finally {
+            if (requestId === dashboardSummaryRequest) {
+                loading.classList.add('hidden');
+                if (refreshButton) refreshButton.disabled = false;
+            }
+        }
+    }
+
+    function renderDashboardCards(data) {
+        const cards = document.getElementById('dashboard-cards');
+        if (!cards) return;
+        const definitions = [
+            { key: 'total_products', label: 'Total Products', detail: 'Live listings', target: 'products-tab', icon: 'fa-solid fa-box-open' },
+            { key: 'pending_submissions', label: 'Pending Submissions', detail: 'Awaiting review', target: 'submissions-tab', icon: 'fa-solid fa-inbox', attention: true },
+            { key: 'pending_claims', label: 'Pending Claims', detail: 'Awaiting review', target: 'claims-tab', icon: 'fa-solid fa-circle-check', attention: true },
+            { key: 'developers', label: 'Developers', detail: 'Registered developers', target: 'developers-tab', icon: 'fa-solid fa-users' },
+            { key: 'newsletter_subscribers', label: 'Newsletter Subscribers', detail: 'Active subscribers', target: 'newsletter-tab', icon: 'fa-solid fa-envelope' },
+            { key: 'total_searches', label: 'Search Analytics', detail: 'Total searches', target: 'analytics-tab', icon: 'fa-solid fa-chart-line' }
+        ];
+        cards.replaceChildren(...definitions.map(definition => {
+            const value = formatDashboardMetric(data[definition.key]);
+            const numericValue = Number(data[definition.key]);
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = `dashboard-summary-card${definition.attention && Number.isFinite(numericValue) && numericValue > 0 ? ' needs-attention' : ''}`;
+            card.dataset.dashboardTarget = definition.target;
+            card.setAttribute('aria-label', `${definition.label}: ${value}. Open ${navLabelForSection(definition.target)}.`);
+
+            const icon = document.createElement('span');
+            icon.className = 'dashboard-card-icon';
+            const iconGlyph = document.createElement('i');
+            iconGlyph.className = definition.icon;
+            iconGlyph.setAttribute('aria-hidden', 'true');
+            icon.appendChild(iconGlyph);
+
+            const content = document.createElement('span');
+            content.className = 'dashboard-card-content';
+            const label = document.createElement('span');
+            label.className = 'dashboard-card-label';
+            label.textContent = definition.label;
+            const metric = document.createElement('strong');
+            metric.className = 'dashboard-card-value';
+            metric.textContent = value;
+            const detail = document.createElement('span');
+            detail.className = 'dashboard-card-detail';
+            detail.textContent = definition.detail;
+            content.append(label, metric, detail);
+
+            const arrow = document.createElement('i');
+            arrow.className = 'fa-solid fa-arrow-up-right-from-square dashboard-card-arrow';
+            arrow.setAttribute('aria-hidden', 'true');
+            card.append(icon, content, arrow);
+            return card;
+        }));
+    }
+
+    function formatDashboardMetric(value) {
+        if (value === null || value === undefined || value === '') return '—';
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toLocaleString() : '—';
+    }
+
+    function navLabelForSection(sectionId) {
+        const item = ADMIN_NAV_ITEMS.find(navItem => navItem.sectionId === sectionId);
+        return item ? item.label : 'page';
+    }
+
+    function setupSettings() {
+        const exportButton = document.getElementById('export-products-csv-btn');
+        if (exportButton) exportButton.addEventListener('click', exportProductsCsv);
+    }
+
+    async function exportProductsCsv() {
+        const button = document.getElementById('export-products-csv-btn');
+        const status = document.getElementById('settings-export-status');
+        const errorBox = document.getElementById('settings-export-error');
+        if (!button || !status || !errorBox) return;
+        status.textContent = '';
+        errorBox.textContent = '';
+        errorBox.classList.add('hidden');
+        button.disabled = true;
+
+        try {
+            const url = `${API_URL}/products/admin/export-csv?admin_key=${encodeURIComponent(adminKey)}`;
+            const response = await fetch(url, { cache: 'no-store' });
+            await requireAdminResponse(response, 'Could not export products');
+            const blob = await response.blob();
+            const disposition = response.headers.get('Content-Disposition') || '';
+            const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+            const plainName = disposition.match(/filename="?([^";]+)"?/i);
+            let filename = encodedName ? encodedName[1] : (plainName ? plainName[1] : 'products.csv');
+            try { filename = decodeURIComponent(filename.replace(/^"|"$/g, '')); } catch (error) { /* keep server-provided name */ }
+
+            const objectUrl = URL.createObjectURL(blob);
+            const download = document.createElement('a');
+            download.href = objectUrl;
+            download.download = filename;
+            download.hidden = true;
+            document.body.appendChild(download);
+            download.click();
+            download.remove();
+            window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            status.textContent = 'Products CSV downloaded.';
+        } catch (error) {
+            errorBox.textContent = error.message || 'The CSV export could not be downloaded.';
+            errorBox.classList.remove('hidden');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    /* ==========================================================================
+       Collections management
+       ========================================================================== */
+    function setupCollections() {
+        const newButton = document.getElementById('collection-new-btn');
+        const tabs = document.getElementById('collection-status-tabs');
+        const list = document.getElementById('collections-list');
+        const form = document.getElementById('collection-editor-form');
+        const productSearch = document.getElementById('collection-product-search');
+        const productResults = document.getElementById('collection-product-results');
+        const selectedList = document.getElementById('collection-selected-list');
+        const typeSelect = document.getElementById('collection-section-type');
+        const publishToggle = document.getElementById('collection-published');
+        const emojiInput = document.getElementById('collection-emoji');
+
+        if (newButton) newButton.addEventListener('click', () => openCollectionEditor(null, newButton));
+        if (tabs) tabs.addEventListener('click', event => {
+            const tab = event.target.closest('[data-collection-status]');
+            if (!tab) return;
+            collectionsPageState.filter = tab.dataset.collectionStatus || 'all';
+            renderCollectionStatusTabs();
+            renderCollectionList();
+        });
+        if (list) list.addEventListener('click', handleCollectionListClick);
+        if (form) form.addEventListener('submit', saveCollectionEditor);
+        if (typeSelect) typeSelect.addEventListener('change', () => {
+            updateCollectionTypePanels();
+            renderCollectionProductResults();
+            updateCollectionPublishConstraint();
+        });
+        if (productSearch) productSearch.addEventListener('input', renderCollectionProductResults);
+        if (productResults) productResults.addEventListener('click', handleCollectionProductResultClick);
+        if (selectedList) selectedList.addEventListener('click', handleSelectedCollectionProductClick);
+        if (publishToggle) publishToggle.addEventListener('change', updateCollectionPublishConstraint);
+        if (emojiInput) emojiInput.addEventListener('blur', () => { emojiInput.value = normalizeCollectionEmoji(emojiInput.value); });
+
+        ['collection-drawer-close', 'collection-cancel-btn', 'collection-drawer-backdrop'].forEach(id => {
+            const button = document.getElementById(id);
+            if (button) button.addEventListener('click', closeCollectionDrawer);
+        });
+        document.addEventListener('keydown', event => {
+            const drawer = document.getElementById('collection-drawer');
+            if (event.key === 'Escape' && drawer && !drawer.classList.contains('hidden')) closeCollectionDrawer();
+        });
+    }
+
+    function collectionApiUrl(path = '') {
+        const cleanPath = path ? (path.startsWith('/') ? path : `/${path}`) : '';
+        return `${API_URL}/collections/admin${cleanPath}?admin_key=${encodeURIComponent(adminKey || '')}`;
+    }
+
+    async function loadCollections(options = {}) {
+        const requestId = ++collectionsListRequest;
+        const loading = document.getElementById('collections-loading');
+        const table = document.getElementById('collection-table-container');
+        const empty = document.getElementById('collections-empty');
+        const error = document.getElementById('collections-error');
+        const silent = Boolean(options.silent);
+        if (error) { error.textContent = ''; error.classList.add('hidden'); }
+        if (loading && !silent) loading.classList.remove('hidden');
+        if (!silent) {
+            if (table) table.classList.add('hidden');
+            if (empty) empty.classList.add('hidden');
+        }
+
+        try {
+            const response = await fetch(collectionApiUrl(), {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            await requireAdminResponse(response, 'Could not load collections');
+            const data = await response.json();
+            if (!data || !Array.isArray(data.collections)) throw new Error('The collections response was invalid.');
+            if (requestId !== collectionsListRequest) return false;
+            const collectionRows = data.collections.slice();
+            const hasDisplayOrder = collectionRows.length > 0 && collectionRows.every(row => row.display_order !== null && row.display_order !== undefined && Number.isFinite(Number(row.display_order)));
+            if (hasDisplayOrder) collectionRows.sort((a, b) => Number(a.display_order) - Number(b.display_order));
+            collectionsPageState.rows = collectionRows;
+            collectionsPageState.counts = data.counts && typeof data.counts === 'object' ? data.counts : {};
+            collectionsPageState.loaded = true;
+            renderCollectionStatusTabs();
+            renderCollectionList();
+            return true;
+        } catch (loadError) {
+            if (requestId !== collectionsListRequest) return false;
+            setCollectionsError(loadError.message || 'Could not load collections.');
+            if (collectionsPageState.loaded) renderCollectionList();
+            else {
+                if (table) table.classList.add('hidden');
+                if (empty) empty.classList.add('hidden');
+            }
+            return false;
+        } finally {
+            if (requestId === collectionsListRequest && loading) loading.classList.add('hidden');
+        }
+    }
+
+    function collectionIsArchived(collection) {
+        return Boolean(collection && (collection.is_archived === true || String(collection.status || '').toLowerCase() === 'archived'));
+    }
+
+    function collectionStatus(collection) {
+        if (collectionIsArchived(collection)) return 'archived';
+        const status = String(collection && collection.status || 'draft').toLowerCase();
+        return ['live', 'scheduled', 'draft', 'expired'].includes(status) ? status : 'draft';
+    }
+
+    function collectionIsPublished(collection) {
+        if (collection && collection.is_published !== undefined && collection.is_published !== null) {
+            return collection.is_published === true || collection.is_published === 1 || collection.is_published === 'true';
+        }
+        return ['live', 'scheduled', 'expired'].includes(collectionStatus(collection));
+    }
+
+    function collectionType(collection) {
+        return String(collection && collection.section_type || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+    }
+
+    function collectionSelectedCount(collection) {
+        const count = Number(collection && collection.selected_count);
+        return Number.isFinite(count) ? count : 0;
+    }
+
+    function renderCollectionStatusTabs() {
+        const tabs = document.getElementById('collection-status-tabs');
+        if (!tabs) return;
+        const rows = collectionsPageState.rows;
+        const computed = {
+            all: rows.filter(row => !collectionIsArchived(row)).length,
+            live: rows.filter(row => collectionStatus(row) === 'live').length,
+            scheduled: rows.filter(row => collectionStatus(row) === 'scheduled').length,
+            draft: rows.filter(row => collectionStatus(row) === 'draft').length,
+            expired: rows.filter(row => collectionStatus(row) === 'expired').length,
+            archived: rows.filter(row => collectionIsArchived(row)).length
+        };
+        tabs.querySelectorAll('[data-collection-status]').forEach(tab => {
+            const key = tab.dataset.collectionStatus;
+            const active = key === collectionsPageState.filter;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', String(active));
+            const count = tab.querySelector('[data-collection-count]');
+            if (count) {
+                const serverCount = Number(collectionsPageState.counts[key]);
+const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
+                count.textContent = Number(countValue || 0).toLocaleString();
+            }
+        });
+        const orderNote = document.getElementById('collection-order-note');
+        if (orderNote) orderNote.classList.toggle('hidden', collectionsPageState.filter !== 'all');
+    }
+
+    function renderCollectionList() {
+        const tbody = document.getElementById('collections-list');
+        const table = document.getElementById('collection-table-container');
+        const empty = document.getElementById('collections-empty');
+        if (!tbody || !table || !empty) return;
+
+        const filter = collectionsPageState.filter;
+        const rows = collectionsPageState.rows.filter(collection => {
+            if (filter === 'all') return !collectionIsArchived(collection);
+            if (filter === 'archived') return collectionIsArchived(collection);
+            return collectionStatus(collection) === filter;
+        });
+        tbody.innerHTML = '';
+        if (!rows.length) {
+            table.classList.add('hidden');
+            empty.textContent = collectionEmptyMessage(filter);
+            empty.classList.remove('hidden');
+            return;
+        }
+
+        empty.classList.add('hidden');
+        table.classList.remove('hidden');
+        const reorderableRows = collectionsPageState.rows.filter(row => !collectionIsArchived(row));
+        tbody.innerHTML = rows.map(collection => {
+            const id = escapeHTML(String(collection.id));
+            const title = escapeHTML(collection.title || 'Untitled collection');
+            const emoji = escapeHTML(collection.emoji || '✨');
+            const type = collectionType(collection);
+            const status = collectionStatus(collection);
+            const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+            const warnings = Array.isArray(collection.warnings) ? collection.warnings.filter(Boolean) : [];
+            const warningMarkup = warnings.map(warning => `<span class="collection-warning-line"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>${escapeHTML(warning)}</span>`).join('');
+            const schedule = collectionScheduleLabel(collection);
+            const index = reorderableRows.findIndex(row => String(row.id) === String(collection.id));
+            const canReorder = filter === 'all' && !collectionIsArchived(collection) && index >= 0;
+            const orderMarkup = canReorder
+                ? `<div class="collection-order-buttons" aria-label="Change collection order">
+                        <button type="button" class="btn-secondary btn-small" data-collection-action="move-up" data-collection-id="${id}" aria-label="Move ${title} up" ${index === 0 || collectionsMutationBusy ? 'disabled' : ''}><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button>
+                        <button type="button" class="btn-secondary btn-small" data-collection-action="move-down" data-collection-id="${id}" aria-label="Move ${title} down" ${index === reorderableRows.length - 1 || collectionsMutationBusy ? 'disabled' : ''}><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+                    </div>`
+                : '<span class="text-muted collection-no-order">—</span>';
+            const liveCount = Number(collection.live_count);
+            const countLabel = Number.isFinite(liveCount) ? liveCount.toLocaleString() : '0';
+            const actionMarkup = renderCollectionActionGroups(collection, id);
+            return `<tr class="collection-table-row" data-collection-id="${id}">
+                <td data-label="Collection">
+                    <div class="collection-title-cell"><span class="collection-row-emoji" aria-hidden="true">${emoji}</span><div><strong>${title}</strong>${warningMarkup ? `<div class="collection-warning-list">${warningMarkup}</div>` : ''}</div></div>
+                </td>
+                <td data-label="Type"><span class="collection-type-badge collection-type-${type}">${type === 'auto' ? 'Auto' : 'Hand-picked'}</span></td>
+                <td data-label="Live products"><strong class="collection-live-count">${countLabel}</strong><span class="collection-mobile-caption">live products</span></td>
+                <td data-label="Status"><span class="collection-status-badge collection-status-${status}">${statusLabel}</span></td>
+                <td data-label="Schedule"><span class="collection-schedule-cell">${escapeHTML(schedule)}</span></td>
+                <td data-label="Order">${orderMarkup}</td>
+                <td data-label="Actions">${actionMarkup}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function collectionEmptyMessage(filter) {
+        const messages = {
+            all: 'No collections yet. Create your first collection to build a section for the public page.',
+            live: 'There are no live collections.',
+            scheduled: 'There are no scheduled collections.',
+            draft: 'There are no draft collections.',
+            expired: 'There are no expired collections.',
+            archived: 'There are no archived collections.'
+        };
+        return messages[filter] || messages.all;
+    }
+
+    function renderCollectionActionGroups(collection, id) {
+        const title = escapeHTML(collection.title || 'collection');
+        const archived = collectionIsArchived(collection);
+        const published = collectionIsPublished(collection);
+        const publishBlocked = !published && collectionType(collection) === 'manual' && collectionSelectedCount(collection) < 3;
+        const disabled = collectionsMutationBusy ? 'disabled' : '';
+        const publishDisabled = collectionsMutationBusy || publishBlocked ? 'disabled' : '';
+        const publishTitle = publishBlocked ? 'Add at least 3 products before publishing' : `${published ? 'Unpublish' : 'Publish'} ${title}`;
+        const actions = `<button type="button" class="btn-secondary btn-small" data-collection-action="edit" data-collection-id="${id}" ${disabled}>Edit</button>
+            <button type="button" class="${published ? 'btn-secondary' : 'btn-primary'} btn-small" data-collection-action="publish" data-collection-id="${id}" title="${escapeHTML(publishTitle)}" aria-label="${escapeHTML(publishTitle)}" ${publishDisabled}>${published ? 'Unpublish' : 'Publish'}</button>
+            <button type="button" class="btn-secondary btn-small" data-collection-action="duplicate" data-collection-id="${id}" ${disabled}>Duplicate</button>
+            ${archived
+                ? `<button type="button" class="btn-secondary btn-small" data-collection-action="restore" data-collection-id="${id}" ${disabled}>Restore</button>`
+                : `<button type="button" class="btn-danger btn-small" data-collection-action="archive" data-collection-id="${id}" ${disabled}>Archive</button>`}`;
+        return `<div class="collection-actions-inline">${actions}</div>
+            <details class="collection-action-menu">
+                <summary class="btn-secondary btn-small" aria-label="More actions for ${title}"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span>More</span></summary>
+                <div class="collection-actions-menu">${actions}</div>
+            </details>`;
+    }
+
+    function collectionScheduleLabel(collection) {
+        const pieces = [];
+        if (collection.start_date) pieces.push(`Starts ${formatCollectionDate(collection.start_date)}`);
+        if (collection.end_date) pieces.push(`Ends ${formatCollectionDate(collection.end_date)}`);
+        return pieces.length ? pieces.join(' · ') : 'Always on';
+    }
+
+    function formatCollectionDate(raw) {
+        if (!raw) return '';
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return String(raw);
+        return raw.includes('T') ? date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : date.toLocaleDateString([], { dateStyle: 'medium' });
+    }
+
+    function setCollectionsError(message) {
+        const error = document.getElementById('collections-error');
+        if (!error) return;
+        error.textContent = message || 'The collection request failed.';
+        error.classList.remove('hidden');
+    }
+
+    function showCollectionsSuccess(message) {
+        const success = document.getElementById('collections-success');
+        if (!success) return;
+        window.clearTimeout(collectionSuccessTimer);
+        success.textContent = message;
+        success.classList.remove('hidden');
+        collectionSuccessTimer = window.setTimeout(() => success.classList.add('hidden'), 5000);
+    }
+
+    function clearCollectionsFeedback() {
+        const error = document.getElementById('collections-error');
+        const success = document.getElementById('collections-success');
+        if (error) { error.textContent = ''; error.classList.add('hidden'); }
+        if (success) { success.textContent = ''; success.classList.add('hidden'); }
+        window.clearTimeout(collectionSuccessTimer);
+    }
+
+    async function handleCollectionListClick(event) {
+        const button = event.target.closest('[data-collection-action]');
+        if (!button || button.disabled) return;
+        const id = button.dataset.collectionId;
+        const action = button.dataset.collectionAction;
+        const collection = collectionsPageState.rows.find(row => String(row.id) === String(id));
+        if (!collection) return;
+        const details = button.closest('details');
+        if (details) details.removeAttribute('open');
+
+        if (action === 'edit') {
+            await openCollectionEditor(collection.id, button);
+        } else if (action === 'publish') {
+            const publish = !collectionIsPublished(collection);
+            if (publish && collectionType(collection) === 'manual' && collectionSelectedCount(collection) < 3) {
+                setCollectionsError('At least 3 products must be selected before a hand-picked collection can be published.');
+                return;
+            }
+            await runCollectionMutation(
+                publish ? 'Collection published.' : 'Collection unpublished.',
+                () => updateCollection(collection.id, { is_published: publish })
+            );
+        } else if (action === 'duplicate') {
+            await runCollectionMutation('Collection duplicated as an unpublished copy.', () => duplicateCollection(collection.id));
+        } else if (action === 'archive') {
+            const title = collection.title || 'this collection';
+            if (!window.confirm(`Archive “${title}”? It will be removed from the public collection page.`)) return;
+            await runCollectionMutation('Collection archived.', () => updateCollection(collection.id, { is_archived: true }));
+        } else if (action === 'restore') {
+            await runCollectionMutation('Collection restored.', () => updateCollection(collection.id, { is_archived: false }));
+        } else if (action === 'move-up') {
+            await moveCollection(collection.id, -1);
+        } else if (action === 'move-down') {
+            await moveCollection(collection.id, 1);
+        }
+    }
+
+    async function runCollectionMutation(successMessage, requestFunction) {
+        if (collectionsMutationBusy) return;
+        collectionsMutationBusy = true;
+        clearCollectionsFeedback();
+        renderCollectionList();
+        try {
+            await requestFunction();
+            await loadCollections({ silent: true });
+            showCollectionsSuccess(successMessage);
+        } catch (error) {
+            setCollectionsError(error.message || 'The collection could not be updated.');
+        } finally {
+            collectionsMutationBusy = false;
+            renderCollectionList();
+        }
+    }
+
+    async function updateCollection(id, payload) {
+        const response = await fetch(collectionApiUrl(`/${encodeURIComponent(String(id))}`), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await requireAdminResponse(response, 'Could not update collection');
+    }
+
+    async function duplicateCollection(id) {
+        const response = await fetch(collectionApiUrl(`/${encodeURIComponent(String(id))}/duplicate`), {
+            method: 'POST',
+            headers: { Accept: 'application/json' }
+        });
+        await requireAdminResponse(response, 'Could not duplicate collection');
+    }
+
+    async function moveCollection(id, direction) {
+        if (collectionsMutationBusy || collectionsPageState.filter !== 'all') return;
+        const previousRows = collectionsPageState.rows.slice();
+        const reorderable = previousRows.filter(row => !collectionIsArchived(row));
+        const from = reorderable.findIndex(row => String(row.id) === String(id));
+        const to = from + direction;
+        if (from < 0 || to < 0 || to >= reorderable.length) return;
+        [reorderable[from], reorderable[to]] = [reorderable[to], reorderable[from]];
+        const archivedRows = previousRows.filter(row => collectionIsArchived(row));
+        collectionsPageState.rows = reorderable.concat(archivedRows);
+        collectionsMutationBusy = true;
+        clearCollectionsFeedback();
+        renderCollectionList();
+        try {
+            const response = await fetch(collectionApiUrl('/reorder'), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ ids: reorderable.map(row => row.id) })
+            });
+            await requireAdminResponse(response, 'Could not save collection order');
+            await loadCollections({ silent: true });
+            showCollectionsSuccess('Collection order saved.');
+        } catch (error) {
+            collectionsPageState.rows = previousRows;
+            setCollectionsError(error.message || 'Could not save collection order.');
+        } finally {
+            collectionsMutationBusy = false;
+            renderCollectionList();
+        }
+    }
+
+    function handleCollectionProductResultClick(event) {
+        const retryButton = event.target.closest('[data-retry-collection-products]');
+        if (retryButton) {
+            collectionProductCatalogReady = false;
+            collectionProductCatalogError = null;
+            ensureCollectionProductCatalog().then(renderCollectionProductPicker);
+            return;
+        }
+        const button = event.target.closest('[data-add-collection-product]');
+        if (!button || button.disabled) return;
+        const product = state.products.find(item => String(item.id) === String(button.dataset.addCollectionProduct));
+        if (!product || !collectionProductIsLive(product)) return;
+        if (collectionSelectedProducts.some(item => String(item.id) === String(product.id))) return;
+        if (collectionSelectedProducts.length >= 30) {
+            const limit = document.getElementById('collection-product-limit-message');
+            if (limit) limit.classList.remove('hidden');
+            return;
+        }
+        collectionSelectedProducts.push({ ...product });
+        renderCollectionProductPicker();
+    }
+
+    function handleSelectedCollectionProductClick(event) {
+        const button = event.target.closest('[data-selected-product-action]');
+        if (!button || button.disabled) return;
+        const id = button.dataset.productId;
+        const index = collectionSelectedProducts.findIndex(product => String(product.id) === String(id));
+        if (index < 0) return;
+        const action = button.dataset.selectedProductAction;
+        if (action === 'remove') collectionSelectedProducts.splice(index, 1);
+        if (action === 'up' && index > 0) [collectionSelectedProducts[index - 1], collectionSelectedProducts[index]] = [collectionSelectedProducts[index], collectionSelectedProducts[index - 1]];
+        if (action === 'down' && index < collectionSelectedProducts.length - 1) [collectionSelectedProducts[index + 1], collectionSelectedProducts[index]] = [collectionSelectedProducts[index], collectionSelectedProducts[index + 1]];
+        renderCollectionProductPicker();
+    }
+
+    async function ensureCollectionProductCatalog() {
+        if (collectionProductCatalogReady) return;
+        if (coreProductsLoadPromise) {
+            await coreProductsLoadPromise;
+            return;
+        }
+        if (!collectionProductCatalogPromise) {
+            collectionProductCatalogPromise = fetchProductsData().finally(() => { collectionProductCatalogPromise = null; });
+        }
+        await collectionProductCatalogPromise;
+    }
+
+    function collectionProductIsLive(product) {
+        if (!product) return false;
+        if (typeof product.is_live === 'boolean') return product.is_live;
+        if (product.is_live !== undefined && product.is_live !== null) return ['true', '1', 'live', 'active'].includes(String(product.is_live).toLowerCase());
+        if (typeof product.status === 'boolean') return product.status;
+        if (product.status !== undefined && product.status !== null) return ['true', '1', 'live', 'active', 'published'].includes(String(product.status).toLowerCase());
+        if (typeof product.is_active === 'boolean') return product.is_active;
+        return true;
+    }
+
+    function renderCollectionProductPicker() {
+        renderCollectionProductResults();
+        renderSelectedCollectionProducts();
+        updateCollectionPublishConstraint();
+        const count = document.getElementById('collection-selected-count');
+        if (count) count.textContent = `${collectionSelectedProducts.length} of 30 selected`;
+        const limit = document.getElementById('collection-product-limit-message');
+        if (limit) limit.classList.toggle('hidden', collectionSelectedProducts.length < 30);
+    }
+
+    function renderCollectionProductResults() {
+        const results = document.getElementById('collection-product-results');
+        const searchInput = document.getElementById('collection-product-search');
+        if (!results) return;
+        if (!collectionProductCatalogReady) {
+            results.innerHTML = '<p class="text-muted collection-product-empty">Loading the admin product catalog…</p>';
+            return;
+        }
+        if (collectionProductCatalogError) {
+            results.innerHTML = `<div class="collection-product-load-error"><p>${escapeHTML(collectionProductCatalogError)}</p><button type="button" class="btn-secondary btn-small" data-retry-collection-products>Retry product load</button></div>`;
+            return;
+        }
+        if (!Array.isArray(state.products) || !state.products.length) {
+            results.innerHTML = '<p class="text-muted collection-product-empty">No products are available in the admin catalog.</p>';
+            return;
+        }
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const matched = state.products.filter(product => {
+            const name = String(product.name || '').toLowerCase();
+            const category = String(product.category || '').toLowerCase();
+            return !query || name.includes(query) || category.includes(query);
+        });
+        if (!matched.length) {
+            results.innerHTML = '<p class="text-muted collection-product-empty">No products match your search.</p>';
+            return;
+        }
+        const visible = matched.slice(0, 40);
+        const selectedIds = new Set(collectionSelectedProducts.map(product => String(product.id)));
+        results.innerHTML = visible.map(product => {
+            const id = escapeHTML(String(product.id));
+            const name = escapeHTML(product.name || 'Untitled product');
+            const category = escapeHTML(product.category || 'Uncategorised');
+            const live = collectionProductIsLive(product);
+            const selected = selectedIds.has(String(product.id));
+            const atLimit = collectionSelectedProducts.length >= 30;
+            const disabled = !live || selected || atLimit;
+            const logo = safeCollectionImageUrl(product.logo_url);
+            const logoMarkup = logo
+                ? `<img src="${escapeHTML(logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+                : '<i class="fa-solid fa-cube" aria-hidden="true"></i>';
+            return `<div class="collection-product-result${live ? '' : ' is-hidden-product'}">
+                <span class="collection-product-logo">${logoMarkup}</span>
+                <span class="collection-product-copy"><strong>${name}</strong><small>${category}</small></span>
+                ${!live ? '<span class="collection-hidden-badge">Hidden</span>' : ''}
+                <button type="button" class="btn-secondary btn-small collection-add-product" data-add-collection-product="${id}" ${disabled ? 'disabled' : ''}>${selected ? 'Added' : (atLimit && live ? 'Limit reached' : 'Add')}</button>
+            </div>`;
+        }).join('') + (matched.length > visible.length ? `<p class="collection-result-limit text-muted">Showing 40 of ${matched.length} matches. Refine your search to find more.</p>` : '');
+    }
+
+    function safeCollectionImageUrl(value) {
+        const url = String(value || '').trim();
+        if (/^https?:\/\//i.test(url) || (url.startsWith('/') && !url.startsWith('//'))) return url;
+        return '';
+    }
+
+    function renderSelectedCollectionProducts() {
+        const list = document.getElementById('collection-selected-list');
+        if (!list) return;
+        if (!collectionSelectedProducts.length) {
+            list.innerHTML = '<li class="collection-selected-empty text-muted">No products selected yet.</li>';
+            return;
+        }
+        list.innerHTML = collectionSelectedProducts.map((product, index) => {
+            const id = escapeHTML(String(product.id));
+            const name = escapeHTML(product.name || 'Untitled product');
+            const category = escapeHTML(product.category || 'Uncategorised');
+            const live = collectionProductIsLive(product);
+            const logo = safeCollectionImageUrl(product.logo_url);
+            const logoMarkup = logo
+                ? `<img src="${escapeHTML(logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+                : '<i class="fa-solid fa-cube" aria-hidden="true"></i>';
+            return `<li class="collection-selected-product" data-product-id="${id}">
+                <span class="collection-selected-number">${index + 1}</span>
+                <span class="collection-product-logo">${logoMarkup}</span>
+                <span class="collection-product-copy"><strong>${name}</strong><small>${category}${live ? '' : ' · Hidden'}</small></span>
+                <span class="collection-selected-order">
+                    <button type="button" class="btn-secondary btn-small" data-selected-product-action="up" data-product-id="${id}" aria-label="Move ${name} up" ${index === 0 ? 'disabled' : ''}><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button>
+                    <button type="button" class="btn-secondary btn-small" data-selected-product-action="down" data-product-id="${id}" aria-label="Move ${name} down" ${index === collectionSelectedProducts.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+                </span>
+                <button type="button" class="btn-secondary btn-small collection-remove-product" data-selected-product-action="remove" data-product-id="${id}" aria-label="Remove ${name}">Remove</button>
+            </li>`;
+        }).join('');
+    }
+
+    function updateCollectionTypePanels() {
+        const typeSelect = document.getElementById('collection-section-type');
+        const manualPanel = document.getElementById('collection-manual-panel');
+        const autoPanel = document.getElementById('collection-auto-panel');
+        const lockNote = document.getElementById('collection-type-lock-note');
+        if (!typeSelect) return;
+        const isAuto = typeSelect.value === 'auto';
+        typeSelect.disabled = collectionEditorId !== null;
+        if (manualPanel) manualPanel.classList.toggle('hidden', isAuto);
+        if (autoPanel) autoPanel.classList.toggle('hidden', !isAuto);
+        if (lockNote) lockNote.classList.toggle('hidden', collectionEditorId === null);
+    }
+
+    function updateCollectionPublishConstraint() {
+        const type = document.getElementById('collection-section-type');
+        const toggle = document.getElementById('collection-published');
+        const guidance = document.getElementById('collection-publish-guidance');
+        if (!type || !toggle || !guidance) return;
+        const needsThree = type.value === 'manual' && collectionSelectedProducts.length < 3;
+        if (!needsThree) {
+            toggle.disabled = false;
+            guidance.textContent = '';
+            guidance.classList.add('hidden');
+            return;
+        }
+        toggle.disabled = !toggle.checked;
+        guidance.textContent = toggle.checked
+            ? 'At least 3 products are required to publish. Turn Published off to save this collection as a draft.'
+            : 'At least 3 products are needed to show on the site. You can save this collection as a draft.';
+        guidance.classList.remove('hidden');
+    }
+
+    function normalizeCollectionEmoji(value) {
+        const text = String(value || '').trim();
+        if (!text) return '';
+        if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+            const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+            const first = segmenter.segment(text)[Symbol.iterator]().next();
+            return first && first.value ? first.value.segment : '';
+        }
+        return Array.from(text)[0] || '';
+    }
+
+    function setCollectionAutoRule(value) {
+        const select = document.getElementById('collection-auto-rule');
+        if (!select) return;
+        const rule = value || 'newest';
+        const exists = Array.from(select.options).some(option => option.value === rule);
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = rule;
+            option.textContent = `Saved rule: ${rule}`;
+            select.appendChild(option);
+        }
+        select.value = rule;
+    }
+
+    function resetCollectionEditorForm() {
+        const form = document.getElementById('collection-editor-form');
+        if (form) form.reset();
+        collectionSelectedProducts = [];
+        const type = document.getElementById('collection-section-type');
+        if (type) { type.value = 'manual'; type.disabled = false; }
+        const search = document.getElementById('collection-product-search');
+        if (search) search.value = '';
+        const emoji = document.getElementById('collection-emoji');
+        if (emoji) emoji.value = '';
+        setCollectionAutoRule('newest');
+        ['collection-editor-error', 'collection-editor-success', 'collection-title-error', 'collection-date-error', 'collection-product-limit-message', 'collection-publish-guidance'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) { element.textContent = ''; element.classList.add('hidden'); }
+        });
+        const saveButton = document.getElementById('collection-save-btn');
+        if (saveButton) { saveButton.disabled = false; saveButton.textContent = 'Save Collection'; }
+        const cancelButton = document.getElementById('collection-cancel-btn');
+        if (cancelButton) cancelButton.disabled = false;
+        collectionEditorReady = false;
+        updateCollectionTypePanels();
+        renderCollectionProductPicker();
+    }
+
+    async function openCollectionEditor(id = null, trigger = null) {
+        const requestId = ++collectionEditorRequest;
+        collectionEditorId = id === null || id === undefined ? null : id;
+        collectionEditorReturnFocus = trigger || document.activeElement;
+        resetCollectionEditorForm();
+        const drawer = document.getElementById('collection-drawer');
+        const backdrop = document.getElementById('collection-drawer-backdrop');
+        const heading = document.getElementById('collection-drawer-heading');
+        const form = document.getElementById('collection-editor-form');
+        const loading = document.getElementById('collection-editor-loading');
+        const saveButton = document.getElementById('collection-save-btn');
+        if (!drawer || !backdrop || !form || !loading) return;
+        drawer.classList.remove('hidden');
+        backdrop.classList.remove('hidden');
+        drawer.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('collection-editor-open');
+        if (heading) heading.textContent = collectionEditorId === null ? 'New Collection' : 'Edit Collection';
+        if (saveButton) saveButton.textContent = collectionEditorId === null ? 'Save Collection' : 'Save Changes';
+
+        if (collectionEditorId === null) {
+            collectionEditorReady = true;
+            form.classList.remove('hidden');
+            loading.classList.add('hidden');
+            updateCollectionTypePanels();
+            renderCollectionProductPicker();
+            ensureCollectionProductCatalog().then(() => {
+                if (requestId === collectionEditorRequest && !drawer.classList.contains('hidden')) renderCollectionProductPicker();
+            });
+            window.setTimeout(() => document.getElementById('collection-title')?.focus(), 50);
+            return;
+        }
+
+        collectionEditorReady = false;
+        form.classList.add('hidden');
+        loading.classList.remove('hidden');
+        try {
+            const [detail] = await Promise.all([
+                fetchCollectionDetail(collectionEditorId),
+                ensureCollectionProductCatalog()
+            ]);
+            if (requestId !== collectionEditorRequest) return;
+            fillCollectionEditor(detail);
+            loading.classList.add('hidden');
+            form.classList.remove('hidden');
+            collectionEditorReady = true;
+            renderCollectionProductPicker();
+            window.setTimeout(() => document.getElementById('collection-title')?.focus(), 50);
+        } catch (error) {
+            if (requestId !== collectionEditorRequest) return;
+            loading.classList.add('hidden');
+            form.classList.remove('hidden');
+            setCollectionEditorError(error.message || 'Could not load this collection. Close the editor and try again.');
+            if (saveButton) saveButton.disabled = true;
+        }
+    }
+
+    async function fetchCollectionDetail(id) {
+        const response = await fetch(collectionApiUrl(`/${encodeURIComponent(String(id))}`), {
+            headers: { Accept: 'application/json' }, cache: 'no-store'
+        });
+        await requireAdminResponse(response, 'Could not load collection');
+        return response.json();
+    }
+
+    function fillCollectionEditor(detail) {
+        const title = document.getElementById('collection-title');
+        const emoji = document.getElementById('collection-emoji');
+        const description = document.getElementById('collection-description');
+        const type = document.getElementById('collection-section-type');
+        const published = document.getElementById('collection-published');
+        const start = document.getElementById('collection-start-date');
+        const end = document.getElementById('collection-end-date');
+        if (title) title.value = detail.title || '';
+        if (emoji) emoji.value = detail.emoji || '';
+        if (description) description.value = detail.description || '';
+        if (type) {
+            type.value = String(detail.section_type || 'manual').toLowerCase() === 'auto' ? 'auto' : 'manual';
+            type.disabled = true;
+        }
+        if (published) published.checked = collectionIsPublished(detail);
+        if (start) start.value = collectionDateToInput(detail.start_date);
+        if (end) end.value = collectionDateToInput(detail.end_date);
+        setCollectionAutoRule(detail.auto_rule || 'newest');
+        const detailProducts = Array.isArray(detail.products) ? detail.products : [];
+        collectionSelectedProducts = detailProducts.map(product => {
+            const catalog = state.products.find(item => String(item.id) === String(product.id)) || {};
+            return { ...catalog, ...product, id: product.id };
+        });
+        updateCollectionTypePanels();
+        const titleError = document.getElementById('collection-title-error');
+        if (titleError) titleError.classList.add('hidden');
+        const dateError = document.getElementById('collection-date-error');
+        if (dateError) dateError.classList.add('hidden');
+    }
+
+    function collectionDateToInput(raw) {
+        if (!raw) return '';
+        const value = String(raw);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value}T00:00`;
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) && !/(Z|[+-]\d{2}:?\d{2})$/i.test(value)) return value.slice(0, 16);
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 16);
+    }
+
+    function collectionDateToIso(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date.toISOString();
+    }
+
+    function closeCollectionDrawer(force = false) {
+        if (collectionEditorSaving && !force) return;
+        const drawer = document.getElementById('collection-drawer');
+        const backdrop = document.getElementById('collection-drawer-backdrop');
+        if (!drawer || drawer.classList.contains('hidden')) return;
+        ++collectionEditorRequest;
+        drawer.classList.add('hidden');
+        if (backdrop) backdrop.classList.add('hidden');
+        drawer.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('collection-editor-open');
+        collectionEditorId = null;
+        collectionEditorReady = false;
+        const focusTarget = collectionEditorReturnFocus && collectionEditorReturnFocus.isConnected
+            ? collectionEditorReturnFocus
+            : document.getElementById('collection-new-btn');
+        if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
+    }
+
+    function setCollectionEditorError(message) {
+        const error = document.getElementById('collection-editor-error');
+        if (!error) return;
+        error.textContent = message || 'The collection could not be saved.';
+        error.classList.remove('hidden');
+        error.scrollIntoView({ block: 'nearest' });
+    }
+
+    async function saveCollectionEditor(event) {
+        event.preventDefault();
+        if (collectionEditorSaving || !collectionEditorReady) return;
+        const titleInput = document.getElementById('collection-title');
+        const titleError = document.getElementById('collection-title-error');
+        const dateError = document.getElementById('collection-date-error');
+        const editorError = document.getElementById('collection-editor-error');
+        const editorSuccess = document.getElementById('collection-editor-success');
+        const typeSelect = document.getElementById('collection-section-type');
+        const publishedToggle = document.getElementById('collection-published');
+        const startValue = document.getElementById('collection-start-date').value;
+        const endValue = document.getElementById('collection-end-date').value;
+        const title = titleInput ? titleInput.value.trim() : '';
+        if (titleError) { titleError.textContent = ''; titleError.classList.add('hidden'); }
+        if (dateError) { dateError.textContent = ''; dateError.classList.add('hidden'); }
+        if (editorError) { editorError.textContent = ''; editorError.classList.add('hidden'); }
+        if (editorSuccess) { editorSuccess.textContent = ''; editorSuccess.classList.add('hidden'); }
+
+        if (!title) {
+            if (titleError) { titleError.textContent = 'Title is required.'; titleError.classList.remove('hidden'); }
+            if (titleInput) titleInput.focus();
+            return;
+        }
+        if (startValue && endValue && new Date(endValue) < new Date(startValue)) {
+            if (dateError) { dateError.textContent = 'End date must be after the start date.'; dateError.classList.remove('hidden'); }
+            return;
+        }
+        const sectionType = typeSelect && typeSelect.value === 'auto' ? 'auto' : 'manual';
+        const isPublished = Boolean(publishedToggle && publishedToggle.checked);
+        if (sectionType === 'manual' && collectionSelectedProducts.length < 3 && isPublished) {
+            updateCollectionPublishConstraint();
+            if (editorError) {
+                editorError.textContent = 'Choose at least 3 products or turn Published off to save as a draft.';
+                editorError.classList.remove('hidden');
+            }
+            return;
+        }
+
+        const payload = {
+            title,
+            emoji: normalizeCollectionEmoji(document.getElementById('collection-emoji').value),
+            description: document.getElementById('collection-description').value.trim(),
+            section_type: sectionType,
+            auto_rule: sectionType === 'auto' ? (document.getElementById('collection-auto-rule').value || 'newest') : null,
+            product_ids: sectionType === 'manual' ? collectionSelectedProducts.map(product => product.id) : [],
+            is_published: isPublished,
+            start_date: collectionDateToIso(startValue),
+            end_date: collectionDateToIso(endValue)
+        };
+        const isEditing = collectionEditorId !== null;
+        const saveButton = document.getElementById('collection-save-btn');
+        const cancelButton = document.getElementById('collection-cancel-btn');
+        const form = document.getElementById('collection-editor-form');
+        collectionEditorSaving = true;
+        if (form) form.setAttribute('aria-busy', 'true');
+        if (saveButton) { saveButton.disabled = true; saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Saving…'; }
+        if (cancelButton) cancelButton.disabled = true;
+        let successMessage = '';
+        try {
+            const response = await fetch(collectionApiUrl(isEditing ? `/${encodeURIComponent(String(collectionEditorId))}` : ''), {
+                method: isEditing ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await requireAdminResponse(response, isEditing ? 'Could not save collection' : 'Could not create collection');
+            await loadCollections({ silent: true });
+            successMessage = isEditing ? 'Collection saved.' : 'Collection created.';
+        } catch (error) {
+            setCollectionEditorError(error.message || 'The collection could not be saved.');
+        } finally {
+            collectionEditorSaving = false;
+            if (form) form.removeAttribute('aria-busy');
+            if (saveButton) { saveButton.disabled = false; saveButton.textContent = isEditing ? 'Save Changes' : 'Save Collection'; }
+            if (cancelButton) cancelButton.disabled = false;
+        }
+        if (successMessage) {
+            closeCollectionDrawer(true);
+            showCollectionsSuccess(successMessage);
+        }
     }
 
     function renderActiveTab(tabId) {
         hideAlert();
-        // Analytics is its own clean space: the global stats bar (which lives
-        // above the tab sections) hides there and returns on every other tab.
-        const statsBar = document.getElementById('stats-bar');
-        if (statsBar) statsBar.classList.toggle('hidden', tabId === 'analytics-tab');
+        if (tabId === 'dashboard-tab') loadDashboardSummary();
+        if (tabId === 'collections-tab') loadCollections();
         if (tabId === 'products-tab') renderProducts();
         if (tabId === 'alternatives-tab') fetchForeignTools();
         if (tabId === 'submissions-tab') renderSubmissions();
@@ -613,19 +1724,16 @@
         }
         if (tabId === 'newsletter-tab') {
             renderNewsletterPicker();
-            // Fetch the subscriber list once per session, not on every render.
             if (subscribersCache === null) fetchNewsletterSubscribers();
         }
         if (tabId === 'claims-tab') fetchClaims();
-        if (tabId === 'analytics-tab') {
-            fetchSearchAnalytics();
-        }
+        if (tabId === 'analytics-tab') fetchSearchAnalytics();
         if (tabId === 'banner-tab') loadBannerAdmin();
     }
 
     function getActiveTabId() {
         const active = document.querySelector('.tab-content.active');
-        return active ? active.id : 'products-tab';
+        return active ? active.id : 'dashboard-tab';
     }
 
     /* ==========================================================================
@@ -691,23 +1799,25 @@
     }
 
     /* ==========================================================================
-       Data loading (fetch full lists, cache in state, render active tab + stats)
+       Data loading (fetch full lists, cache in state, render active page)
        ========================================================================== */
     async function loadAllData() {
-        await Promise.all([fetchProductsData(), fetchSubmissionsData(), fetchDevelopersData()]);
-        updateStats();
-        renderActiveTab(getActiveTabId());
+        const initiallyOnDashboard = getActiveTabId() === 'dashboard-tab';
+        if (initiallyOnDashboard) loadDashboardSummary();
+        const productsPromise = fetchProductsData();
+        coreProductsLoadPromise = productsPromise;
+        await Promise.all([productsPromise, fetchSubmissionsData(), fetchDevelopersData()]);
+        if (coreProductsLoadPromise === productsPromise) coreProductsLoadPromise = null;
+        if (getActiveTabId() !== 'dashboard-tab') renderActiveTab(getActiveTabId());
     }
 
     async function refreshProducts() {
         await fetchProductsData();
-        updateStats();
         renderProducts();
     }
 
     async function refreshSubmissions() {
         await fetchSubmissionsData();
-        updateStats();
         renderSubmissions();
     }
 
@@ -716,9 +1826,13 @@
             const res = await fetch(`${API_URL}/products/admin/all?admin_key=${adminKey}`);
             if (!res.ok) throw new Error("Failed to fetch products. Check admin key.");
             state.products = await res.json();
+            collectionProductCatalogError = null;
+            collectionProductCatalogReady = true;
         } catch (error) {
             showAlert('error', error.message);
             state.products = [];
+            collectionProductCatalogError = error.message || 'Could not load the admin product catalog.';
+            collectionProductCatalogReady = true;
         }
     }
 
@@ -742,21 +1856,6 @@
             showAlert('error', error.message);
             state.developers = [];
         }
-    }
-
-    /* ==========================================================================
-       Quick Stats Bar
-       ========================================================================== */
-    function updateStats() {
-        setText('stat-total-products', state.products.length);
-        setText('stat-pending-submissions', state.submissions.filter(s => submissionStatus(s) === 'pending').length);
-        setText('stat-total-developers', state.developers.length);
-        setText('stat-total-rejected', state.submissions.filter(s => submissionStatus(s) === 'rejected').length);
-    }
-
-    function setText(id, value) {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value;
     }
 
     function submissionStatus(s) {
@@ -1165,11 +2264,11 @@
         const picker = document.getElementById('product-alternatives-picker');
         category.addEventListener('change', () => {
             const id = document.getElementById('edit_product_id').value;
-            if (id && !productModal.classList.contains('hidden')) loadProductAlternatives(id, category.value);
+            if (!productModal.classList.contains('hidden')) loadProductAlternatives(id, category.value);
         });
         document.getElementById('retry-product-alternatives').addEventListener('click', () => {
             const id = document.getElementById('edit_product_id').value;
-            if (id) loadProductAlternatives(id, category.value);
+            loadProductAlternatives(id, category.value);
         });
         trigger.addEventListener('click', () => setProductAlternativesOpen(picker.classList.contains('hidden')));
         picker.addEventListener('change', updateProductAlternativeSummary);
@@ -1206,14 +2305,15 @@
         document.getElementById('product-alternatives-picker').replaceChildren();
         document.getElementById('product-alternatives-trigger').disabled = true;
         document.getElementById('product-alternatives-summary').textContent = 'Select foreign tools';
-        document.getElementById('product-alternatives-status').textContent = '';
+        document.getElementById('product-alternatives-status').textContent = 'Choose a category to see matching foreign tools.';
         document.getElementById('product-alternatives-error').classList.add('hidden');
         document.getElementById('retry-product-alternatives').classList.add('hidden');
     }
 
     async function loadProductAlternatives(id, category) {
+        const productId = id ? String(id) : null;
         const requestId = ++productAlternativesRequest;
-        productAlternativesState = { id: String(id), category, ready: false };
+        productAlternativesState = { id: productId, category, ready: false };
         const picker = document.getElementById('product-alternatives-picker');
         const trigger = document.getElementById('product-alternatives-trigger');
         const summary = document.getElementById('product-alternatives-summary');
@@ -1230,16 +2330,19 @@
         if (!category) return;
 
         try {
-            const [linkedRes, toolsRes] = await Promise.all([
-                fetch(`${API_URL}/products/${encodeURIComponent(id)}/alternatives`),
-                fetch(`${API_URL}/products/admin/alternatives/foreign-tools?admin_key=${encodeURIComponent(adminKey)}&category=${encodeURIComponent(category)}`)
-            ]);
-            await Promise.all([
-                requireAdminResponse(linkedRes, 'Could not load linked alternatives'),
-                requireAdminResponse(toolsRes, 'Could not load foreign tools in this category')
-            ]);
-            const [linked, tools] = await Promise.all([linkedRes.json(), toolsRes.json()]);
-            if (!Array.isArray(linked) || !Array.isArray(tools)) throw new Error('Invalid alternatives response from the server.');
+            const toolsRequest = fetch(`${API_URL}/products/admin/alternatives/foreign-tools?admin_key=${encodeURIComponent(adminKey)}&category=${encodeURIComponent(category)}`);
+            const linksRequest = productId
+                ? fetch(`${API_URL}/products/${encodeURIComponent(productId)}/alternatives`)
+                : Promise.resolve(null);
+            const [toolsRes, linkedRes] = await Promise.all([toolsRequest, linksRequest]);
+            await requireAdminResponse(toolsRes, 'Could not load foreign tools in this category');
+            if (linkedRes) await requireAdminResponse(linkedRes, 'Could not load linked alternatives');
+
+            const tools = await toolsRes.json();
+            const linked = linkedRes ? await linkedRes.json() : [];
+            if (!Array.isArray(tools) || !Array.isArray(linked)) {
+                throw new Error('Invalid alternatives response from the server.');
+            }
             if (requestId !== productAlternativesRequest) return;
 
             const linkedIds = new Set(linked.map(item => Number(item.id ?? item.foreign_tool_id)));
@@ -1266,6 +2369,35 @@
             errorEl.classList.remove('hidden');
             retryBtn.classList.remove('hidden');
         }
+    }
+
+    function extractCreatedProductId(data) {
+        if (!data || typeof data !== 'object') return null;
+        const candidates = [
+            data.id,
+            data.product_id,
+            data.product && data.product.id,
+            data.product && data.product.product_id,
+            data.data && data.data.id,
+            data.data && data.data.product && data.data.product.id
+        ];
+        const candidate = candidates.find(value => value !== undefined && value !== null && String(value).trim() !== '');
+        return candidate === undefined ? null : String(candidate);
+    }
+
+    function findCreatedProductId(payload) {
+        const normalize = value => String(value || '').trim().toLocaleLowerCase();
+        const normalizeWebsite = value => normalize(value).replace(/\/+$/, '');
+        const name = normalize(payload.name);
+        const website = normalizeWebsite(payload.website);
+        const category = normalize(payload.category);
+        const matches = state.products.filter(product =>
+            normalize(product.name) === name &&
+            normalizeWebsite(product.website) === website &&
+            normalize(product.category) === category &&
+            product.id !== undefined && product.id !== null
+        );
+        return matches.length === 1 ? String(matches[0].id) : null;
     }
 
     function showProductModalError(message) {
@@ -1902,7 +3034,7 @@
 
         const status = res ? res.status : 0;
         if (status === 400) return `${fallback} — the server rejected the request (400). Check that the CSV header row matches the expected columns exactly.`;
-        if (status === 401 || status === 403) return 'Admin key rejected. Clear the admin key and log in again.';
+        if (status === 401 || status === 403) return 'Admin key rejected. Sign out and log in again.';
         if (status === 413) return 'That CSV is too large for the server to accept. Split it into smaller files.';
         if (status >= 500) return `${fallback} — the server hit an error (${status}). Please try again.`;
         return `${fallback}${status ? ` (HTTP ${status})` : ' — network error.'}`;
@@ -3456,7 +4588,7 @@
         section.className = 'tab-content hidden';
         section.innerHTML = `
             <div class="section-header">
-                <h2>Analytics</h2>
+                <h2>Search Analytics</h2>
                 <div class="section-header-actions">
                     <button id="analytics-refresh-btn" class="btn-secondary">Refresh</button>
                 </div>
@@ -3485,15 +4617,6 @@
         const host = document.querySelector('main') || document.body;
         host.appendChild(section);
 
-        // Nav entry too, if the host page lacks it.
-        if (!document.querySelector('.nav-tab[data-target="analytics-tab"]')) {
-            const anchor = document.querySelector('.nav-tab[data-target="newsletter-tab"]') || document.querySelector('.nav-tab');
-            const btn = document.createElement('button');
-            btn.className = 'nav-tab';
-            btn.setAttribute('data-target', 'analytics-tab');
-            btn.textContent = 'Analytics';
-            if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(btn, anchor.nextSibling);
-        }
     }
 
     async function fetchSearchAnalytics() {

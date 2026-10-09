@@ -6,7 +6,7 @@
     <title>Enovox Search - Discover Nigerian Tech</title>
     <link rel="canonical" href="https://search.enovoxtech.com" />
     <!-- Link to the shared stylesheet -->
-    <link rel="stylesheet" href="/static/css/style.css?v=autocomplete-20261004-1">
+    <link rel="stylesheet" href="/static/css/style.css?v=category-grid-20261008-1">
     <!-- FontAwesome for footer icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
@@ -42,76 +42,140 @@
     </div>
     <header class="navbar">
         <div class="nav-container">
-            <a href="/" class="brand-logo">
-                <img src="/static/assets/logo.png" alt="Enovox search" class="logo-icon logo-light">
-                <img src="/static/assets/logo-white.png" alt="Enovox search" class="logo-icon logo-dark">
-                <span class="brand-name">Enovox Search</span>
+            <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                <span class="brand-name">Enovox <span>Search</span></span>
             </a>
 
-            <nav class="nav-links">
-                <a href="/">Home</a>
-                <a href="/explore">Explore</a>
-                <a href="/about">About Us</a>
-                <a href="/submit">Submit Tool</a>
-                <a href="/ai" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
-                <a href="/contact">Contact</a>
-                <a href="/nigeria-66" class="nigeria66-nav-link"><svg class="nigeria66-flag-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="12" viewBox="0 0 30 20" role="img" aria-label="Nigerian flag" focusable="false"><rect width="30" height="20" fill="#ffffff"/><path d="M0 0h10v20H0zM20 0h10v20H20z" fill="#008751"/></svg>Nigeria @ 66</a>
+            <nav class="nav-links" id="primary-navigation" aria-label="Primary navigation">
+                <div class="mobile-nav-header">
+                    <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                        <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                        <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                        <span class="brand-name">Enovox <span>Search</span></span>
+                    </a>
+                    <button type="button" class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
 
+                <div class="nav-menu-list">
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-explore-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m16.2 7.8-2.8 6.4-5.6 2.8 2.8-6.4 5.6-2.8Z"></path></svg><span>Explore</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu" id="header-explore-menu">
+                            <a class="nav-dropdown-item nav-dropdown-featured" href="/explore">
+                                <span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">All Products</span><span class="nav-dropdown-description">Explore products built by Nigerians.</span></span>
+                                <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                            </a>
+                            <a class="nav-dropdown-item" href="/collection"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Collection</span><span class="nav-dropdown-description">Curated product lists by category.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/spotlight"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Spotlight <span class="nav-badge-new">NEW</span></span><span class="nav-dropdown-description">Founder stories and how they built it.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/alternative" data-alternative-nav><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Nigeria Alternatives</span><span class="nav-dropdown-description">Local alternatives to popular global tools.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-categories-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Categories</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
+                            <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
+                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-developers-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Developers</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-developers-menu" id="header-developers-menu">
+                            <div class="developer-menu-links" data-developer-links hidden>
+                                <a class="nav-dropdown-item" href="/dashboard"><span class="nav-dropdown-title">Developer Dashboard</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/submit"><span class="nav-dropdown-title">Submit Product</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/guidelines"><span class="nav-dropdown-title">Developer Guidelines</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                            <div class="developer-menu-guest" data-developer-guest>
+                                <a class="nav-dropdown-item" href="/signup?type=developer"><span class="nav-dropdown-title">Join as a Developer</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/login?type=developer"><span class="nav-dropdown-title">Developer Login</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/submit" class="header-submit-product">Submit Product</a>
+                </div>
+
+                <a class="mobile-submit-product" href="/submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M20 16.5v2A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5v-2"></path></svg>
+                    <span>Submit Product</span>
+                </a>
+                <div class="mobile-nav-divider" aria-hidden="true"></div>
+                <a href="/ai" class="mobile-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="mobile-ask-ai-copy"><strong>Ask AI</strong><small>Need help finding a product?</small></span>
+                    <svg class="mobile-row-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+                <button type="button" id="mobile-theme-toggle" class="mobile-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <span class="mobile-theme-label"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>Dark Mode</span>
+                    <span class="mobile-theme-switch" aria-hidden="true"><span></span></span>
+                </button>
                 <div class="nav-auth-mobile">
-                    <a href="#footer-subscribe-form" class="nav-subscribe-btn nav-subscribe-mobile" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
-                    <a href="/login" class="mobile-auth-pill mobile-auth-primary auth-login-slot">Login</a>
-                    <a href="/signup" class="mobile-auth-pill mobile-auth-accent auth-signup-slot">Sign up</a>
+                    <a href="/login" class="mobile-auth-link auth-login-slot">Log in</a>
+                    <a href="/signup" class="mobile-auth-link mobile-auth-signup auth-signup-slot"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg><span>Sign up</span></a>
                 </div>
             </nav>
 
             <div class="nav-actions">
-                <!-- Dark Mode Toggle -->
-                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                <button id="theme-toggle" class="icon-btn header-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
                     <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
-                
-                <!-- Search Icon -->
-                <a href="/explore" class="icon-btn" aria-label="Search">
+                <a href="/explore" class="icon-btn header-search-icon" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 </a>
-
-                <a href="#footer-subscribe-form" class="nav-subscribe-btn" aria-label="Subscribe to the newsletter"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>Subscribe</a>
-                <a href="/login" class="btn-text auth-login-slot">Login</a>
-                <a href="/signup" class="btn-primary auth-signup-slot">Sign up</a>
-
-                <!-- Hamburger Icon -->
-                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Toggle Navigation">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
+                <a href="/ai" class="header-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="header-ask-ai-copy"><strong>Ask AI <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></strong><small>Need help finding a product?</small></span>
+                </a>
+                <div class="header-auth-desktop">
+                    <a href="/login" class="header-auth-login auth-login-slot">Log in</a>
+                    <a href="/signup" class="header-auth-signup auth-signup-slot">Sign up</a>
+                </div>
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Open navigation" aria-controls="primary-navigation" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
             </div>
         </div>
+        <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
     </header>
 
     <main>
         <!-- Main Hero Section -->
-        <section class="hero">
+        <section class="hero homepage-hero">
             <h1 id="hero-headline">Discover What Nigeria Is Building.</h1>
             <p class="hero-subtitle">Discover AI, software, apps, and digital products built by Nigerian innovators — all in one place.</p>
 
             <!-- Search Bar -->
             <div class="search-container">
                 <form id="hero-search-form" action="/explore" method="GET">
+                    <span class="hero-search-leading-icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </span>
                     <input type="text" id="hero-search-input" name="query" placeholder="Search or type 'AI' for Chat..." required autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="hero-search-suggestions">
                     <button type="button" id="hero-search-clear" class="autocomplete-clear-btn" aria-label="Clear search" title="Clear search" hidden>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
-                    <!-- Clickable search: submits the GET form (no Enter needed) -->
-                    <button type="submit" class="hero-search-submit" aria-label="Search">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </button>
-                    <!-- AI Chat Button with Coming Soon popup -->
+                    <span class="hero-search-divider" aria-hidden="true"></span>
                     <button type="button" id="ai-chat-btn" class="btn-ai" onclick="alert('This feature is coming soon!')">
-                        Ask AI
+                        <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                        <span>Ask AI</span>
+                    </button>
+                    <button type="submit" class="hero-search-submit" aria-label="Search">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                     </button>
                 </form>
                 <div id="hero-search-suggestions" class="product-autocomplete" role="region" aria-label="Product suggestions" hidden></div>
@@ -122,10 +186,16 @@
                 <div class="hero-categories" id="home-category-pills">
                     <!-- JS injects pills here -->
                 </div>
-                <button id="pill-toggle-btn" class="pill-arrow-btn" aria-label="Show more categories">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                </button>
+                <a class="hero-view-all-categories" href="/category">View all categories →</a>
             </div>
+            <a class="hero-ask-ai-mobile" href="/ai" aria-label="Ask AI for help finding a product">
+                <span class="hero-ask-ai-main">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <strong>Ask AI</strong>
+                    <svg class="hero-ask-ai-arrow" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                </span>
+                <small class="hero-ask-ai-description">Need help finding a product?</small>
+            </a>
         </section>
         <section class="stats-section">
 
@@ -212,7 +282,7 @@
         </section>
 
         <!-- Explore Popular Categories (top three from the live category counts) -->
-        <section class="popular-categories-section" aria-labelledby="popular-categories-heading">
+        <section class="popular-categories-section" aria-labelledby="popular-categories-heading" hidden>
             <div class="popular-categories-heading">
                 <div class="accent-bar"></div>
                 <h2 id="popular-categories-heading">Explore Popular Categories</h2>
@@ -403,7 +473,7 @@
         </div>
     </footer>
     <script src="/static/js/config.js"></script>
-    <script src="/static/js/home.js?v=autocomplete-20261004-1"></script>
+    <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
     <script src="/static/js/nav-auth.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a45784f2ca23fac0',t:'MTc5MTE1MTg1NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a470dffd9d6f38ee',t:'MTc5MTQxNzcyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

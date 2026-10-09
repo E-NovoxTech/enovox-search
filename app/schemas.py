@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import validator
 
 
@@ -308,4 +308,42 @@ class SubmissionApproveEdits(BaseModel):
     keywords: Optional[str] = None
     contact_email: Optional[str] = None
     github_url: Optional[str] = None
-    foreign_tool_ids: Optional[List[int]] = None
+    foreign_tool_ids: Optional[List[int]] = None 
+     
+class CollectionCreate(BaseModel):
+    title: str
+    emoji: Optional[str] = None
+    description: Optional[str] = None
+    section_type: str = "manual"
+    auto_rule: Optional[str] = "newest"
+    product_ids: List[int] = []
+    is_published: bool = False
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+class CollectionUpdate(BaseModel):
+    title: Optional[str] = None
+    emoji: Optional[str] = None
+    description: Optional[str] = None
+    auto_rule: Optional[str] = None
+    product_ids: Optional[List[int]] = None
+    is_published: Optional[bool] = None
+    is_archived: Optional[bool] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+
+class CollectionReorder(BaseModel):
+    ids: List[int]
+
+class CollectionSectionOut(BaseModel):
+    id: int
+    title: str
+    slug: str
+    emoji: Optional[str] = None
+    description: Optional[str] = None
+    section_type: str
+    products: List[ProductOut]
+    total: int
+    has_more: bool
+
+    

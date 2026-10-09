@@ -10,7 +10,7 @@ from app.routers import verification
 from app.routers import google_auth
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse
-
+from app.routers import site_collections
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Enovox Search")
@@ -40,6 +40,7 @@ app.include_router(submissions.router)
 app.include_router(pages.router)
 app.include_router(developers.router)
 app.include_router(ai.router)
+app.include_router(site_collections.router)                                                      
 app.include_router(users.router)
 app.include_router(verification.router)
 app.include_router(google_auth.router)

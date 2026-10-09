@@ -32,7 +32,7 @@
         <!-- Top Header Bar: MOBILE ONLY (hidden on desktop via CSS, min-width: 769px) -->
         <div class="admin-top-header">
             <div style="display: flex; align-items: center; gap: 10px;">
-                <button id="admin-hamburger" aria-label="Open Menu">
+                <button type="button" id="admin-hamburger" aria-label="Open admin menu" aria-controls="admin-sidebar" aria-expanded="false">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                 </button>
                 <span>Enovox Admin</span>
@@ -59,7 +59,7 @@
         <!-- Dashboard Body Container (Sidebar + Main Content Side-by-Side) -->
         <div class="dashboard-body">
             <!-- Sidebar Overlay for Mobile -->
-            <div id="admin-sidebar-overlay" class="sidebar-overlay"></div>
+            <button type="button" id="admin-sidebar-overlay" class="sidebar-overlay" aria-label="Close admin menu"></button>
 
             <!-- Sidebar -->
             <aside class="admin-sidebar" id="admin-sidebar">
@@ -83,50 +83,53 @@
                         </div>
                     </div>
                 </div>
-                <nav class="sidebar-nav">
-                    <button class="nav-tab active" data-target="products-tab">Products</button>
-                    <button class="nav-tab" data-target="alternatives-tab">Alternatives</button>
-                    <button class="nav-tab" data-target="submissions-tab">Submissions</button>
-                    <button class="nav-tab" data-target="developers-tab">Developers</button>
-                    <button class="nav-tab" data-target="claims-tab">Claims</button>
-                    <button class="nav-tab" data-target="newsletter-tab">Newsletter</button>
-                    <button class="nav-tab" data-target="analytics-tab">Analytics</button>
-                    <button class="nav-tab" data-target="banner-tab">Site Banner</button>
-                    <a href="/" class="nav-tab" style="font-weight: bold; text-decoration: none;">Home</a>
-                </nav>
+                <nav class="sidebar-nav" id="admin-sidebar-nav" aria-label="Admin pages"></nav>
+                <nav class="sidebar-pinned-nav" id="admin-sidebar-pinned-nav" aria-label="Pinned pages"></nav>
                 <div class="sidebar-footer">
-                    <button id="logout-admin-btn" class="btn-danger">Clear Admin Key</button>
+                    <button type="button" id="logout-admin-btn" class="btn-danger">
+                        <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                        <span>Sign Out</span>
+                    </button>
                 </div>
             </aside>
 
             <!-- Main Content Area -->
-            <main class="admin-main">
+            <main class="admin-main" id="admin-main">
                 <div id="global-alert" class="alert hidden"></div>
 
-                <!-- QUICK STATS BAR (always visible, regardless of active tab) -->
-                <div class="stats-bar" id="stats-bar">
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-total-products">–</div>
-                        <div class="stat-label">Total Products</div>
+                <!-- DASHBOARD: monitoring only -->
+                <section id="dashboard-tab" class="tab-content active" aria-labelledby="dashboard-heading">
+                    <div class="section-header dashboard-section-header">
+                        <div>
+                            <p class="dashboard-eyebrow">OVERVIEW</p>
+                            <h1 id="dashboard-heading">Dashboard</h1>
+                            <p class="text-muted">A live snapshot of products, community, and site activity.</p>
+                        </div>
+                        <button type="button" id="dashboard-refresh-btn" class="btn-secondary">
+                            <i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh
+                        </button>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-pending-submissions">–</div>
-                        <div class="stat-label">Pending Submissions</div>
+                    <div id="dashboard-loading" class="dashboard-state" role="status" aria-live="polite">
+                        <span class="dashboard-spinner" aria-hidden="true"></span>
+                        <span>Loading dashboard summary…</span>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-total-developers">–</div>
-                        <div class="stat-label">Total Developers</div>
+                    <div id="dashboard-error" class="dashboard-error hidden" role="alert">
+                        <div class="dashboard-error-copy">
+                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                            <div>
+                                <strong>Dashboard data is unavailable.</strong>
+                                <p id="dashboard-error-message">Please try again.</p>
+                            </div>
+                        </div>
+                        <button type="button" id="dashboard-retry-btn" class="btn-secondary">Try again</button>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="stat-total-rejected">–</div>
-                        <div class="stat-label">Total Rejected</div>
-                    </div>
-                </div>
+                    <div id="dashboard-cards" class="dashboard-cards hidden" aria-label="Admin dashboard metrics"></div>
+                </section>
 
                 <!-- PRODUCTS TAB -->
-                <section id="products-tab" class="tab-content active">
+                <section id="products-tab" class="tab-content hidden" aria-labelledby="products-heading">
                     <div class="section-header">
-                        <h2>All Products</h2>
+                        <h2 id="products-heading">All Products</h2>
                         <div class="section-header-actions">
                             <button id="open-bulk-upload-btn" class="btn-secondary">Bulk Upload</button>
                             <button id="open-create-modal-btn" class="btn-primary">+ Add Product Manually</button>
@@ -219,6 +222,52 @@
                         </table>
                     </div>
                     <div class="pagination-bar" id="products-pagination"></div>
+                </section>
+
+                <!-- COLLECTIONS TAB -->
+                <section id="collections-tab" class="tab-content hidden" aria-labelledby="collections-heading">
+                    <div class="section-header collections-page-header">
+                        <div>
+                            <p class="dashboard-eyebrow">PRODUCT MANAGEMENT</p>
+                            <h2 id="collections-heading">Collections</h2>
+                            <p class="text-muted">Manage the curated sections shown on the public collection page.</p>
+                        </div>
+                        <button type="button" id="collection-new-btn" class="btn-primary">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> New Collection
+                        </button>
+                    </div>
+                    <div id="collections-success" class="alert success hidden" role="status" aria-live="polite"></div>
+                    <div id="collections-error" class="alert error hidden" role="alert"></div>
+
+                    <div class="collection-status-tabs" id="collection-status-tabs" role="tablist" aria-label="Filter collections by status">
+                        <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-collection-status="all">All <span data-collection-count="all">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-collection-status="live">Live <span data-collection-count="live">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-collection-status="scheduled">Scheduled <span data-collection-count="scheduled">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-collection-status="draft">Draft <span data-collection-count="draft">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-collection-status="expired">Expired <span data-collection-count="expired">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-collection-status="archived">Archived <span data-collection-count="archived">0</span></button>
+                    </div>
+                    <p class="collection-order-note" id="collection-order-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> This order is the order on the public page.</p>
+                    <div id="collections-loading" class="collection-loading hidden" role="status" aria-live="polite">
+                        <span class="dashboard-spinner" aria-hidden="true"></span> Loading collections…
+                    </div>
+                    <div id="collections-empty" class="collection-empty hidden" role="status"></div>
+                    <div class="table-container collection-table-container hidden" id="collection-table-container">
+                        <table class="admin-table collections-table">
+                            <thead>
+                                <tr>
+                                    <th>Collection</th>
+                                    <th>Type</th>
+                                    <th>Live products</th>
+                                    <th>Status</th>
+                                    <th>Schedule</th>
+                                    <th>Order</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="collections-list"></tbody>
+                        </table>
+                    </div>
                 </section>
 
                 <!-- ALTERNATIVES TAB -->
@@ -337,7 +386,7 @@
                             </div>
                             <label class="developer-update-select-all">
                                 <input type="checkbox" id="developer-update-select-all" disabled>
-                                <span> Select all </span>
+                                <span>Select all developers (every page)</span>
                             </label>
                             <div id="developer-update-list" class="developer-update-list" role="group" aria-labelledby="developer-update-recipient-label"></div>
                             <div id="developer-update-pager" class="developer-update-pager hidden">
@@ -452,7 +501,7 @@
                 <!-- ANALYTICS TAB — dedicated space; add more cards to .analytics-grid over time -->
                 <section id="analytics-tab" class="tab-content hidden">
                     <div class="section-header">
-                        <h2>Analytics</h2>
+                        <h2>Search Analytics</h2>
                         <div class="section-header-actions">
                             <button id="analytics-refresh-btn" class="btn-secondary">Refresh</button>
                         </div>
@@ -483,7 +532,7 @@
                 <!-- SITE BANNER TAB -->
                 <section id="banner-tab" class="tab-content hidden">
                     <div class="section-header">
-                        <h2>Site Banner</h2>
+                        <h2>Announcements</h2>
                         <div class="section-header-actions">
                             <button id="banner-reload-btn" type="button" class="btn-secondary">Reload</button>
                         </div>
@@ -570,9 +619,158 @@
                         </div>
                     </form>
                 </section>
+                <section id="settings-tab" class="tab-content hidden" aria-labelledby="settings-heading">
+                    <div class="section-header">
+                        <div>
+                            <p class="dashboard-eyebrow">ADMINISTRATION</p>
+                            <h2 id="settings-heading">Settings</h2>
+                        </div>
+                    </div>
+                    <section class="settings-card" aria-labelledby="export-products-heading">
+                        <div class="settings-card-copy">
+                            <span class="settings-card-icon"><i class="fa-solid fa-file-csv" aria-hidden="true"></i></span>
+                            <div>
+                                <h3 id="export-products-heading">Export Products (CSV)</h3>
+                                <p class="text-muted">Download a CSV copy of the product catalog.</p>
+                            </div>
+                        </div>
+                        <div class="settings-card-action">
+                            <button type="button" id="export-products-csv-btn" class="btn-primary">
+                                <i class="fa-solid fa-download" aria-hidden="true"></i> Export Products (CSV)
+                            </button>
+                            <p id="settings-export-status" class="text-muted" role="status" aria-live="polite"></p>
+                            <div id="settings-export-error" class="alert error hidden" role="alert"></div>
+                        </div>
+                    </section>
+                </section>
+
             </main>
         </div>
     </div>
+
+    <!-- Collections editor: side drawer on desktop, full-screen sheet on mobile -->
+    <button type="button" id="collection-drawer-backdrop" class="collection-drawer-backdrop hidden" aria-label="Close collection editor"></button>
+    <aside id="collection-drawer" class="collection-drawer hidden" role="dialog" aria-modal="true" aria-labelledby="collection-drawer-heading" aria-hidden="true">
+        <div class="collection-drawer-header">
+            <div>
+                <p class="dashboard-eyebrow">COLLECTION MANAGEMENT</p>
+                <h2 id="collection-drawer-heading">New Collection</h2>
+            </div>
+            <button type="button" id="collection-drawer-close" class="close-btn" aria-label="Close editor">&times;</button>
+        </div>
+        <div id="collection-editor-loading" class="collection-editor-loading hidden" role="status" aria-live="polite">
+            <span class="dashboard-spinner" aria-hidden="true"></span> Loading collection…
+        </div>
+        <form id="collection-editor-form" class="collection-editor-form hidden" novalidate>
+            <div class="collection-editor-scroll">
+                <div id="collection-editor-error" class="alert error hidden" role="alert"></div>
+
+                <section class="collection-editor-section" aria-labelledby="collection-basics-heading">
+                    <div class="collection-editor-section-heading">
+                        <span class="collection-editor-step">1</span>
+                        <div><h3 id="collection-basics-heading">Basics</h3><p class="text-muted">Name and identify this section.</p></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="collection-title">Title <span aria-hidden="true">*</span></label>
+                        <input type="text" id="collection-title" maxlength="120" autocomplete="off" required>
+                        <span id="collection-title-error" class="error-text hidden" role="alert"></span>
+                    </div>
+                    <div class="collection-basics-grid">
+                        <div class="form-group">
+                            <label for="collection-emoji">Emoji</label>
+                            <input type="text" id="collection-emoji" maxlength="12" placeholder="✨" autocomplete="off" aria-describedby="collection-emoji-help">
+                            <small id="collection-emoji-help" class="text-muted">Use one emoji or character.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="collection-section-type">Type</label>
+                            <select id="collection-section-type">
+                                <option value="manual">Hand-picked</option>
+                                <option value="auto">Auto</option>
+                            </select>
+                            <small id="collection-type-lock-note" class="text-muted hidden">Type is locked after creation.</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="collection-description">Short description</label>
+                        <textarea id="collection-description" rows="3" maxlength="280" placeholder="A short intro for this collection"></textarea>
+                        <small class="text-muted">Up to 280 characters.</small>
+                    </div>
+                </section>
+
+                <section class="collection-editor-section" aria-labelledby="collection-products-heading">
+                    <div class="collection-editor-section-heading">
+                        <span class="collection-editor-step">2</span>
+                        <div><h3 id="collection-products-heading">Products</h3><p class="text-muted">Choose products or let the collection update automatically.</p></div>
+                    </div>
+                    <div id="collection-manual-panel">
+                        <div class="form-group collection-product-search-group">
+                            <label for="collection-product-search">Find products</label>
+                            <input type="search" id="collection-product-search" placeholder="Search by name or category…" autocomplete="off">
+                        </div>
+                        <div id="collection-product-results" class="collection-product-results" aria-live="polite">
+                            <p class="text-muted collection-product-empty">Search the loaded product catalog to add items.</p>
+                        </div>
+                        <div class="collection-selection-heading">
+                            <h4>Selected products</h4>
+                            <span id="collection-selected-count" class="collection-selected-count" aria-live="polite">0 of 30 selected</span>
+                        </div>
+                        <ol id="collection-selected-list" class="collection-selected-list"></ol>
+                        <div class="collection-product-hints">
+                            <p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> At least 3 are needed to show on the site.</p>
+                            <p><i class="fa-solid fa-layer-group" aria-hidden="true"></i> The first 6 appear on the /collection row. More than 6 gets a View all page.</p>
+                        </div>
+                        <p id="collection-product-limit-message" class="collection-inline-note hidden" role="status">A collection can contain at most 30 products.</p>
+                    </div>
+                    <div id="collection-auto-panel" class="hidden">
+                        <div class="form-group">
+                            <label for="collection-auto-rule">Automatic rule</label>
+                            <select id="collection-auto-rule">
+                                <option value="newest">Newest products (latest 6)</option>
+                            </select>
+                        </div>
+                        <div class="collection-auto-note"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Updates automatically. Always shows the latest 6. No View all.</div>
+                    </div>
+                </section>
+
+                <section class="collection-editor-section" aria-labelledby="collection-schedule-heading">
+                    <div class="collection-editor-section-heading">
+                        <span class="collection-editor-step">3</span>
+                        <div><h3 id="collection-schedule-heading">Schedule</h3><p class="text-muted">Optional start and end dates.</p></div>
+                    </div>
+                    <div class="collection-basics-grid">
+                        <div class="form-group">
+                            <label for="collection-start-date">Start date</label>
+                            <input type="datetime-local" id="collection-start-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="collection-end-date">End date</label>
+                            <input type="datetime-local" id="collection-end-date">
+                        </div>
+                    </div>
+                    <p class="collection-schedule-note">Leave both dates empty to keep this collection always on.</p>
+                    <p id="collection-date-error" class="error-text hidden" role="alert"></p>
+                </section>
+
+                <section class="collection-editor-section" aria-labelledby="collection-publish-heading">
+                    <div class="collection-editor-section-heading">
+                        <span class="collection-editor-step">4</span>
+                        <div><h3 id="collection-publish-heading">Publish</h3><p class="text-muted">Save as a draft or publish when ready.</p></div>
+                    </div>
+                    <label class="collection-publish-toggle" for="collection-published">
+                        <input type="checkbox" id="collection-published">
+                        <span class="collection-toggle-track" aria-hidden="true"><span></span></span>
+                        <span><strong>Published</strong><small>Show this collection on the public page when its schedule allows.</small></span>
+                    </label>
+                    <p id="collection-publish-guidance" class="collection-inline-note hidden" role="status"></p>
+                    <div id="collection-editor-success" class="alert success hidden" role="status" aria-live="polite"></div>
+                </section>
+            </div>
+            <div class="collection-editor-footer">
+                <button type="button" id="collection-cancel-btn" class="btn-secondary">Cancel</button>
+                <button type="submit" id="collection-save-btn" class="btn-primary">Save Collection</button>
+            </div>
+        </form>
+    </aside>
 
     <!-- Create / Edit Product Modal -->
     <div id="product-modal" class="overlay hidden">
@@ -699,7 +897,8 @@
                 </div>
 
                 <div id="product-alternatives-section" class="form-group full-width hidden">
-                    <label for="product-alternatives-trigger">Alternative To</label>
+                    <label for="product-alternatives-trigger">Alternative To <span class="text-muted">(optional)</span></label>
+                    <p class="text-muted" style="margin:0 0 0.55rem; font-size:0.82rem; line-height:1.45;">Select foreign tools this product is an alternative to. Options are filtered by the product category.</p>
                     <div class="product-alternative-control">
                         <button type="button" id="product-alternatives-trigger" class="product-alternative-trigger"
                                 aria-expanded="false" aria-controls="product-alternatives-picker" disabled>
@@ -792,5 +991,5 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
     <script src="/static/js/submit-tags.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e441a068fafe9a',t:'MTc4OTk0MzIzNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e441a068fafe9a',t:'MTc4OTk0MzIzNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47d48fb0ee70b81',t:'MTc5MTU0Nzg1Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
