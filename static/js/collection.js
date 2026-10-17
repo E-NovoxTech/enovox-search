@@ -353,7 +353,7 @@
         const iconEl = document.createElement('span');
         iconEl.className = 'cl-icon';
         iconEl.setAttribute('aria-hidden', 'true');
-        iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+        iconEl.textContent = (section.emoji && String(section.emoji).trim()) || '✨';
         main.appendChild(iconEl);
 
         const textWrap = document.createElement('div');

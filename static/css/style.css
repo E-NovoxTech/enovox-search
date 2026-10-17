@@ -5447,8 +5447,19 @@ body {
 .cl-theme-blue .cl-icon { background-color: #2563eb; }
 .cl-theme-green .cl-icon { background-color: #0b8a57; }
 .cl-theme-amber .cl-icon { background-color: #c2610a; }
+.cl-icon,
+.cl-theme-blue .cl-icon,
+.cl-theme-green .cl-icon,
+.cl-theme-amber .cl-icon {
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    font-size: 1.7rem;
+    line-height: 1;
+}
 @media (max-width: 640px) {
     .cl-icon { width: 48px; height: 48px; border-radius: 14px; font-size: 1.15rem; }
+    .cl-icon { font-size: 1.4rem; }
 }
 
 .cl-band-text { min-width: 0; }
