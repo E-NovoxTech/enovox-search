@@ -318,8 +318,8 @@ class CollectionCreate(BaseModel):
     auto_rule: Optional[str] = "newest"
     product_ids: List[int] = []
     is_published: bool = False
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
 
 class CollectionUpdate(BaseModel):
     title: Optional[str] = None
@@ -329,8 +329,8 @@ class CollectionUpdate(BaseModel):
     product_ids: Optional[List[int]] = None
     is_published: Optional[bool] = None
     is_archived: Optional[bool] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
 
 class CollectionReorder(BaseModel):
     ids: List[int]
@@ -346,4 +346,71 @@ class CollectionSectionOut(BaseModel):
     total: int
     has_more: bool
 
+class SpotlightApply(BaseModel):
+    founder_name: Optional[str] = None
+    photo_url: Optional[str] = None
+    startup_name: Optional[str] = None
+    state: Optional[str] = None
+    what_it_does: Optional[str] = None
+    challenges: Optional[str] = None
+    achievement: Optional[str] = None
+    vision: Optional[str] = None
+    quote: Optional[str] = None
+    why_nigeria: Optional[str] = None
+    startup_website: Optional[str] = None
+    skills: List[str] = []
+    instagram_url: Optional[str] = None
+    x_url: Optional[str] = None
+    facebook_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    tiktok_url: Optional[str] = None
+    github_url: Optional[str] = None
+    open_to_work: bool = False
+    product_ids: List[int] = []
+    consent: bool = False
+    guidelines_agreed: bool = False
+    save_as_draft: bool = False
     
+class SpotlightEdit(SpotlightApply):
+    pass
+
+class SpotlightReact(BaseModel):
+    value: Optional[str] = None  # "like", "dislike", or null to remove
+
+class HireReport(BaseModel):
+    hired_by: Optional[str] = None
+    note: Optional[str] = None
+    hired_on: Optional[date] = None
+
+class HireConfirm(BaseModel):
+    confirmed: bool
+    
+class SpotlightUpdate(BaseModel):
+    headline: Optional[str] = None
+    summary: Optional[str] = None
+    body_opening: Optional[str] = None
+    body_building: Optional[str] = None
+    quote: Optional[str] = None
+    body_why_started: Optional[str] = None
+    body_headed: Optional[str] = None
+    why_believe: Optional[str] = None
+    slug: Optional[str] = None
+    status: Optional[str] = None
+    
+class ClaimStart(BaseModel):
+    name: str
+    email: str
+    role: str
+    social_url: Optional[str] = None
+
+class ClaimVerify(BaseModel):
+    code: str
+    
+class SponsoredCreate(BaseModel):
+    product_id: int
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+
+class SponsoredReorder(BaseModel):
+    ids: List[int] 
+                                             

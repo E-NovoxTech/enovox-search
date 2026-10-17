@@ -270,6 +270,55 @@
                     </div>
                 </section>
 
+                <!-- SPONSORED TAB -->
+                <section id="sponsored-tab" class="tab-content hidden" aria-labelledby="sponsored-heading">
+                    <div class="section-header collections-page-header">
+                        <div>
+                            <p class="dashboard-eyebrow">PRODUCT MANAGEMENT</p>
+                            <h2 id="sponsored-heading">Sponsored Placements</h2>
+                            <p class="text-muted">The products featured in the Sponsored section of the homepage. Flip the switch to sponsor a live product; flip it again to remove it.</p>
+                        </div>
+                        <div class="sponsored-header-actions">
+                            <a href="/#home-sponsored-section" class="sponsored-preview-link" target="_blank" rel="noopener">Preview on homepage <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+                            <span id="sponsored-slots" class="sponsored-slots-pill" role="status">0 of 10 picked</span>
+                        </div>
+                    </div>
+                    <div id="sponsored-success" class="alert success hidden" role="status" aria-live="polite"></div>
+                    <div id="sponsored-error" class="alert error hidden" role="alert"></div>
+                    <div class="sponsored-meter">
+                        <div class="sponsored-meter-text">
+                            <div><strong id="sponsored-meter-count">0</strong><span>of 10 slots used</span></div>
+                            <small id="sponsored-meter-note">The homepage carousel shows up to 10.</small>
+                        </div>
+                        <div class="sponsored-meter-bar" id="sponsored-meter-bar" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                    </div>
+                    <div class="sponsored-layout">
+                    <div class="sponsored-main">
+                    <div class="toolbar sponsored-toolbar">
+                        <input type="text" id="sponsored-search" placeholder="Search by name..." autocomplete="off">
+                        <select id="sponsored-category-filter">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div id="sponsored-loading" class="collection-loading hidden" role="status" aria-live="polite">
+                        <span class="dashboard-spinner" aria-hidden="true"></span> Loading the product catalog&hellip;
+                    </div>
+                    <div id="sponsored-empty" class="collection-empty hidden" role="status"></div>
+                    <div id="sponsored-list" class="sponsored-product-list"></div>
+                    <div class="pagination-bar sponsored-pagination" id="sponsored-pagination"></div>
+                    </div>
+
+                    <div id="sponsored-current" class="sponsored-current">
+                        <div class="sponsored-current-head">
+                            <h3>Currently Sponsored <span id="sponsored-current-count" class="sponsored-current-count">0 of 10</span></h3>
+                            <p class="text-muted">The homepage shows these picks in this exact top-to-bottom order. Use the arrows to rearrange; toggles above add or remove entries here instantly.</p>
+                        </div>
+                        <div id="sponsored-current-empty" class="collection-empty hidden" role="status">Nothing sponsored yet. Flip a switch in the list above to feature a product here.</div>
+                        <div id="sponsored-current-list" class="sponsored-current-list"></div>
+                    </div>
+                    </div>
+                </section>
+
                 <!-- ALTERNATIVES TAB -->
                 <section id="alternatives-tab" class="tab-content hidden">
                     <div class="section-header">
@@ -418,7 +467,13 @@
                             <button id="claims-refresh-btn" class="btn-secondary">Refresh</button>
                         </div>
                     </div>
-                    <div id="claims-loading" class="text-muted" style="margin-bottom: 1rem;">Loading pending claims…</div>
+                <div class="collection-status-tabs" id="claims-status-tabs" role="tablist" aria-label="Filter claims by status">
+                    <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-claims-status="pending">Pending <span data-claims-count="pending">0</span></button>
+                    <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-claims-status="approved">Approved <span data-claims-count="approved">0</span></button>
+                    <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-claims-status="rejected">Rejected <span data-claims-count="rejected">0</span></button>
+                    <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-claims-status="all">All <span data-claims-count="all">0</span></button>
+                </div>
+                <div id="claims-loading" class="text-muted" style="margin-bottom: 1rem;">Loading claims…</div>
                     <div id="claims-error" class="alert error hidden"></div>
                     <div id="claims-empty" class="claims-empty hidden">No pending claims</div>
                     <div id="claims-list" class="claims-list"></div>
@@ -644,6 +699,258 @@
                     </section>
                 </section>
 
+                <!-- SPOTLIGHT: APPLICATIONS TAB -->
+                <section id="spotlight-applications-tab" class="tab-content hidden" aria-labelledby="spot-app-heading">
+                    <div class="section-header collections-page-header">
+                        <div>
+                            <p class="dashboard-eyebrow">SPOTLIGHT</p>
+                            <h2 id="spot-app-heading">Spotlight Applications</h2>
+                            <p class="text-muted">Review founder applications. Approving one creates a draft spotlight page. You can also add a founder yourself below.</p>
+                        </div>
+                        <button type="button" id="spot-add-founder-btn" class="btn-primary">
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i> Add Founder
+                        </button>
+                    </div>
+                    <div id="spot-app-error" class="alert error hidden" role="alert"></div>
+
+                    <div class="collection-status-tabs" id="spot-app-status-tabs" role="tablist" aria-label="Filter applications by status">
+                        <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-spot-status="pending">Pending <span data-spot-count="pending">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spot-status="approved">Approved <span data-spot-count="approved">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spot-status="rejected">Rejected <span data-spot-count="rejected">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spot-status="draft">Draft <span data-spot-count="draft">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spot-status="all">All</button>
+                    </div>
+                    <div id="spot-app-loading" class="collection-loading hidden" role="status" aria-live="polite">
+                        <span class="dashboard-spinner" aria-hidden="true"></span> Loading applications&hellip;
+                    </div>
+                    <div id="spot-app-empty" class="collection-empty hidden" role="status"></div>
+                    <div class="table-container hidden" id="spot-app-table-container">
+                        <table class="admin-table spot-applications-table">
+                            <thead>
+                                <tr>
+                                    <th>Photo</th>
+                                    <th>Founder</th>
+                                    <th>Startup</th>
+                                    <th>State</th>
+                                    <th>Source</th>
+                                    <th>Submitted</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spot-app-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- SPOTLIGHT: FOUNDER SPOTLIGHTS TAB -->
+                <section id="spotlight-list-tab" class="tab-content hidden" aria-labelledby="spot-list-heading">
+                    <div class="section-header collections-page-header">
+                        <div>
+                            <p class="dashboard-eyebrow">SPOTLIGHT</p>
+                            <h2 id="spot-list-heading">Founder Spotlights</h2>
+                            <p class="text-muted">Edit, publish and unpublish spotlight pages. Publishing goes live immediately and emails the founder if they have an account.</p>
+                        </div>
+                    </div>
+                    <div id="spot-list-error" class="alert error hidden" role="alert"></div>
+
+                    <div class="collection-status-tabs" id="spot-list-status-tabs" role="tablist" aria-label="Filter spotlights by status">
+                        <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-spotlist-status="all">All <span data-spotlist-count="all">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spotlist-status="draft">Draft <span data-spotlist-count="draft">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spotlist-status="published">Published <span data-spotlist-count="published">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-spotlist-status="unpublished">Unpublished <span data-spotlist-count="unpublished">0</span></button>
+                    </div>
+                    <div id="spot-list-loading" class="collection-loading hidden" role="status" aria-live="polite">
+                        <span class="dashboard-spinner" aria-hidden="true"></span> Loading spotlights&hellip;
+                    </div>
+                    <div id="spot-list-empty" class="collection-empty hidden" role="status"></div>
+                    <div class="table-container hidden" id="spot-list-table-container">
+                        <table class="admin-table spot-spotlights-table">
+                            <thead>
+                                <tr>
+                                    <th>Headline</th>
+                                    <th>Startup</th>
+                                    <th>Founder</th>
+                                    <th>Status</th>
+                                    <th>Hires</th>
+                                    <th>Updated</th>
+                                    <th>View</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spot-list-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- SPOTLIGHT: HIRES TAB -->
+                <section id="spotlight-hires-tab" class="tab-content hidden" aria-labelledby="spot-hires-heading">
+                    <div class="section-header collections-page-header">
+                        <div>
+                            <p class="dashboard-eyebrow">SPOTLIGHT</p>
+                            <h2 id="spot-hires-heading">Spotlight Hires</h2>
+                            <p class="text-muted">Hires reported through the spotlight page. Confirm each hire once you have verified it. Unconfirmed hires are highlighted.</p>
+                        </div>
+                    </div>
+                    <div id="spot-hires-error" class="alert error hidden" role="alert"></div>
+                    <div id="spot-hires-loading" class="collection-loading hidden" role="status" aria-live="polite">
+                        <span class="dashboard-spinner" aria-hidden="true"></span> Loading hires&hellip;
+                    </div>
+                    <div id="spot-hires-empty" class="collection-empty hidden" role="status"></div>
+                    <div class="table-container hidden" id="spot-hires-table-container">
+                        <table class="admin-table spot-hires-table">
+                            <thead>
+                                <tr>
+                                    <th>Startup</th>
+                                    <th>Founder</th>
+                                    <th>Hired by</th>
+                                    <th>Note</th>
+                                    <th>Date</th>
+                                    <th>Confirmed</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spot-hires-table-body">
+                                <!-- Injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- SPOTLIGHT: ADD FOUNDER (4th view, reached from Applications) -->
+                <section id="spotlight-add-founder-tab" class="tab-content hidden" aria-labelledby="spot-af-heading">
+                    <div class="section-header collections-page-header">
+                        <div>
+                            <p class="dashboard-eyebrow">SPOTLIGHT</p>
+                            <h2 id="spot-af-heading">Add Founder</h2>
+                            <p class="text-muted">Creates an approved application and a draft spotlight right away. No developer account is needed.</p>
+                        </div>
+                        <button type="button" id="spot-af-back-btn" class="btn-secondary">
+                            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Applications
+                        </button>
+                    </div>
+
+                    <div id="spot-af-result" class="spot-af-result hidden" role="status" aria-live="polite">
+                        <div class="spot-af-result-icon" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <h3 id="spot-af-result-title">Founder added</h3>
+                            <p class="text-muted" id="spot-af-result-text"></p>
+                        </div>
+                        <button type="button" id="spot-af-view-spotlight" class="btn-primary">
+                            <i class="fa-solid fa-star" aria-hidden="true"></i> View spotlight draft
+                        </button>
+                    </div>
+
+                    <div id="spot-af-error" class="alert error hidden" role="alert"></div>
+
+                    <div class="spot-form-card">
+                        <form id="spot-af-form" class="admin-form" novalidate>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="spot-af-founder-name">Founder name</label>
+                                    <input type="text" id="spot-af-founder-name" name="founder_name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-startup-name">Startup name</label>
+                                    <input type="text" id="spot-af-startup-name" name="startup_name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-photo-url">Photo URL</label>
+                                    <input type="url" id="spot-af-photo-url" name="photo_url" placeholder="https://...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-state">State</label>
+                                    <input type="text" id="spot-af-state" name="state" placeholder="e.g. Lagos">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-website">Startup website</label>
+                                    <input type="url" id="spot-af-website" name="startup_website" placeholder="https://...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-what-it-does">What the startup does</label>
+                                    <input type="text" id="spot-af-what-it-does" name="what_it_does" maxlength="140" placeholder="One plain sentence">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-vision">Vision for Nigeria</label>
+                                    <input type="text" id="spot-af-vision" name="vision" maxlength="140">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-challenges">Biggest challenges</label>
+                                    <input type="text" id="spot-af-challenges" name="challenges" maxlength="140">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-achievement">Proudest achievement</label>
+                                    <input type="text" id="spot-af-achievement" name="achievement" maxlength="140">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-quote">A line from you, in your own words</label>
+                                    <input type="text" id="spot-af-quote" name="quote" maxlength="180" placeholder="A quotable line for their spotlight page">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-why-nigeria">Why do you believe in Nigeria?</label>
+                                    <input type="text" id="spot-af-why-nigeria" name="why_nigeria" maxlength="180" placeholder="Their reason for building here, e.g. Nigerian problems are worth solving">
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="spot-af-instagram">Instagram URL</label>
+                                    <input type="url" id="spot-af-instagram" name="instagram_url" placeholder="https://instagram.com/...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-x">X (Twitter) URL</label>
+                                    <input type="url" id="spot-af-x" name="x_url" placeholder="https://x.com/...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-facebook">Facebook URL</label>
+                                    <input type="url" id="spot-af-facebook" name="facebook_url" placeholder="https://facebook.com/...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-linkedin">LinkedIn URL</label>
+                                    <input type="url" id="spot-af-linkedin" name="linkedin_url" placeholder="https://linkedin.com/in/...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-tiktok">TikTok URL</label>
+                                    <input type="url" id="spot-af-tiktok" name="tiktok_url" placeholder="https://tiktok.com/@...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="spot-af-github">GitHub URL</label>
+                                    <input type="url" id="spot-af-github" name="github_url" placeholder="https://github.com/...">
+                                </div>
+                            </div>
+                            <p class="spot-field-hint">Social links are optional (add whichever you know).</p>
+
+                            <div class="form-group spot-af-skills-group">
+                                <label for="spot-af-skills-input">Skills (up to 5, press Enter to add)</label>
+                                <div class="tag-input-wrapper" id="spot-af-skills-wrapper">
+                                    <div class="tag-chip-list" id="spot-af-skills-chip-list"></div>
+                                    <input type="text" id="spot-af-skills-input" placeholder="Type a skill and press Enter or , (max 5)">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="spot-af-product-search">Feature products on the spotlight (up to 2)</label>
+                                <input type="text" id="spot-af-product-search" placeholder="Search live products..." autocomplete="off">
+                                <div id="spot-af-product-results" class="spot-picker-results hidden"></div>
+                                <div class="tag-chip-list" id="spot-af-product-chips"></div>
+                                <p id="spot-af-product-error" class="spot-field-error hidden" role="alert">You can feature at most 2 products.</p>
+                                <p id="spot-af-product-loading" class="spot-field-hint hidden" role="status">Loading products&hellip;</p>
+                            </div>
+
+                            <div class="form-group spot-af-checks">
+                                <label class="spot-check"><input type="checkbox" id="spot-af-open-to-work"> Show &ldquo;Open to work&rdquo; on their spotlight</label>
+                                <label class="spot-check"><input type="checkbox" id="spot-af-consent" checked> Founder consents to being featured</label>
+                                <label class="spot-check"><input type="checkbox" id="spot-af-guidelines" checked> Spotlight guidelines agreed on their behalf</label>
+                            </div>
+
+                            <div class="modal-actions spot-af-actions">
+                                <span id="spot-af-status" class="spot-inline-status" role="status" aria-live="polite"></span>
+                                <button type="submit" id="spot-af-submit" class="btn-primary">Create Founder &amp; Spotlight Draft</button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
             </main>
         </div>
     </div>
@@ -662,10 +969,16 @@
             <span class="dashboard-spinner" aria-hidden="true"></span> Loading collection…
         </div>
         <form id="collection-editor-form" class="collection-editor-form hidden" novalidate>
+            <nav class="collection-jump" aria-label="Jump to section">
+                <button type="button" data-collection-jump="collection-basics-section"><b>1</b> Basics</button>
+                <button type="button" data-collection-jump="collection-products-section"><b>2</b> Products</button>
+                <button type="button" data-collection-jump="collection-schedule-section"><b>3</b> Schedule</button>
+                <button type="button" data-collection-jump="collection-publish-section"><b>4</b> Publish</button>
+            </nav>
             <div class="collection-editor-scroll">
                 <div id="collection-editor-error" class="alert error hidden" role="alert"></div>
 
-                <section class="collection-editor-section" aria-labelledby="collection-basics-heading">
+                <section class="collection-editor-section" id="collection-basics-section" aria-labelledby="collection-basics-heading">
                     <div class="collection-editor-section-heading">
                         <span class="collection-editor-step">1</span>
                         <div><h3 id="collection-basics-heading">Basics</h3><p class="text-muted">Name and identify this section.</p></div>
@@ -693,11 +1006,18 @@
                     <div class="form-group">
                         <label for="collection-description">Short description</label>
                         <textarea id="collection-description" rows="3" maxlength="280" placeholder="A short intro for this collection"></textarea>
-                        <small class="text-muted">Up to 280 characters.</small>
+                        <small class="text-muted collection-count-row"><span>Up to 280 characters.</span><span id="collection-description-count">0 / 280</span></small>
+                    </div>
+                    <div class="form-group collection-preview-group">
+                        <span class="collection-preview-label">How it appears on the site</span>
+                        <div class="collection-preview" aria-live="polite">
+                            <span class="collection-preview-emoji" id="collection-preview-emoji" aria-hidden="true">✨</span>
+                            <div><strong id="collection-preview-title">Your collection title</strong><small id="collection-preview-desc">Your short description shows here.</small></div>
+                        </div>
                     </div>
                 </section>
 
-                <section class="collection-editor-section" aria-labelledby="collection-products-heading">
+                <section class="collection-editor-section" id="collection-products-section" aria-labelledby="collection-products-heading">
                     <div class="collection-editor-section-heading">
                         <span class="collection-editor-step">2</span>
                         <div><h3 id="collection-products-heading">Products</h3><p class="text-muted">Choose products or let the collection update automatically.</p></div>
@@ -732,7 +1052,7 @@
                     </div>
                 </section>
 
-                <section class="collection-editor-section" aria-labelledby="collection-schedule-heading">
+                <section class="collection-editor-section" id="collection-schedule-section" aria-labelledby="collection-schedule-heading">
                     <div class="collection-editor-section-heading">
                         <span class="collection-editor-step">3</span>
                         <div><h3 id="collection-schedule-heading">Schedule</h3><p class="text-muted">Optional start and end dates.</p></div>
@@ -747,11 +1067,11 @@
                             <input type="datetime-local" id="collection-end-date">
                         </div>
                     </div>
-                    <p class="collection-schedule-note">Leave both dates empty to keep this collection always on.</p>
+                    <p class="collection-schedule-note">Leave both dates empty to keep this collection always on. Setting a start date and turning Published on will make it go live automatically once that date arrives (checked every 15 minutes) &mdash; you don&rsquo;t need to come back and publish it yourself.</p>
                     <p id="collection-date-error" class="error-text hidden" role="alert"></p>
                 </section>
 
-                <section class="collection-editor-section" aria-labelledby="collection-publish-heading">
+                <section class="collection-editor-section" id="collection-publish-section" aria-labelledby="collection-publish-heading">
                     <div class="collection-editor-section-heading">
                         <span class="collection-editor-step">4</span>
                         <div><h3 id="collection-publish-heading">Publish</h3><p class="text-muted">Save as a draft or publish when ready.</p></div>
@@ -853,8 +1173,9 @@
                         <input type="url" name="playstore_url">
                     </div>
                     <div class="form-group">
-                        <label>Founder Name(s)</label>
-                        <input type="text" name="founder">
+                        <label>Founder Name(s) *</label>
+                        <input type="text" name="founder" required>
+                        <div class="error-text hidden" id="founder-error"></div>
                     </div>
                     <div class="form-group">
                         <label>Platform (e.g., Web, iOS, Android)</label>
@@ -988,8 +1309,178 @@
         </div>
     </div>
 
+
+    <!-- Spotlight Application Detail Modal -->
+    <div id="spot-app-detail-modal" class="overlay hidden">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <h2 id="spot-app-modal-title">Application</h2>
+                <button id="spot-app-modal-close" class="close-btn">&times;</button>
+            </div>
+            <div id="spot-app-detail-body">
+                <!-- Injected via JS: photo, meta, story fields, skills, socials, products -->
+            </div>
+
+            <div id="spot-ai-draft" class="spot-ai-draft hidden">
+                <h3 class="spot-ai-title">AI Spotlight Draft
+                    <span class="spot-ai-note">Review-only &mdash; nothing here is saved until you copy it into a spotlight.</span>
+                </h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="spot-ai-headline">Headline</label>
+                        <textarea id="spot-ai-headline" rows="2" data-draft-field="headline"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="spot-ai-summary">Summary</label>
+                        <textarea id="spot-ai-summary" rows="2" data-draft-field="summary"></textarea>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="spot-ai-body_opening">Opening</label>
+                        <textarea id="spot-ai-body_opening" rows="4" data-draft-field="body_opening"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="spot-ai-body_building">What they&rsquo;re building</label>
+                        <textarea id="spot-ai-body_building" rows="4" data-draft-field="body_building"></textarea>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="spot-ai-quote">Quote</label>
+                        <textarea id="spot-ai-quote" rows="3" data-draft-field="quote"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="spot-ai-body_why_started">Why they started</label>
+                        <textarea id="spot-ai-body_why_started" rows="4" data-draft-field="body_why_started"></textarea>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="spot-ai-body_headed">Where they&rsquo;re headed</label>
+                        <textarea id="spot-ai-body_headed" rows="4" data-draft-field="body_headed"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="spot-ai-why_believe">Why believe in Nigeria</label>
+                        <textarea id="spot-ai-why_believe" rows="3" data-draft-field="why_believe"></textarea>
+                    </div>
+                </div>
+                <div class="spot-ai-actions">
+                    <span id="spot-copy-status" class="spot-inline-status" role="status" aria-live="polite"></span>
+                    <button type="button" id="spot-ai-save-btn" class="btn-secondary">
+                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save to Spotlight
+                    </button>
+                    <button type="button" id="spot-ai-approve-btn" class="btn-success">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i> Approve &amp; Save
+                    </button>
+                    <button type="button" id="spot-copy-btn" class="btn-primary">
+                        <i class="fa-solid fa-copy" aria-hidden="true"></i> Copy to Founder Spotlights
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-actions spot-app-modal-actions">
+                <span id="spot-ai-status" class="spot-inline-status" role="status" aria-live="polite"></span>
+                <button type="button" id="spot-draft-ai-btn" class="btn-secondary">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Draft with AI
+                </button>
+                <button type="button" id="spot-reject-btn" class="btn-danger">Reject</button>
+                <button type="button" id="spot-approve-btn" class="btn-success">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spotlight Reject Reason Modal (reason required) -->
+    <div id="spot-reject-modal" class="overlay hidden">
+        <div class="modal-box">
+            <h2>Reject Application</h2>
+            <p id="spot-reject-context" class="text-muted" style="margin: 0.5rem 0 1rem;"></p>
+            <div class="form-group">
+                <label>Reason (required)</label>
+                <textarea id="spot-reject-reason-input" rows="3" placeholder="Let the founder know what to fix or improve..."></textarea>
+                <p id="spot-reject-error" class="spot-field-error hidden" role="alert">A reason is required to reject an application.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="spot-reject-cancel-btn">Cancel</button>
+                <button class="btn-danger" id="spot-reject-confirm-btn">Confirm Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Spotlight Editor Modal -->
+    <div id="spot-editor-modal" class="overlay hidden">
+        <div class="modal-box large">
+            <div class="modal-header">
+                <h2>Spotlight <span id="spot-editor-status" class="spot-status-slot"></span></h2>
+                <button id="spot-editor-close" class="close-btn">&times;</button>
+            </div>
+            <div id="spot-editor-error" class="alert error hidden" role="alert"></div>
+            <div id="spot-editor-loading" class="collection-loading hidden" role="status" aria-live="polite">
+                <span class="dashboard-spinner" aria-hidden="true"></span> Loading spotlight&hellip;
+            </div>
+            <div id="spot-editor-body" class="spot-editor-layout hidden">
+                <div class="spot-editor-main">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="spot-edit-headline">Headline</label>
+                            <textarea id="spot-edit-headline" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="spot-edit-summary">Summary</label>
+                            <textarea id="spot-edit-summary" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="spot-edit-body_opening">Opening</label>
+                            <textarea id="spot-edit-body_opening" rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="spot-edit-body_building">What they&rsquo;re building</label>
+                            <textarea id="spot-edit-body_building" rows="4"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="spot-edit-quote">Quote</label>
+                            <textarea id="spot-edit-quote" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="spot-edit-body_why_started">Why they started</label>
+                            <textarea id="spot-edit-body_why_started" rows="4"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="spot-edit-body_headed">Where they&rsquo;re headed</label>
+                            <textarea id="spot-edit-body_headed" rows="4"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="spot-edit-why_believe">Why believe in Nigeria</label>
+                            <textarea id="spot-edit-why_believe" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="spot-edit-slug">URL slug</label>
+                        <input type="text" id="spot-edit-slug">
+                        <p class="spot-field-hint">Public page URL: /spotlight/<span id="spot-edit-slug-preview"></span> &mdash; changing this changes the live URL.</p>
+                    </div>
+                </div>
+                <aside class="spot-editor-aside" id="spot-editor-app-info">
+                    <!-- Injected via JS: read-only founder/application info -->
+                </aside>
+            </div>
+            <div class="modal-actions spot-editor-actions">
+                <button type="button" id="spot-unpublish-btn" class="btn-danger">Unpublish</button>
+                <span id="spot-save-status" class="spot-inline-status" role="status" aria-live="polite"></span>
+                <button type="button" id="spot-save-btn" class="btn-secondary">Save changes</button>
+                <button type="button" id="spot-publish-btn" class="btn-success">Publish</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
     <script src="/static/js/submit-tags.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3e441a068fafe9a',t:'MTc4OTk0MzIzNA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47d48fb0ee70b81',t:'MTc5MTU0Nzg1Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a49d156298ee655d',t:'MTc5MTg4MTI4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

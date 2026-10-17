@@ -11,11 +11,16 @@
         { group: 'OVERVIEW', label: 'Dashboard', icon: 'fa-solid fa-gauge-high', sectionId: 'dashboard-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Products', icon: 'fa-solid fa-box-open', sectionId: 'products-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Collections', icon: 'fa-solid fa-layer-group', sectionId: 'collections-tab' },
+        { group: 'PRODUCT MANAGEMENT', label: 'Sponsored', icon: 'fa-solid fa-rectangle-ad', sectionId: 'sponsored-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Alternatives', icon: 'fa-solid fa-shuffle', sectionId: 'alternatives-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Submissions', icon: 'fa-solid fa-inbox', sectionId: 'submissions-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Claims', icon: 'fa-solid fa-circle-check', sectionId: 'claims-tab' },
         { group: 'COMMUNITY', label: 'Developers', icon: 'fa-solid fa-users', sectionId: 'developers-tab' },
         { group: 'COMMUNITY', label: 'Newsletter', icon: 'fa-solid fa-envelope', sectionId: 'newsletter-tab' },
+        { group: 'SPOTLIGHT', label: 'Applications', icon: 'fa-solid fa-star', sectionId: 'spotlight-applications-tab' },
+        { group: 'SPOTLIGHT', label: 'Founder Spotlights', icon: 'fa-solid fa-id-card', sectionId: 'spotlight-list-tab' },
+        { group: 'SPOTLIGHT', label: 'Hires', icon: 'fa-solid fa-handshake', sectionId: 'spotlight-hires-tab' },
+        { group: 'SPOTLIGHT', label: 'Add Founder', icon: 'fa-solid fa-user-plus', sectionId: 'spotlight-add-founder-tab', hidden: true },
         { group: 'INSIGHTS', label: 'Search Analytics', icon: 'fa-solid fa-chart-line', sectionId: 'analytics-tab' },
         { group: 'WEBSITE', label: 'Announcements', icon: 'fa-solid fa-bullhorn', sectionId: 'banner-tab' },
         { group: 'PINNED', label: 'Settings', icon: 'fa-solid fa-gear', sectionId: 'settings-tab', pinned: true }
@@ -151,7 +156,8 @@
 
         // Populate shared category choices for table filters and the foreign-tool form.
         ['products-category-filter', 'submissions-category-filter',
-         'foreign-tools-category-filter', 'foreign-tool-category'].forEach(id => {
+         'foreign-tools-category-filter', 'foreign-tool-category',
+         'sponsored-category-filter'].forEach(id => {
             const sel = document.getElementById(id);
             if (sel && typeof ENOVOX_CONFIG !== 'undefined') {
                 ENOVOX_CONFIG.CATEGORIES.forEach(cat => {
@@ -167,6 +173,7 @@
         setupDashboard();
         setupSettings();
         setupCollections();
+        setupSponsored();
 
         // Mobile sidebar drawer controls.
         const hamburgerBtn = document.getElementById('admin-hamburger');
@@ -199,6 +206,7 @@
         setupClaims();
         setupAnalytics();
         setupBanner();
+        setupSpotlight();
         initNotifications();
         initAuth(); // async — kicked off last, verifies any stored key itself
     });
@@ -462,6 +470,13 @@
         const entry = document.getElementById('keywords-tag-entry');
         if (!entry) return;
 
+        // Keywords are optional in the admin product form. Make sure a stray
+        // HTML "required" attribute can never trigger the browser's own
+        // blocking "Please fill out this field" bubble before our handler runs.
+        entry.required = false;
+        const keywordsField = productForm ? productForm.querySelector('[name="keywords"]') : null;
+        if (keywordsField) keywordsField.required = false;
+
         entry.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ',') {
                 e.preventDefault();
@@ -569,16 +584,13 @@
         clearProductFormErrors();
         let isValid = true;
 
-        // Keywords: at least 1 tag required. Also absorb anything still sitting
-        // in the entry box (user may have typed a tag but not pressed Enter).
+        // Keywords are OPTIONAL. We still absorb anything left sitting in the
+        // entry box (user may have typed a tag but not pressed Enter) so that
+        // text is not lost, but an empty tag list no longer blocks saving.
         const entry = document.getElementById('keywords-tag-entry');
         if (entry && entry.value.trim() !== '') {
             addKeywordTag(entry.value);
             entry.value = '';
-        }
-        if (productKeywordTags.length === 0) {
-            showFieldError('keywords-error', 'Add at least one keyword or tag.');
-            isValid = false;
         }
 
         // Contact email: required + format
@@ -596,6 +608,13 @@
         const pricingDetailsValue = productForm.pricing_details.value.trim();
         if (pricingDetailsValue === '') {
             showFieldError('pricing-details-error', 'Please specify pricing details.');
+            isValid = false;
+        }
+
+        // Founder: required by the backend (ProductBase) — keep client in
+        // sync so admins get a named error instead of a raw 422.
+        if (productForm.founder.value.trim() === '') {
+            showFieldError('founder-error', 'Founder name(s) are required.');
             isValid = false;
         }
 
@@ -624,7 +643,7 @@
     }
 
     function clearProductFormErrors() {
-        ['keywords-error', 'contact-email-error', 'pricing-details-error', 'github-url-error'].forEach(clearFieldError);
+        ['keywords-error', 'contact-email-error', 'pricing-details-error', 'github-url-error', 'founder-error'].forEach(clearFieldError);
     }
 
     /* ==========================================================================
@@ -640,6 +659,7 @@
         const activeSectionId = getActiveTabId();
         const groups = new Map();
         ADMIN_NAV_ITEMS.forEach(item => {
+            if (item.hidden) return;
             if (item.pinned) {
                 pinnedNav.appendChild(createAdminNavButton(item, activeSectionId));
                 return;
@@ -708,7 +728,7 @@
             page.classList.toggle('hidden', !active);
         });
         const adminMain = document.getElementById('admin-main');
-        if (adminMain) adminMain.classList.toggle('collections-page-active', sectionId === 'collections-tab');
+        if (adminMain) adminMain.classList.toggle('collections-page-active', sectionId === 'collections-tab' || sectionId === 'sponsored-tab');
         document.querySelectorAll('.nav-tab[data-target]').forEach(button => {
             const active = button.dataset.target === sectionId;
             button.classList.toggle('active', active);
@@ -782,6 +802,7 @@
             { key: 'total_products', label: 'Total Products', detail: 'Live listings', target: 'products-tab', icon: 'fa-solid fa-box-open' },
             { key: 'pending_submissions', label: 'Pending Submissions', detail: 'Awaiting review', target: 'submissions-tab', icon: 'fa-solid fa-inbox', attention: true },
             { key: 'pending_claims', label: 'Pending Claims', detail: 'Awaiting review', target: 'claims-tab', icon: 'fa-solid fa-circle-check', attention: true },
+            { key: 'pending_spotlights', label: 'Spotlight Applications', detail: 'Awaiting review', target: 'spotlight-applications-tab', icon: 'fa-solid fa-star', attention: true },
             { key: 'developers', label: 'Developers', detail: 'Registered developers', target: 'developers-tab', icon: 'fa-solid fa-users' },
             { key: 'newsletter_subscribers', label: 'Newsletter Subscribers', detail: 'Active subscribers', target: 'newsletter-tab', icon: 'fa-solid fa-envelope' },
             { key: 'total_searches', label: 'Search Analytics', detail: 'Total searches', target: 'analytics-tab', icon: 'fa-solid fa-chart-line' }
@@ -922,6 +943,90 @@
             const drawer = document.getElementById('collection-drawer');
             if (event.key === 'Escape' && drawer && !drawer.classList.contains('hidden')) closeCollectionDrawer();
         });
+
+        // "..." action menu: it is position: fixed and placed from the button's
+        // rectangle, so it is never clipped by the table or the page and it opens
+        // upward when there is no room below (e.g. the last row of the list).
+        document.addEventListener('toggle', event => {
+            const details = event.target;
+            if (!details || !details.classList || !details.classList.contains('collection-action-menu')) return;
+            if (details.open) {
+                closeCollectionMenus(details);
+                positionCollectionMenu(details);
+            } else {
+                const menu = details.querySelector('.collection-actions-menu');
+                if (menu) menu.classList.remove('is-ready');
+            }
+        }, true);
+        document.addEventListener('click', event => {
+            if (!event.target.closest('.collection-action-menu')) closeCollectionMenus();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            const open = document.querySelector('details.collection-action-menu[open]');
+            if (open) { open.removeAttribute('open'); const summary = open.querySelector('summary'); if (summary) summary.focus(); }
+        });
+        window.addEventListener('resize', () => closeCollectionMenus());
+        document.addEventListener('scroll', event => {
+            const target = event.target;
+            if (target && target.nodeType === 1 && target.closest('.collection-actions-menu')) return;
+            closeCollectionMenus();
+        }, true);
+
+        // Drawer: jump links between the four sections.
+        if (form) form.addEventListener('click', event => {
+            const jump = event.target.closest('[data-collection-jump]');
+            if (!jump) return;
+            const section = document.getElementById(jump.dataset.collectionJump);
+            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        // Drawer: live preview card + description counter.
+        ['collection-title', 'collection-emoji', 'collection-description'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.addEventListener('input', syncCollectionPreview);
+        });
+    }
+
+    function closeCollectionMenus(except) {
+        document.querySelectorAll('details.collection-action-menu[open]').forEach(details => {
+            if (details !== except) details.removeAttribute('open');
+        });
+    }
+
+    function positionCollectionMenu(details) {
+        const summary = details.querySelector('summary');
+        const menu = details.querySelector('.collection-actions-menu');
+        if (!summary || !menu) return;
+        const rect = summary.getBoundingClientRect();
+        const width = menu.offsetWidth;
+        const height = menu.offsetHeight;
+        const gap = 6;
+        const pad = 8;
+        let top = rect.bottom + gap;
+        let opensUp = false;
+        if (top + height > window.innerHeight - pad) {
+            if (rect.top - gap - height >= pad) { top = rect.top - gap - height; opensUp = true; }
+            else top = Math.max(pad, window.innerHeight - pad - height);
+        }
+        const left = Math.min(Math.max(pad, rect.right - width), Math.max(pad, window.innerWidth - width - pad));
+        menu.style.top = `${Math.round(top)}px`;
+        menu.style.left = `${Math.round(left)}px`;
+        menu.classList.toggle('opens-up', opensUp);
+        menu.classList.add('is-ready');
+    }
+
+    function syncCollectionPreview() {
+        const title = document.getElementById('collection-title');
+        const emoji = document.getElementById('collection-emoji');
+        const description = document.getElementById('collection-description');
+        const previewTitle = document.getElementById('collection-preview-title');
+        const previewEmoji = document.getElementById('collection-preview-emoji');
+        const previewDesc = document.getElementById('collection-preview-desc');
+        const count = document.getElementById('collection-description-count');
+        if (previewTitle) previewTitle.textContent = (title && title.value.trim()) || 'Your collection title';
+        if (previewEmoji) previewEmoji.textContent = (emoji && emoji.value.trim()) || '✨';
+        if (previewDesc) previewDesc.textContent = (description && description.value.trim()) || 'Your short description shows here.';
+        if (count) count.textContent = `${description ? description.value.length : 0} / 280`;
     }
 
     function collectionApiUrl(path = '') {
@@ -1107,17 +1212,18 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         const disabled = collectionsMutationBusy ? 'disabled' : '';
         const publishDisabled = collectionsMutationBusy || publishBlocked ? 'disabled' : '';
         const publishTitle = publishBlocked ? 'Add at least 3 products before publishing' : `${published ? 'Unpublish' : 'Publish'} ${title}`;
-        const actions = `<button type="button" class="btn-secondary btn-small" data-collection-action="edit" data-collection-id="${id}" ${disabled}>Edit</button>
-            <button type="button" class="${published ? 'btn-secondary' : 'btn-primary'} btn-small" data-collection-action="publish" data-collection-id="${id}" title="${escapeHTML(publishTitle)}" aria-label="${escapeHTML(publishTitle)}" ${publishDisabled}>${published ? 'Unpublish' : 'Publish'}</button>
-            <button type="button" class="btn-secondary btn-small" data-collection-action="duplicate" data-collection-id="${id}" ${disabled}>Duplicate</button>
+        // Edit and Publish/Unpublish stay visible; Duplicate and Archive/Restore live in the "..." menu.
+        const primaryActions = `<button type="button" class="btn-secondary btn-small" data-collection-action="edit" data-collection-id="${id}" ${disabled}>Edit</button>
+            <button type="button" class="${published ? 'btn-secondary' : 'btn-primary'} btn-small" data-collection-action="publish" data-collection-id="${id}" title="${escapeHTML(publishTitle)}" aria-label="${escapeHTML(publishTitle)}" ${publishDisabled}>${published ? 'Unpublish' : 'Publish'}</button>`;
+        const menuActions = `<button type="button" class="btn-secondary btn-small" data-collection-action="duplicate" data-collection-id="${id}" ${disabled}>Duplicate</button>
             ${archived
                 ? `<button type="button" class="btn-secondary btn-small" data-collection-action="restore" data-collection-id="${id}" ${disabled}>Restore</button>`
                 : `<button type="button" class="btn-danger btn-small" data-collection-action="archive" data-collection-id="${id}" ${disabled}>Archive</button>`}`;
-        return `<div class="collection-actions-inline">${actions}</div>
+        return `<div class="collection-actions-inline">${primaryActions}
             <details class="collection-action-menu">
-                <summary class="btn-secondary btn-small" aria-label="More actions for ${title}"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span>More</span></summary>
-                <div class="collection-actions-menu">${actions}</div>
-            </details>`;
+                <summary class="btn-secondary btn-small" aria-label="More actions for ${title}" title="More actions"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i></summary>
+                <div class="collection-actions-menu">${menuActions}</div>
+            </details></div>`;
     }
 
     function collectionScheduleLabel(collection) {
@@ -1490,6 +1596,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         collectionEditorReady = false;
         updateCollectionTypePanels();
         renderCollectionProductPicker();
+        syncCollectionPreview();
     }
 
     async function openCollectionEditor(id = null, trigger = null) {
@@ -1585,6 +1692,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         if (titleError) titleError.classList.add('hidden');
         const dateError = document.getElementById('collection-date-error');
         if (dateError) dateError.classList.add('hidden');
+        syncCollectionPreview();
     }
 
     function collectionDateToInput(raw) {
@@ -1715,9 +1823,16 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         hideAlert();
         if (tabId === 'dashboard-tab') loadDashboardSummary();
         if (tabId === 'collections-tab') loadCollections();
+        if (tabId === 'sponsored-tab') loadSponsored();
         if (tabId === 'products-tab') renderProducts();
         if (tabId === 'alternatives-tab') fetchForeignTools();
-        if (tabId === 'submissions-tab') renderSubmissions();
+        if (tabId === 'submissions-tab') {
+            // Show whatever is cached straight away, then re-fetch from the
+            // server so submissions made AFTER the admin page loaded (the ones
+            // the dashboard summary and the bell already count) appear here.
+            renderSubmissions();
+            refreshSubmissions();
+        }
         if (tabId === 'developers-tab') {
             renderDevelopers();
             renderDeveloperUpdatePicker();
@@ -1729,6 +1844,10 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         if (tabId === 'claims-tab') fetchClaims();
         if (tabId === 'analytics-tab') fetchSearchAnalytics();
         if (tabId === 'banner-tab') loadBannerAdmin();
+        if (tabId === 'spotlight-applications-tab') loadSpotApplications();
+        if (tabId === 'spotlight-list-tab') loadSpotlights();
+        if (tabId === 'spotlight-hires-tab') loadSpotHires();
+        if (tabId === 'spotlight-add-founder-tab') initSpotAddFounderView();
     }
 
     function getActiveTabId() {
@@ -1951,7 +2070,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
                     <td>${new Date(p.created_at).toLocaleDateString()}</td>
                     <td>
                         <div class="action-menu">
-                            <button class="dot-btn" onclick="this.parentElement.classList.toggle('active')">⋮</button>
+                            <button class="dot-btn" onclick="toggleActionMenu(this)">⋮</button>
                             <div class="dropdown-content">
                                 <button onclick="editProduct(${p.id})">Edit Details</button>
                                 <button onclick="toggleFlag(${p.id}, 'featured', ${p.featured})">${p.featured ? 'Remove Featured' : 'Make Featured'}</button>
@@ -2059,14 +2178,498 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
     /* ==========================================================================
        Alternatives: foreign-tool catalog + product edit checkboxes
        ========================================================================== */
+    // Readable labels for backend wire keys (everything else is humanized).
+    const ADMIN_SERVER_FIELD_LABELS = {
+        contact_email: 'Contact email',
+        startup_website: 'Startup website',
+        founder_name: 'Founder name',
+        startup_name: 'Startup name',
+        photo_url: 'Photo URL',
+        what_it_does: 'What the startup does',
+        open_to_work: 'Open to work',
+        consent: 'Consent to publish',
+        guidelines_agreed: 'Guidelines agreement',
+        save_as_draft: 'Save as draft',
+        product_ids: 'Products',
+        x_url: 'X URL',
+        why_believe: 'Why believe in Nigeria',
+        body_opening: 'Opening',
+        body_building: "What they're building",
+        body_why_started: 'Why they started',
+        body_headed: "Where they're headed"
+    };
+    function humanizeWireKey(key) {
+        return String(key)
+            .replace(/_url$/, ' URL')
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, ch => ch.toUpperCase());
+    }
     async function requireAdminResponse(res, fallback) {
         if (res.ok) return;
         const data = await parseApiResponse(res);
         const detail = data && (data.detail || data.message);
+        // FastAPI 422 detail entries are {loc: [..., '<key>'], msg}: name the
+        // exact field instead of repeating bare "field required" rows.
         const message = Array.isArray(detail)
-            ? detail.map(item => item.msg || item.message || JSON.stringify(item)).join('; ')
+            ? detail.map(item => {
+                if (!item || typeof item !== 'object') return String(item);
+                const loc = Array.isArray(item.loc) ? item.loc : [];
+                const key = loc.length ? String(loc[loc.length - 1]) : null;
+                const label = key ? (ADMIN_SERVER_FIELD_LABELS[key] || humanizeWireKey(key)) : null;
+                const msg = item.msg || item.message || JSON.stringify(item);
+                return label ? `${label}: ${msg}` : msg;
+            }).filter(Boolean).join('; ')
             : (typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : ''));
         throw new Error(message || `${fallback} (HTTP ${res.status}).`);
+    }
+
+    /* ==========================================================================
+       Sponsored picks - the homepage "Sponsored" section, max 10 products.
+       Data: this tab reuses the Products tab data, not a separate list
+       endpoint - the same cached admin catalog (GET /products/admin/all via
+       fetchProductsData) drives the search box, the category filter and the
+       10-per-page pagination (the shared paginate/renderPagination helpers,
+       same as the Products tab). Every product object carries its own
+       is_sponsored flag; only live products are listed (the same live test
+       the Collections picker uses).
+       Toggle: the switch on a row PUTs /products/{product_id}/sponsor
+       ?admin_key= with NO body - the single endpoint flips the flag both
+       ways. The id sent is the product's own database id field (id, with a
+       defensive _id fallback) - never a row index, never the slug - and it
+       is logged to the console right before the request fires so it can be
+       matched against the Products tab. Updates are optimistic with
+       rollback: on server rejection (e.g. the 10-pick cap) the flag and the
+       switch are restored and the server message shows inline on the row.
+       Order: the "Currently Sponsored" panel under the list mirrors the
+       homepage order. Arrows rearrange it locally, then the FULL ordered id
+       list is saved with PUT /products/sponsored/reorder {ids:[...]}; a
+       failed save rolls the local order back and surfaces the error banner.
+       ========================================================================== */
+    const SPONSORED_LIMIT = 10;
+    const SPONSORED_PAGE_SIZE = 10;
+    const sponsoredState = {
+        filter: { search: '', category: '' },
+        page: 1,
+        busyIds: new Set(),
+        rowErrors: new Map(),
+        order: [],
+        orderSeeded: false,
+        reorderBusy: false
+    };
+    let sponsoredSuccessTimer = 0;
+
+    function setupSponsored() {
+        const list = document.getElementById('sponsored-list');
+        const search = document.getElementById('sponsored-search');
+        const category = document.getElementById('sponsored-category-filter');
+        const currentList = document.getElementById('sponsored-current-list');
+        if (!list) return;
+
+        if (search) search.addEventListener('input', () => {
+            sponsoredState.filter.search = search.value;
+            sponsoredState.page = 1; // filters always jump back to page 1
+            renderSponsored();
+        });
+        if (category) category.addEventListener('change', () => {
+            sponsoredState.filter.category = category.value;
+            sponsoredState.page = 1; // filters always jump back to page 1
+            renderSponsored();
+        });
+        list.addEventListener('change', handleSponsoredListChange);
+        if (currentList) currentList.addEventListener('click', handleSponsoredMoveClick);
+    }
+
+    /* ---------- ids ---------- */
+
+    // The wire id for a product row: its own database id field. The backend
+    // 404s the sponsor endpoint when this does not match a real product, so
+    // it must come from the row data itself - never a render index or slug.
+    function sponsoredProductId(product) {
+        if (!product) return null;
+        const primary = product.id;
+        const fallback = product._id;
+        const value = (primary !== undefined && primary !== null && String(primary).trim() !== '')
+            ? primary
+            : ((fallback !== undefined && fallback !== null && String(fallback).trim() !== '') ? fallback : null);
+        return value;
+    }
+
+    function sponsoredIdKey(product) {
+        const id = sponsoredProductId(product);
+        return id === null ? null : String(id);
+    }
+
+    function findSponsoredProduct(key) {
+        return (Array.isArray(state.products) ? state.products : []).find(item => sponsoredIdKey(item) === String(key)) || null;
+    }
+
+    /* ---------- data (reuses the Products tab catalog) ---------- */
+
+    // Server may send true/false/1/0/"true" - collapse to a bool, keep fallback on absence.
+    function sponsoredFlag(value, fallback) {
+        if (value === undefined || value === null) return fallback;
+        return value === true || value === 1 || value === '1' || value === 'true';
+    }
+
+    function sponsoredIsPicked(product) {
+        return !!product && sponsoredFlag(product.is_sponsored, false);
+    }
+
+    // Every live product from the cached catalog - the same live test the
+    // Collections picker applies, so deactivated/hidden products stay out.
+    function getSponsoredCatalog() {
+        return (Array.isArray(state.products) ? state.products : []).filter(collectionProductIsLive);
+    }
+
+    function getFilteredSponsoredProducts() {
+        const query = (sponsoredState.filter.search || '').trim().toLowerCase();
+        const category = sponsoredState.filter.category;
+        return getSponsoredCatalog().filter(product => {
+            if (category && (product.category || '') !== category) return false;
+            if (query && !(product.name || '').toLowerCase().includes(query)) return false;
+            return true;
+        });
+    }
+
+    function sponsoredPickedCount() {
+        return getSponsoredCatalog().filter(sponsoredIsPicked).length;
+    }
+
+    // The single sponsor endpoint: PUT flips the product's is_sponsored flag. No body.
+    function sponsoredApiUrl(productId, desired) {
+        const flag = (desired === undefined) ? '' : `&sponsored=${desired}`;
+        return `${API_URL}/products/${encodeURIComponent(String(productId))}/sponsor?admin_key=${adminKey}${flag}`;
+    }
+    // Saves the full homepage order of sponsored picks. Body: {ids:[...]}.
+    function sponsoredReorderApiUrl() {
+        return `${API_URL}/products/sponsored/reorder?admin_key=${adminKey}`;
+    }
+
+    // Primary population comes from the shared filter populator above
+    // (ENOVOX_CONFIG). This backfill only runs when that left the select
+    // empty, deriving categories from the cached catalog instead.
+    function populateSponsoredCategoryFilter() {
+        const sel = document.getElementById('sponsored-category-filter');
+        if (!sel || sel.options.length > 1) return;
+        const fromConfig = (typeof ENOVOX_CONFIG !== 'undefined' && Array.isArray(ENOVOX_CONFIG.CATEGORIES) && ENOVOX_CONFIG.CATEGORIES.length)
+            ? ENOVOX_CONFIG.CATEGORIES
+            : [];
+        const seen = new Set(fromConfig);
+        const extra = getSponsoredCatalog().map(product => product && product.category).filter(cat => cat && !seen.has(cat)).sort();
+        fromConfig.concat(extra).forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            sel.appendChild(option);
+        });
+    }
+
+    function loadSponsored() {
+        const loading = document.getElementById('sponsored-loading');
+        clearSponsoredError();
+        if (!collectionProductCatalogReady && loading) loading.classList.remove('hidden');
+        // Same data path as the Products tab - the cached admin catalog fetch.
+        ensureCollectionProductCatalog().then(() => {
+            if (loading) loading.classList.add('hidden');
+            if (collectionProductCatalogError) setSponsoredError(collectionProductCatalogError);
+            populateSponsoredCategoryFilter();
+            renderSponsored();
+        });
+    }
+
+    /* ---------- order of the sponsored picks ---------- */
+
+    // Optional server-provided ordering fields, if the catalog ever grows one.
+    function sponsoredPositionHint(product) {
+        const raw = product && (product.sponsored_position !== undefined ? product.sponsored_position
+            : (product.sponsor_order !== undefined ? product.sponsor_order : product.sponsored_order));
+        const n = Number(raw);
+        return Number.isFinite(n) ? n : null;
+    }
+
+    // Keeps sponsoredState.order in step with the flags on the catalog: on
+    // first load it seeds from the catalog (position hints first), afterwards
+    // it preserves the arranged order, drops picks that were toggled off and
+    // appends fresh picks at the end.
+    function syncSponsoredOrder() {
+        if (!collectionProductCatalogReady || collectionProductCatalogError) return;
+        const picked = getSponsoredCatalog().filter(sponsoredIsPicked);
+        const byKey = new Map();
+        picked.forEach(product => {
+            const key = sponsoredIdKey(product);
+            if (key !== null && !byKey.has(key)) byKey.set(key, product);
+        });
+        if (!sponsoredState.orderSeeded) {
+            sponsoredState.orderSeeded = true;
+            sponsoredState.order = picked.slice().sort((a, b) => {
+                const pa = sponsoredPositionHint(a);
+                const pb = sponsoredPositionHint(b);
+                if (pa === null && pb === null) return 0;
+                if (pa === null) return 1;
+                if (pb === null) return -1;
+                return pa - pb;
+            }).map(sponsoredIdKey).filter(key => key !== null);
+            return;
+        }
+        const kept = sponsoredState.order.filter(key => byKey.has(key));
+        const have = new Set(kept);
+        sponsoredState.order = kept.concat(picked.filter(product => {
+            const key = sponsoredIdKey(product);
+            return key !== null && !have.has(key);
+        }).map(sponsoredIdKey));
+    }
+
+    /* ---------- render ---------- */
+
+    // Real <img> logo like the rest of the panel; the letter tile behind it is
+    // only a placeholder until the image reports a successful load, and stays
+    // as the fallback when the URL is missing or the image errors out.
+    function sponsoredLogoCell(name, logoUrl) {
+        const letter = escapeHTML((name || 'S').trim().charAt(0).toUpperCase() || 'S');
+        const image = logoUrl
+            ? `<img class="sponsored-logo-img" src="${escapeHTML(logoUrl)}" alt="" loading="lazy" onload="this.parentElement.classList.add('has-logo')" onerror="this.remove()">`
+            : '';
+        return `<span class="collection-product-logo sponsored-logo" aria-hidden="true"><span class="sponsored-logo-letter">${letter}</span>${image}</span>`;
+    }
+
+    function renderSponsored() {
+        const list = document.getElementById('sponsored-list');
+        const empty = document.getElementById('sponsored-empty');
+        const slots = document.getElementById('sponsored-slots');
+        if (!list || !empty) return;
+
+        syncSponsoredOrder();
+
+        if (slots) {
+            const picked = sponsoredPickedCount();
+            slots.textContent = `${picked} of ${SPONSORED_LIMIT} picked`;
+            slots.classList.toggle('sponsored-slots-full', picked >= SPONSORED_LIMIT);
+            updateSponsoredMeter(picked);
+        }
+
+        const pagination = document.getElementById('sponsored-pagination');
+        if (!collectionProductCatalogReady || collectionProductCatalogError) {
+            list.innerHTML = '';
+            if (pagination) pagination.innerHTML = '';
+            if (collectionProductCatalogError) {
+                empty.textContent = 'The product list could not be loaded. Fix the error above and reopen this tab.';
+                empty.classList.remove('hidden');
+            } else {
+                empty.classList.add('hidden');
+            }
+            renderSponsoredCurrent();
+            return;
+        }
+
+        const catalog = getSponsoredCatalog();
+        const filtered = getFilteredSponsoredProducts();
+        const { pageItems, totalPages, safePage } = paginate(filtered, sponsoredState.page, SPONSORED_PAGE_SIZE);
+        sponsoredState.page = safePage;
+
+        if (!filtered.length) {
+            list.innerHTML = '';
+            if (pagination) pagination.innerHTML = '';
+            empty.textContent = catalog.length
+                ? 'No products match your search.'
+                : 'No live products yet. Once a product is live it appears here, ready to sponsor.';
+            empty.classList.remove('hidden');
+            renderSponsoredCurrent();
+            return;
+        }
+        empty.classList.add('hidden');
+
+        list.innerHTML = pageItems.map(product => {
+            const pid = sponsoredProductId(product);
+            const key = sponsoredIdKey(product);
+            const idAttr = key === null ? '' : escapeHTML(key);
+            const name = escapeHTML(product.name || 'Untitled product');
+            const picked = sponsoredIsPicked(product);
+            const busy = key !== null && sponsoredState.busyIds.has(key);
+            const rowError = key !== null ? (sponsoredState.rowErrors.get(key) || '') : '';
+            const noId = pid === null;
+            return `<div class="sponsored-product-row" ${key === null ? '' : `data-sponsored-id="${idAttr}"`}>
+                ${sponsoredLogoCell(product.name, product.logo_url)}
+                <div class="collection-product-copy"><strong>${name}</strong><small>${escapeHTML(product.category || 'Uncategorised')}</small></div>
+                <div class="sponsored-toggle-cell">
+                    <label class="collection-publish-toggle sponsored-active-toggle" aria-label="Toggle ${name} sponsored state">
+                        <input type="checkbox" class="sponsored-toggle-input" ${key === null ? '' : `data-sponsored-id="${idAttr}"`} ${picked ? 'checked' : ''} ${busy || noId ? 'disabled' : ''} ${noId ? 'title="This product has no database id the sponsor endpoint can use"' : ''}>
+                        <span class="collection-toggle-track" aria-hidden="true"><span></span></span>
+                        <span class="sponsored-active-caption"><small>${picked ? 'Sponsored' : 'Not sponsored'}</small></span>
+                    </label>
+                    <p class="sponsored-row-error${rowError ? '' : ' hidden'}" role="alert">${escapeHTML(rowError)}</p>
+                </div>
+            </div>`;
+        }).join('');
+
+        renderPagination('sponsored-pagination', filtered.length, sponsoredState.page, totalPages, (page) => {
+            sponsoredState.page = page;
+            renderSponsored();
+        });
+
+        renderSponsoredCurrent();
+    }
+
+    function updateSponsoredMeter(picked) {
+        const countEl = document.getElementById('sponsored-meter-count');
+        const noteEl = document.getElementById('sponsored-meter-note');
+        const bar = document.getElementById('sponsored-meter-bar');
+        if (countEl) countEl.textContent = String(picked);
+        if (noteEl) {
+            const left = Math.max(0, SPONSORED_LIMIT - picked);
+            noteEl.textContent = left === 0
+                ? 'All slots are used. Switch one off to add another.'
+                : `${left} ${left === 1 ? 'slot' : 'slots'} left. The homepage carousel shows up to ${SPONSORED_LIMIT}.`;
+        }
+        if (bar) Array.from(bar.children).forEach((segment, index) => segment.classList.toggle('is-on', index < picked));
+    }
+
+    function renderSponsoredCurrent() {
+        const wrap = document.getElementById('sponsored-current-list');
+        const empty = document.getElementById('sponsored-current-empty');
+        const count = document.getElementById('sponsored-current-count');
+        if (!wrap || !empty) return;
+        const order = sponsoredState.order.filter(key => {
+            const product = findSponsoredProduct(key);
+            return product && sponsoredIsPicked(product);
+        });
+        if (count) count.textContent = `${order.length} of ${SPONSORED_LIMIT}`;
+        if (!order.length) {
+            wrap.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+        wrap.innerHTML = order.map((key, index) => {
+            const product = findSponsoredProduct(key);
+            if (!product) return '';
+            const keyAttr = escapeHTML(String(key));
+            const name = escapeHTML(product.name || 'Untitled product');
+            const busyAttr = sponsoredState.reorderBusy ? 'disabled' : '';
+            return `<div class="sponsored-current-row" data-sponsored-key="${keyAttr}">
+                <span class="sponsored-current-position" aria-hidden="true">${index + 1}</span>
+                ${sponsoredLogoCell(product.name, product.logo_url)}
+                <div class="collection-product-copy"><strong>${name}</strong><small>${escapeHTML(product.category || '')}</small></div>
+                <div class="sponsored-order-buttons" aria-label="Change sponsored order">
+                    <button type="button" class="btn-secondary btn-small" data-sponsored-move="up" data-sponsored-key="${keyAttr}" aria-label="Move ${name} up" ${index === 0 ? 'disabled' : busyAttr}><i class="fa-solid fa-chevron-up" aria-hidden="true"></i></button>
+                    <button type="button" class="btn-secondary btn-small" data-sponsored-move="down" data-sponsored-key="${keyAttr}" aria-label="Move ${name} down" ${index === order.length - 1 ? 'disabled' : busyAttr}><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function setSponsoredError(message) {
+        const el = document.getElementById('sponsored-error');
+        if (!el) return;
+        el.textContent = message || 'The sponsored request failed.';
+        el.classList.remove('hidden');
+    }
+    function clearSponsoredError() {
+        const el = document.getElementById('sponsored-error');
+        if (!el) return;
+        el.textContent = '';
+        el.classList.add('hidden');
+    }
+    function showSponsoredSuccess(message) {
+        const el = document.getElementById('sponsored-success');
+        if (!el) return;
+        window.clearTimeout(sponsoredSuccessTimer);
+        el.textContent = message;
+        el.classList.remove('hidden');
+        sponsoredSuccessTimer = window.setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    /* ---------- toggle action ---------- */
+
+    async function handleSponsoredListChange(event) {
+        const input = event.target.closest('.sponsored-toggle-input');
+        if (!input) return;
+        const key = input.dataset.sponsoredId;
+        const product = key === undefined ? null : findSponsoredProduct(key);
+        if (!product) { input.checked = false; return; }
+        const pid = sponsoredProductId(product);
+        const previous = sponsoredIsPicked(product);
+        if (sponsoredState.busyIds.has(key)) { input.checked = previous; return; }
+        if (pid === null) {
+            // Defensive: never fire the sponsor request without a real wire id.
+            input.checked = previous;
+            sponsoredState.rowErrors.set(key, 'This product has no database id the sponsor endpoint can use.');
+            renderSponsored();
+            return;
+        }
+
+        const next = !previous;
+        const url = sponsoredApiUrl(pid, next);
+        console.log('[sponsored] toggle for', JSON.stringify(product.name), '- sending product id', JSON.stringify(pid), '-', url);
+        sponsoredState.rowErrors.delete(key);
+        product.is_sponsored = next; // optimistic: the endpoint flips the flag on every call
+        sponsoredState.busyIds.add(key);
+        clearSponsoredError();
+        renderSponsored();
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: { Accept: 'application/json' }
+            });
+            const reply = response.clone();
+            await requireAdminResponse(response, 'Could not update the sponsored flag');
+            try {
+                const result = await reply.json();
+                if (typeof result.is_sponsored === 'boolean') product.is_sponsored = result.is_sponsored;
+            } catch (e) { /* keep the optimistic value */ }
+            showSponsoredSuccess(product.is_sponsored
+                ? '"' + (product.name || 'Product') + '" added to the Sponsored section.'
+                : '"' + (product.name || 'Product') + '" removed from the Sponsored section.');
+        } catch (error) {
+            // Roll the flag and the switch back: a rejected toggle (e.g. the
+            // 10-pick cap) must not stay visibly on; the message stays inline
+            // on the row that failed.
+            product.is_sponsored = previous;
+            sponsoredState.rowErrors.set(key, error.message || 'Could not update the sponsored flag.');
+        } finally {
+            sponsoredState.busyIds.delete(key);
+            renderSponsored();
+        }
+    }
+
+    /* ---------- reorder action ---------- */
+
+    function handleSponsoredMoveClick(event) {
+        const button = event.target.closest('[data-sponsored-move]');
+        if (!button || button.disabled) return;
+        moveSponsoredPick(button.dataset.sponsoredKey, button.dataset.sponsoredMove === 'up' ? -1 : 1);
+    }
+
+    async function moveSponsoredPick(key, direction) {
+        if (sponsoredState.reorderBusy) return;
+        const previousOrder = sponsoredState.order.slice();
+        const from = previousOrder.indexOf(String(key));
+        const to = from + direction;
+        if (from < 0 || to < 0 || to >= previousOrder.length) return;
+        const nextOrder = previousOrder.slice();
+        [nextOrder[from], nextOrder[to]] = [nextOrder[to], nextOrder[from]];
+        const idsBody = nextOrder.map(k => {
+            const product = findSponsoredProduct(k);
+            return product ? sponsoredProductId(product) : k;
+        });
+        sponsoredState.order = nextOrder;
+        sponsoredState.reorderBusy = true;
+        clearSponsoredError();
+        renderSponsored();
+        try {
+            const response = await fetch(sponsoredReorderApiUrl(), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ ids: idsBody })
+            });
+            await requireAdminResponse(response, 'Could not save the sponsored order');
+            showSponsoredSuccess('Sponsored order saved.');
+        } catch (error) {
+            sponsoredState.order = previousOrder; // roll the local order back
+            setSponsoredError(error.message || 'Could not save the sponsored order.');
+        } finally {
+            sponsoredState.reorderBusy = false;
+            renderSponsored();
+        }
     }
 
     function setupAlternatives() {
@@ -2089,13 +2692,10 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         });
         document.getElementById('foreign-tools-table-body').addEventListener('click', event => {
             const menuBtn = event.target.closest('.dot-btn');
-            if (menuBtn) {
-                const menu = menuBtn.closest('.action-menu');
-                const wasOpen = menu.classList.contains('active');
-                document.querySelectorAll('.action-menu.active').forEach(el => el.classList.remove('active'));
-                menu.classList.toggle('active', !wasOpen);
-                return;
-            }
+                if (menuBtn) {
+                    window.toggleActionMenu(menuBtn);
+                    return;
+                }
             const editBtn = event.target.closest('[data-foreign-edit]');
             const deleteBtn = event.target.closest('[data-foreign-delete]');
             const id = editBtn ? editBtn.dataset.foreignEdit : (deleteBtn ? deleteBtn.dataset.foreignDelete : null);
@@ -3296,7 +3896,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         formHTML += `
             <div class="form-group full-width" id="detail-alternatives-group">
                 <div class="submission-alternatives-heading">
-                    <label>Alternative To${isPending ? ' *' : ''}</label>
+                    <label id="detail-alternatives-label">Alternative To${isPending ? ' *' : ''}</label>
                     <button type="button" id="detail-alternatives-help" class="submission-alt-help-trigger"
                             aria-label="Help: Alternative To" aria-expanded="false" aria-controls="detail-alternatives-help-pop">?</button>
                 </div>
@@ -3447,7 +4047,16 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         const alt = submissionAlternativeState;
         const status = document.getElementById('detail-alternatives-status');
         if (!status || !alt.ready) return;
+        // The required star only applies when this category has tools to pick from.
+        const label = document.getElementById('detail-alternatives-label');
+        if (label) label.textContent = `Alternative To${alt.isPending && alt.available.size ? ' *' : ''}`;
         const count = alt.selected.size;
+        if (!alt.available.size && !count) {
+            // Nothing exists to pick in this category, so nothing is required.
+            status.classList.remove('is-missing-selection');
+            status.textContent = 'No foreign tools exist in this category, so an alternative is not required.';
+            return;
+        }
         status.classList.toggle('is-missing-selection', alt.isPending && !alt.original.size && !count);
         let text = `${count} foreign tool${count === 1 ? '' : 's'} selected.`;
         if (alt.isPending) text += ' Check or uncheck tools here to correct the selection before approval.';
@@ -3499,7 +4108,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
             alt.ready = true;
             renderSubmissionAlternativeRows();
             updateSubmissionAlternativeStatus();
-            if (!alt.sourceKnown) {
+            if (!alt.sourceKnown && alt.available.size > 0) {
                 status.textContent += ' The submission did not return its original selections.';
             }
         } catch (error) {
@@ -3580,10 +4189,18 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         const categoryChanged = 'category' in payload;
         const alternativesChanged = alt.selected.size !== alt.original.size ||
             [...alt.selected].some(toolId => !alt.original.has(toolId));
-        // Alternative To is required even for an otherwise unchanged review.
+        // Alternative To is only compulsory when this category actually has
+        // foreign tools to choose from. Once the list for the CURRENT category
+        // has loaded and is empty, there is nothing to pick, so it must not
+        // block approval. (A list that has not loaded yet is still not treated
+        // as "empty": that case keeps waiting, so a slow or failed request can
+        // never let an unlinked product through.)
+        const altListLoaded = alt.ready && alt.category === category;
+        const noToolsInCategory = altListLoaded && alt.available.size === 0;
+        // Otherwise it is required even for an otherwise unchanged review.
         // An empty detail response must never silently publish an unlinked product.
-        if (!alt.selected.size) {
-            showSubmissionReviewError(alt.ready && alt.category === category
+        if (!alt.selected.size && !noToolsInCategory) {
+            showSubmissionReviewError(altListLoaded
                 ? 'Alternative is compulsory, pick one.'
                 : 'Wait for matching alternatives to load before approving.', true);
             return;
@@ -3593,7 +4210,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
                 showSubmissionReviewError('Wait for matching alternatives to load before approving changes to the category or selection.', true);
                 return;
             }
-            if (!alt.selected.size) {
+            if (!alt.selected.size && !noToolsInCategory) {
                 showSubmissionReviewError('Alternative is compulsory, pick one.', true);
                 return;
             }
@@ -3958,12 +4575,56 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         return String(str).replace(/[&<>'"]/g, tag => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[tag]));
     }
 
-    window.onclick = function(event) {
-        if (!event.target.matches('.dot-btn')) {
-            document.querySelectorAll('.action-menu.active').forEach(m => m.classList.remove('active'));
-        }
+    
+    function closeActionMenus() {
+        document.querySelectorAll('.action-menu.active').forEach(menu => {
+            menu.classList.remove('active');
+            const dropdown = menu.querySelector('.dropdown-content');
+            if (dropdown) dropdown.removeAttribute('style'); // drop the fixed positioning
+        });
     }
 
+    // Opens the row menu as a fixed overlay so table scroll containers can't clip it.
+    function positionActionMenu(menu) {
+        const btn = menu.querySelector('.dot-btn');
+        const dropdown = menu.querySelector('.dropdown-content');
+        if (!btn || !dropdown) return;
+        dropdown.style.position = 'fixed';
+        dropdown.style.right = 'auto';
+        const b = btn.getBoundingClientRect();
+        const d = dropdown.getBoundingClientRect();
+        const gap = 4;
+        const margin = 8;
+        let top = b.bottom + gap;
+        // Not enough room below? Open upward instead.
+        if (top + d.height > window.innerHeight - margin && b.top - gap - d.height >= margin) {
+            top = b.top - gap - d.height;
+        }
+        top = Math.max(margin, Math.min(top, window.innerHeight - d.height - margin));
+        const left = Math.max(margin, Math.min(b.right - d.width, window.innerWidth - d.width - margin));
+        dropdown.style.top = `${top}px`;
+        dropdown.style.left = `${left}px`;
+    }
+
+    window.toggleActionMenu = function(btn) {
+        const menu = btn.closest('.action-menu');
+        if (!menu) return;
+        const wasOpen = menu.classList.contains('active');
+        closeActionMenus();
+        if (!wasOpen) {
+            menu.classList.add('active');
+            positionActionMenu(menu);
+        }
+    };
+
+    window.onclick = function(event) {
+        if (!event.target.matches('.dot-btn')) closeActionMenus();
+    };
+    window.addEventListener('resize', closeActionMenus, { passive: true });
+    // Capture phase so scrolling .admin-main or a table container also closes it.
+    document.addEventListener('scroll', () => {
+        if (document.querySelector('.action-menu.active')) closeActionMenus();
+    }, true);
     /* ==========================================================================
        Persistent Notification Tray Logic (Unified Desktop & Mobile)
 
@@ -4077,6 +4738,14 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
                 const response = await fetch(`/submissions/admin/all?admin_key=${currentKey}`);
                 if (response.ok) {
                     const subs = await response.json();
+
+                    // Keep the Submissions tab's cached list in step with what the
+                    // bell just saw, so the tab never lags behind the notification.
+                    if (Array.isArray(subs)) {
+                        state.submissions = subs;
+                        if (getActiveTabId() === 'submissions-tab') renderSubmissions();
+                    }
+
                     const pendingCount = subs.filter(s => (s.status || 'pending') === 'pending').length;
                     const lastCount = parseInt(localStorage.getItem("enovox_last_sub_count") || pendingCount, 10);
 
@@ -4302,13 +4971,27 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
        (same list that powers the Products tab) — no extra fetch.
        ========================================================================== */
     let claimsCache = [];
+    let claimsFilter = 'pending'; // default view; other tabs filter client-side on claim.status
 
     function setupClaims() {
         const refreshBtn = document.getElementById('claims-refresh-btn');
         if (refreshBtn) refreshBtn.addEventListener('click', () => fetchClaims());
 
+        const tabs = document.getElementById('claims-status-tabs');
+        if (tabs) tabs.addEventListener('click', event => {
+            const tab = event.target.closest('[data-claims-status]');
+            if (!tab || tab.dataset.claimsStatus === claimsFilter) return;
+            claimsFilter = tab.dataset.claimsStatus;
+            renderClaims();
+        });
+
         const list = document.getElementById('claims-list');
         if (list) list.addEventListener('click', onClaimsListClick);
+    }
+
+    // Missing status is treated as pending; unknown values stay as-is (visible under "All" only).
+    function claimStatus(claim) {
+        return String((claim && claim.status) || 'pending').toLowerCase();
     }
 
     async function fetchClaims() {
@@ -4317,8 +5000,8 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         if (loadingEl) loadingEl.classList.remove('hidden');
         if (errorEl) errorEl.classList.add('hidden');
         try {
-            const res = await fetch(`${API_URL}/products/admin/claims?admin_key=${encodeURIComponent(adminKey)}`);
-            if (!res.ok) throw new Error('Could not load pending claims.');
+            const res = await fetch(`${API_URL}/products/admin/claims/all?admin_key=${encodeURIComponent(adminKey)}`);
+            if (!res.ok) throw new Error('Could not load claims.');
             const claims = await res.json();
             claimsCache = Array.isArray(claims) ? claims : [];
             renderClaims();
@@ -4341,17 +5024,50 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         return isNaN(d.getTime()) ? String(raw) : d.toLocaleDateString();
     }
 
+    function renderClaimTabs() {
+        const counts = { pending: 0, approved: 0, rejected: 0, all: claimsCache.length };
+        claimsCache.forEach(claim => {
+            const status = claimStatus(claim);
+            if (status in counts) counts[status] += 1;
+        });
+        document.querySelectorAll('#claims-status-tabs [data-claims-status]').forEach(tab => {
+            const key = tab.dataset.claimsStatus;
+            const active = key === claimsFilter;
+            tab.classList.toggle('active', active);
+            tab.setAttribute('aria-selected', String(active));
+            const count = tab.querySelector('[data-claims-count]');
+            if (count) count.textContent = String(counts[key] || 0);
+        });
+    }
+
+    function claimsEmptyMessage() {
+        if (claimsFilter === 'all') return 'No claims yet';
+        return `No ${claimsFilter} claims`;
+    }
+
     function renderClaims() {
+        renderClaimTabs();
         const list = document.getElementById('claims-list');
         const emptyEl = document.getElementById('claims-empty');
         if (!list || !emptyEl) return;
         list.innerHTML = '';
-        if (claimsCache.length === 0) {
+        const rows = claimsFilter === 'all'
+            ? claimsCache
+            : claimsCache.filter(claim => claimStatus(claim) === claimsFilter);
+        if (rows.length === 0) {
+            emptyEl.textContent = claimsEmptyMessage();
             emptyEl.classList.remove('hidden');
             return;
         }
         emptyEl.classList.add('hidden');
-        claimsCache.forEach(claim => list.appendChild(buildClaimCard(claim)));
+        rows.forEach(claim => list.appendChild(buildClaimCard(claim)));
+    }
+
+    function claimStatusBadgeHTML(status) {
+        if (status === 'approved') return '<span class="badge active">Approved</span>';
+        if (status === 'rejected') return '<span class="badge deactivated">Rejected</span>';
+        if (status === 'pending') return '<span class="badge new">Pending</span>';
+        return `<span class="badge feature">${escapeHTML(status.charAt(0).toUpperCase() + status.slice(1))}</span>`;
     }
 
     function buildClaimCard(claim) {
@@ -4359,6 +5075,8 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         card.className = 'claim-card';
         card.setAttribute('data-claim-id', claim.id);
 
+        const status = claimStatus(claim);
+        const isPending = status === 'pending';
         const product = findClaimProduct(claim);
         const productName = product ? product.name : `Product #${claim.product_id}`;
         const logoHtml = product && product.logo_url
@@ -4367,18 +5085,11 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         const socialHtml = claim.social_url
             ? `<a href="${escapeHTML(claim.social_url)}" target="_blank" rel="noopener">${escapeHTML(claim.social_url)}</a>`
             : '<span class="text-muted">—</span>';
-
-        card.innerHTML = `
-            <div class="claim-card-head">
-                <div class="claim-product">${logoHtml}<strong>${escapeHTML(productName)}</strong><span class="badge new">Pending</span></div>
-                <span class="text-muted claim-date">Submitted ${escapeHTML(formatClaimDate(claim.created_at))}</span>
-            </div>
-            <div class="claim-card-body">
-                <div><span class="claim-label">Claimant</span>${escapeHTML(claim.name || '—')}</div>
-                <div><span class="claim-label">Email</span>${escapeHTML(claim.email || '—')}</div>
-                <div><span class="claim-label">Role</span>${escapeHTML(claim.role || '—')}</div>
-                <div><span class="claim-label">Social / LinkedIn</span>${socialHtml}</div>
-            </div>
+        const reason = claim.rejection_reason || claim.reason || '';
+        const reasonHtml = (status === 'rejected' && reason)
+            ? `<div class="claim-rejection-note"><strong>Rejection reason:</strong> ${escapeHTML(reason)}</div>`
+            : '';
+        const actionsHtml = isPending ? `
             <div class="claim-card-actions">
                 <button type="button" class="btn-success" data-claim-action="approve" data-claim-id="${claim.id}">Approve</button>
                 <button type="button" class="btn-danger" data-claim-action="reject" data-claim-id="${claim.id}">Reject</button>
@@ -4388,7 +5099,21 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
                 <button type="button" class="btn-danger btn-small" data-claim-action="reject-confirm" data-claim-id="${claim.id}">Confirm Reject</button>
                 <button type="button" class="btn-secondary btn-small" data-claim-action="reject-cancel" data-claim-id="${claim.id}">Cancel</button>
                 <div class="error-text hidden claim-reject-error">A reason is required to reject a claim.</div>
+            </div>` : '';
+
+        card.innerHTML = `
+            <div class="claim-card-head">
+                <div class="claim-product">${logoHtml}<strong>${escapeHTML(productName)}</strong>${claimStatusBadgeHTML(status)}</div>
+                <span class="text-muted claim-date">Submitted ${escapeHTML(formatClaimDate(claim.created_at))}</span>
             </div>
+            <div class="claim-card-body">
+                <div><span class="claim-label">Claimant</span>${escapeHTML(claim.name || '—')}</div>
+                <div><span class="claim-label">Email</span>${escapeHTML(claim.email || '—')}</div>
+                <div><span class="claim-label">Role</span>${escapeHTML(claim.role || '—')}</div>
+                <div><span class="claim-label">Social / LinkedIn</span>${socialHtml}</div>
+            </div>
+            ${reasonHtml}
+            ${actionsHtml}
         `;
         return card;
     }
@@ -4437,7 +5162,7 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
             const res = await fetch(`${API_URL}/products/admin/claims/${claimId}/approve?admin_key=${encodeURIComponent(adminKey)}`, { method: 'POST' });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.detail || data.message || 'Could not approve this claim.');
-            claimsCache = claimsCache.filter(c => c.id !== claimId);
+            claim.status = 'approved'; // moves out of Pending, into Approved
             renderClaims();
             showAlert('success', data.message || 'Claim approved.');
         } catch (error) {
@@ -4467,7 +5192,8 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.detail || data.message || 'Could not reject this claim.');
-            claimsCache = claimsCache.filter(c => c.id !== claimId);
+            const claim = claimsCache.find(c => c.id === claimId);
+            if (claim) { claim.status = 'rejected'; claim.rejection_reason = reason; }
             renderClaims();
             showAlert('success', data.message || 'Claim rejected.');
         } catch (error) {
@@ -4877,4 +5603,1228 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
             btn.textContent = originalText;
         }
     }
+
+    /* ==========================================================================
+       SPOTLIGHT ADMIN
+       Applications review + AI drafting, spotlight editor, hires and the
+       manual Add Founder view. Every endpoint lives under /spotlight/admin and
+       takes the admin key as ?admin_key=...
+       ========================================================================== */
+    const SPOT_DRAFT_FIELDS = ['headline', 'summary', 'body_opening', 'body_building', 'quote', 'body_why_started', 'body_headed', 'why_believe'];
+    const SPOT_SOCIAL_KEYS = ['instagram_url', 'x_url', 'facebook_url', 'linkedin_url', 'tiktok_url', 'github_url'];
+    const SPOT_SOCIAL_META = {
+        instagram_url: { icon: 'fa-brands fa-instagram', label: 'Instagram' },
+        x_url: { icon: 'fa-brands fa-x-twitter', label: 'X' },
+        facebook_url: { icon: 'fa-brands fa-facebook-f', label: 'Facebook' },
+        linkedin_url: { icon: 'fa-brands fa-linkedin-in', label: 'LinkedIn' },
+        tiktok_url: { icon: 'fa-brands fa-tiktok', label: 'TikTok' },
+        github_url: { icon: 'fa-brands fa-github', label: 'GitHub' }
+    };
+    const SPOT_APP_STATUS_TABS = ['pending', 'approved', 'rejected', 'draft'];
+    const SPOT_LIST_STATUS_TABS = ['all', 'draft', 'published', 'unpublished'];
+
+    const spotState = {
+        applications: [],
+        appStatus: 'pending',
+        counts: { pending: 0, approved: 0, rejected: 0, draft: 0 },
+        countsLoaded: false,
+        currentApp: null,
+        aiDrafted: false,
+        spotlights: [],
+        listStatus: 'all',
+        editingSpotlight: null,
+        hires: [],
+        afSkills: [],
+        afProducts: []
+    };
+
+    function spotUrl(path) {
+        const joiner = path.includes('?') ? '&' : '?';
+        return `${API_URL}${path}${joiner}admin_key=${encodeURIComponent(adminKey)}`;
+    }
+
+    function formatSpotDate(value) {
+        if (!value) return '—';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString([], { dateStyle: 'medium' });
+    }
+
+    function spotAppStatusBadge(status) {
+        if (status === 'approved') return '<span class="badge active">Approved</span>';
+        if (status === 'rejected') return '<span class="badge deactivated">Rejected</span>';
+        if (status === 'draft') return '<span class="badge new">Draft</span>';
+        return '<span class="badge popular">Pending</span>';
+    }
+
+    function spotListStatusBadge(status) {
+        if (status === 'published') return '<span class="badge active">Published</span>';
+        if (status === 'unpublished') return '<span class="badge deactivated">Unpublished</span>';
+        return '<span class="badge popular">Draft</span>';
+    }
+
+    function spotSourceBadge(source) {
+        return source === 'admin'
+            ? '<span class="badge feature">Admin-added</span>'
+            : '<span class="badge popular">Founder</span>';
+    }
+
+    function spotSkillsArray(skills) {
+        if (Array.isArray(skills)) return skills.map(s => String(s).trim()).filter(Boolean);
+        if (typeof skills === 'string') {
+            return skills.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        return [];
+    }
+
+    function spotThumbHTML(url, extraClass) {
+        const cls = `spot-thumb-wrap${extraClass ? ` ${extraClass}` : ''}`;
+        if (!url) return `<span class="${cls}" aria-hidden="true"><i class="fa-solid fa-user"></i></span>`;
+        return `<span class="${cls}"><img src="${escapeHTML(url)}" alt="" data-spot-photo loading="lazy"><i class="fa-solid fa-user" aria-hidden="true"></i></span>`;
+    }
+
+    function bindSpotPhotoFallbacks(root) {
+        root.querySelectorAll('img[data-spot-photo]').forEach(img => {
+            img.addEventListener('error', () => { img.classList.add('hidden'); img.removeAttribute('data-spot-photo'); }, { once: true });
+        });
+    }
+
+    /* --------------------------------------------------------------------------
+       View 1: Applications (status tabs, table, detail panel, approve/reject/AI)
+       -------------------------------------------------------------------------- */
+    function renderSpotAppTabs() {
+        document.querySelectorAll('#spot-app-status-tabs [data-spot-status]').forEach(btn => {
+            const active = btn.dataset.spotStatus === spotState.appStatus;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        SPOT_APP_STATUS_TABS.forEach(status => {
+            const span = document.querySelector(`#spot-app-status-tabs [data-spot-count="${status}"]`);
+            if (!span) return;
+            const raw = spotState.counts ? spotState.counts[status] : 0;
+            const value = Number(raw);
+            span.textContent = Number.isFinite(value) ? String(value) : '0';
+        });
+    }
+
+    async function loadSpotApplications() {
+        const loading = document.getElementById('spot-app-loading');
+        const errorEl = document.getElementById('spot-app-error');
+        const emptyEl = document.getElementById('spot-app-empty');
+        const table = document.getElementById('spot-app-table-container');
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (table) table.classList.add('hidden');
+        if (loading) loading.classList.remove('hidden');
+        try {
+            const statusParam = spotState.appStatus === 'all' ? '' : `?status=${encodeURIComponent(spotState.appStatus)}`;
+            const listRes = await fetch(spotUrl(`/spotlight/admin/applications${statusParam}`), {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            await requireAdminResponse(listRes, 'Could not load spotlight applications');
+            const list = await listRes.json();
+            spotState.applications = Array.isArray(list) ? list : [];
+
+            try {
+                const countsRes = await fetch(spotUrl('/spotlight/admin/counts'), {
+                    headers: { Accept: 'application/json' },
+                    cache: 'no-store'
+                });
+                if (countsRes.ok) {
+                    spotState.counts = await countsRes.json();
+                    spotState.countsLoaded = true;
+                } else {
+                    console.warn('[spotlight] could not load application counts:', countsRes.status);
+                }
+            } catch (countsError) {
+                console.warn('[spotlight] could not load application counts:', countsError);
+            }
+        } catch (error) {
+            if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove('hidden'); }
+        } finally {
+            if (loading) loading.classList.add('hidden');
+        }
+        renderSpotApplications();
+    }
+
+    function renderSpotApplications() {
+        renderSpotAppTabs();
+        const body = document.getElementById('spot-app-table-body');
+        const emptyEl = document.getElementById('spot-app-empty');
+        const table = document.getElementById('spot-app-table-container');
+        if (!body) return;
+        const apps = spotState.applications;
+        if (!apps.length) {
+            if (table) table.classList.add('hidden');
+            if (emptyEl) {
+                emptyEl.textContent = spotState.appStatus === 'pending'
+                    ? 'No pending applications right now.'
+                    : `No ${spotState.appStatus === 'all' ? '' : `${spotState.appStatus} `}applications found.`;
+                emptyEl.classList.remove('hidden');
+            }
+            return;
+        }
+        body.innerHTML = apps.map(app => `
+            <tr class="clickable-row" data-spot-app-id="${escapeHTML(String(app.id))}">
+                <td data-cell="Photo" class="spot-td-photo">${spotThumbHTML(app.photo_url)}</td>
+                <td data-cell="Founder"><strong>${escapeHTML(app.founder_name || '—')}</strong></td>
+                <td data-cell="Startup">${escapeHTML(app.startup_name || '—')}</td>
+                <td data-cell="State">${escapeHTML(app.state || '—')}</td>
+                <td data-cell="Source">${spotSourceBadge(app.source)}</td>
+                <td data-cell="Submitted">${escapeHTML(formatSpotDate(app.created_at))}</td>
+            </tr>
+        `).join('');
+        bindSpotPhotoFallbacks(body);
+        if (table) table.classList.remove('hidden');
+    }
+
+    function spotDetailItem(label, valueHTML, full) {
+        const value = (valueHTML === null || valueHTML === undefined || valueHTML === '') ? '—' : valueHTML;
+        return `<div class="spot-detail-item${full ? ' spot-detail-full' : ''}"><dt>${escapeHTML(label)}</dt><dd>${value}</dd></div>`;
+    }
+
+    function spotExternalLink(url, label) {
+        const raw = String(url || '').trim();
+        if (!/^https?:\/\//i.test(raw)) return null;
+        return `<a href="${escapeHTML(raw)}" target="_blank" rel="noopener noreferrer">${escapeHTML(label || raw)} <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>`;
+    }
+
+    function spotApplicationProductsHTML(app) {
+        const ids = Array.isArray(app.product_ids) ? app.product_ids
+            : (Array.isArray(app.products) ? app.products.map(p => (p && typeof p === 'object') ? p.id : p) : []);
+        const embedded = Array.isArray(app.products)
+            ? app.products.filter(p => p && typeof p === 'object' && p.name)
+            : [];
+        const pills = [];
+        ids.forEach(id => {
+            const known = embedded.find(p => String(p.id) === String(id))
+                || (Array.isArray(state.products) ? state.products.find(p => String(p.id) === String(id)) : null);
+            if (!known) return;
+            const logo = known.logo_url ? `<img src="${escapeHTML(known.logo_url)}" alt="" data-spot-photo>` : '';
+            pills.push(`<span class="spot-product-pill">${logo}<span>${escapeHTML(known.name)}</span></span>`);
+        });
+        if (!pills.length) return '';
+        return spotDetailItem('Featured products', `<span class="spot-product-pills">${pills.join('')}</span>`, true);
+    }
+
+    function renderSpotApplicationDetail(app) {
+        const detailBody = document.getElementById('spot-app-detail-body');
+        if (!detailBody) return;
+        const websiteLink = spotExternalLink(app.startup_website, 'Visit website');
+        const email = app.contact_email ? `<a href="mailto:${escapeHTML(app.contact_email)}">${escapeHTML(app.contact_email)}</a>` : '';
+        const skills = spotSkillsArray(app.skills);
+        const skillsHTML = skills.length
+            ? `<span class="spot-skills-row">${skills.map(s => `<span class="tag-chip">${escapeHTML(s)}</span>`).join('')}</span>`
+            : '';
+        const socialsHTML = SPOT_SOCIAL_KEYS.map(key => {
+            const link = spotExternalLink(app[key], null);
+            if (!link) return '';
+            const meta = SPOT_SOCIAL_META[key];
+            return `<a href="${escapeHTML(app[key])}" target="_blank" rel="noopener noreferrer" title="${meta.label}" aria-label="${meta.label}"><i class="${meta.icon}" aria-hidden="true"></i></a>`;
+        }).filter(Boolean).join('');
+        const openToWork = app.open_to_work
+            ? '<span class="badge active">Open to work</span>'
+            : '<span class="text-muted">Not marked open to work</span>';
+
+        detailBody.innerHTML = `
+            <div class="spot-detail-head">
+                ${spotThumbHTML(app.photo_url, 'spot-detail-photo')}
+                <div>
+                    <div class="spot-detail-names"><strong>${escapeHTML(app.founder_name || '—')}</strong> <span class="text-muted">/ ${escapeHTML(app.startup_name || '')}</span></div>
+                    <div class="spot-detail-badges">${spotAppStatusBadge(app.status)} ${spotSourceBadge(app.source)}</div>
+                    <p class="text-muted spot-detail-submitted">Submitted ${escapeHTML(formatSpotDate(app.created_at))}</p>
+                </div>
+            </div>
+            <dl class="spot-detail-grid">
+                ${spotDetailItem('What it does', escapeHTML(app.what_it_does || ''), true)}
+                ${spotDetailItem('Biggest challenges', escapeHTML(app.challenges || ''), true)}
+                ${spotDetailItem('Proudest achievement', escapeHTML(app.achievement || ''), true)}
+                ${spotDetailItem('Vision', escapeHTML(app.vision || ''), true)}
+                ${spotDetailItem('State', escapeHTML(app.state || ''))}
+                ${spotDetailItem('Startup website', websiteLink || '')}
+                ${spotDetailItem('Contact email', email)}
+                ${spotDetailItem('Open to work', openToWork)}
+                ${skillsHTML ? spotDetailItem('Skills', skillsHTML, true) : ''}
+                ${socialsHTML ? spotDetailItem('Socials', `<span class="spot-social-links">${socialsHTML}</span>`, true) : ''}
+                ${spotApplicationProductsHTML(app)}
+            </dl>
+            ${app.rejection_reason ? `<p class="spot-rejection-note"><strong>Rejection reason:</strong> ${escapeHTML(app.rejection_reason)}</p>` : ''}
+            <ul class="spot-consent-list">
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Consented to be featured</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Agreed to the spotlight guidelines</li>
+            </ul>
+        `;
+        bindSpotPhotoFallbacks(detailBody);
+    }
+
+    function openSpotApplicationModal(app) {
+        spotState.currentApp = app;
+        spotState.aiDrafted = false;
+        document.getElementById('spot-app-modal-title').textContent = `${app.founder_name || 'Application'} — ${app.startup_name || ''}`;
+        renderSpotApplicationDetail(app);
+        const aiBlock = document.getElementById('spot-ai-draft');
+        if (aiBlock) aiBlock.classList.add('hidden');
+        document.querySelectorAll('#spot-ai-draft [data-draft-field]').forEach(ta => { ta.value = ''; });
+        document.getElementById('spot-ai-status').textContent = '';
+        document.getElementById('spot-copy-status').textContent = '';
+        const pending = app.status === 'pending';
+        document.getElementById('spot-approve-btn').classList.toggle('hidden', !pending);
+        document.getElementById('spot-reject-btn').classList.toggle('hidden', !pending);
+        document.getElementById('spot-app-detail-modal').classList.remove('hidden');
+    }
+
+    function closeSpotApplicationModal() {
+        document.getElementById('spot-app-detail-modal').classList.add('hidden');
+        spotState.currentApp = null;
+        spotState.aiDrafted = false;
+    }
+
+    async function approveSpotApplication() {
+        const app = spotState.currentApp;
+        if (!app) return;
+        const label = `${app.founder_name || 'this founder'} of ${app.startup_name || 'this startup'}`;
+        if (!window.confirm(`Approve ${label}? This creates a spotlight draft. Continue?`)) return;
+        const btn = document.getElementById('spot-approve-btn');
+        btn.disabled = true;
+        try {
+            const res = await fetch(spotUrl(`/spotlight/admin/applications/${app.id}/approve`), { method: 'POST' });
+            await requireAdminResponse(res, 'Could not approve the application');
+            showAlert('success', 'Application approved — spotlight draft created.');
+            closeSpotApplicationModal();
+            await loadSpotApplications();
+        } catch (error) {
+            document.getElementById('spot-ai-status').textContent = error.message;
+            showAlert('error', error.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function openSpotRejectModal() {
+        const app = spotState.currentApp;
+        if (!app) return;
+        document.getElementById('spot-reject-context').textContent = `${app.founder_name || 'Founder'} — ${app.startup_name || 'Startup'}`;
+        const input = document.getElementById('spot-reject-reason-input');
+        input.value = '';
+        document.getElementById('spot-reject-error').classList.add('hidden');
+        document.getElementById('spot-reject-modal').classList.remove('hidden');
+        input.focus();
+    }
+
+    async function confirmSpotReject() {
+        const app = spotState.currentApp;
+        if (!app) return;
+        const input = document.getElementById('spot-reject-reason-input');
+        const errorEl = document.getElementById('spot-reject-error');
+        const reason = input.value.trim();
+        if (!reason) {
+            errorEl.classList.remove('hidden');
+            input.focus();
+            return;
+        }
+        errorEl.classList.add('hidden');
+        const btn = document.getElementById('spot-reject-confirm-btn');
+        btn.disabled = true;
+        try {
+            const res = await fetch(spotUrl(`/spotlight/admin/applications/${app.id}/reject?reason=${encodeURIComponent(reason)}`), { method: 'POST' });
+            await requireAdminResponse(res, 'Could not reject the application');
+            showAlert('success', 'Application rejected.');
+            document.getElementById('spot-reject-modal').classList.add('hidden');
+            closeSpotApplicationModal();
+            await loadSpotApplications();
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function draftSpotWithAI() {
+        const app = spotState.currentApp;
+        if (!app) return;
+        const btn = document.getElementById('spot-draft-ai-btn');
+        const statusEl = document.getElementById('spot-ai-status');
+        btn.disabled = true;
+        statusEl.textContent = 'Generating draft with AI… this can take a few seconds.';
+        try {
+            const res = await fetch(spotUrl(`/spotlight/admin/applications/${app.id}/draft`), {
+                method: 'POST',
+                headers: { Accept: 'application/json' }
+            });
+            await requireAdminResponse(res, 'AI drafting failed');
+            const data = await res.json();
+            const draft = data && data.draft;
+            if (!draft || typeof draft !== 'object') throw new Error('The AI response did not include a draft.');
+            SPOT_DRAFT_FIELDS.forEach(field => {
+                const ta = document.querySelector(`#spot-ai-draft [data-draft-field="${field}"]`);
+                if (ta) ta.value = typeof draft[field] === 'string' ? draft[field] : '';
+            });
+            spotState.aiDrafted = true;
+            document.getElementById('spot-ai-draft').classList.remove('hidden');
+            statusEl.textContent = 'Draft ready — review and edit it below, then copy it into the spotlight.';
+        } catch (error) {
+            statusEl.textContent = `AI drafting failed: ${error.message}`;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function resolveSpotlightIdForApp(app) {
+        if (app.spotlight_id) return app.spotlight_id;
+        if (app.spotlight && app.spotlight.id) return app.spotlight.id;
+        const res = await fetch(spotUrl('/spotlight/admin/spotlights'), {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+        });
+        await requireAdminResponse(res, 'Could not load spotlights');
+        const list = await res.json();
+        const rows = Array.isArray(list) ? list : [];
+        const direct = rows.find(row => String(row.application_id) === String(app.id))
+            || rows.find(row => row.application && String(row.application.id) === String(app.id))
+            || rows.find(row => row.startup_name === app.startup_name && row.founder_name === app.founder_name);
+        if (direct) return direct.id;
+        // Last resort: walk the newest drafts and inspect their nested application record.
+        const candidates = rows.slice(0, 50);
+        for (const candidate of candidates) {
+            try {
+                const detailRes = await fetch(spotUrl(`/spotlight/admin/spotlights/${candidate.id}`), {
+                    headers: { Accept: 'application/json' },
+                    cache: 'no-store'
+                });
+                if (!detailRes.ok) continue;
+                const detail = await detailRes.json();
+                if (detail && detail.application && String(detail.application.id) === String(app.id)) return candidate.id;
+            } catch (walkError) {
+                console.warn('[spotlight] detail lookup failed for spotlight', candidate.id, walkError);
+            }
+        }
+        return null;
+    }
+
+    async function copySpotDraftToSpotlight() {
+        const app = spotState.currentApp;
+        const statusEl = document.getElementById('spot-copy-status');
+        if (!app || !spotState.aiDrafted) {
+            statusEl.textContent = 'Generate an AI draft first.';
+            return;
+        }
+        statusEl.textContent = '';
+        if (app.status !== 'approved') {
+            statusEl.textContent = 'Approve this application first to create the spotlight record, then copy the AI draft over.';
+            return;
+        }
+        const payload = {};
+        SPOT_DRAFT_FIELDS.forEach(field => {
+            const ta = document.querySelector(`#spot-ai-draft [data-draft-field="${field}"]`);
+            if (ta) payload[field] = ta.value;
+        });
+        const btn = document.getElementById('spot-copy-btn');
+        btn.disabled = true;
+        statusEl.textContent = 'Looking up the spotlight…';
+        try {
+            const spotlightId = await resolveSpotlightIdForApp(app);
+            if (!spotlightId) {
+                statusEl.textContent = 'Approve this application first to create the spotlight record.';
+                return;
+            }
+            statusEl.textContent = 'Copying draft into the spotlight…';
+            const res = await fetch(spotUrl(`/spotlight/admin/spotlights/${spotlightId}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await requireAdminResponse(res, 'Could not copy the draft into the spotlight');
+            statusEl.textContent = 'Copied — find it under Founder Spotlights (Draft tab).';
+            showAlert('success', 'AI draft copied into the spotlight.');
+        } catch (error) {
+            statusEl.textContent = `Copy failed: ${error.message}`;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    /* --------------------------------------------------------------------------
+       AI draft — SAVE (persist into the spotlight) and APPROVE (approve the
+       application record, then persist the draft). Both write to the server
+       and verify with a refetch, so results survive a page refresh.
+       -------------------------------------------------------------------------- */
+    function setSpotAiButtonsBusy(busy, busyId, busyText) {
+        const buttons = {
+            'spot-ai-save-btn': '<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save to Spotlight',
+            'spot-ai-approve-btn': '<i class="fa-solid fa-check" aria-hidden="true"></i> Approve &amp; Save',
+            'spot-copy-btn': '<i class="fa-solid fa-copy" aria-hidden="true"></i> Copy to Founder Spotlights'
+        };
+        Object.keys(buttons).forEach(id => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.disabled = busy;
+            btn.innerHTML = (busy && id === busyId) ? busyText : buttons[id];
+        });
+        spotState.aiBusy = busy;
+    }
+
+    function collectSpotAiDraftPayload() {
+        const payload = {};
+        SPOT_DRAFT_FIELDS.forEach(field => {
+            const ta = document.querySelector(`#spot-ai-draft [data-draft-field="${field}"]`);
+            if (ta) payload[field] = ta.value;
+        });
+        return payload;
+    }
+
+    // PUT the AI text into the spotlight record, then GET it back to confirm
+    // the write actually persisted (approval must update the real record).
+    async function persistSpotAiDraft(app) {
+        const spotlightId = await resolveSpotlightIdForApp(app);
+        if (!spotlightId) return { ok: false, reason: 'no-spotlight' };
+        const payload = collectSpotAiDraftPayload();
+        const res = await fetch(spotUrl(`/spotlight/admin/spotlights/${spotlightId}`), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        await requireAdminResponse(res, 'Could not save the AI draft');
+        const check = await fetch(spotUrl(`/spotlight/admin/spotlights/${spotlightId}`), {
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+        });
+        if (check.ok) {
+            const detail = await check.json();
+            if (detail && typeof detail.headline === 'string' && detail.headline !== payload.headline) {
+                return { ok: false, reason: 'verify-mismatch' };
+            }
+        }
+        app.spotlight_id = spotlightId;
+        return { ok: true, spotlightId };
+    }
+
+    async function saveSpotAiDraft() {
+        const app = spotState.currentApp;
+        const statusEl = document.getElementById('spot-ai-status');
+        if (!app || spotState.aiBusy) return;
+        if (!spotState.aiDrafted) {
+            statusEl.textContent = 'Generate an AI draft first.';
+            return;
+        }
+        if (app.status !== 'approved') {
+            statusEl.textContent = 'Save needs the spotlight record — approve this application first (or use Approve & Save to do both).';
+            return;
+        }
+        setSpotAiButtonsBusy(true, 'spot-ai-save-btn', '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Saving…');
+        statusEl.textContent = 'Saving the AI draft into the spotlight…';
+        try {
+            const result = await persistSpotAiDraft(app);
+            if (!result.ok && result.reason === 'no-spotlight') {
+                statusEl.textContent = 'Save failed: the spotlight record was not found — approve this application first.';
+                return;
+            }
+            if (!result.ok) throw new Error('The save was verified against the server and did not match — please try again.');
+            statusEl.textContent = 'Saved — this draft is stored on the spotlight and survives a page refresh.';
+            showAlert('success', 'AI draft saved to the spotlight.');
+            await loadSpotlights(); // keep the Founder Spotlights list in sync
+        } catch (error) {
+            statusEl.textContent = `Save failed: ${error.message}`;
+        } finally {
+            setSpotAiButtonsBusy(false);
+        }
+    }
+
+    async function approveSpotAiDraft() {
+        const app = spotState.currentApp;
+        const statusEl = document.getElementById('spot-ai-status');
+        if (!app || spotState.aiBusy) return;
+        if (!spotState.aiDrafted) {
+            statusEl.textContent = 'Generate an AI draft first.';
+            return;
+        }
+        const label = `${app.founder_name || 'this founder'} of ${app.startup_name || 'this startup'}`;
+        const pending = app.status === 'pending';
+        const question = pending
+            ? `Approve ${label} and store this AI text as the spotlight draft? The application is approved and the spotlight record is written on the server. Continue?`
+            : `Store this AI text as ${label}'s spotlight draft on the server? Continue?`;
+        if (!window.confirm(question)) return;
+        setSpotAiButtonsBusy(true, 'spot-ai-approve-btn', '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Approving…');
+        try {
+            if (pending) {
+                statusEl.textContent = 'Approving the application…';
+                const res = await fetch(spotUrl(`/spotlight/admin/applications/${app.id}/approve`), { method: 'POST' });
+                await requireAdminResponse(res, 'Could not approve the application');
+                app.status = 'approved';
+                statusEl.textContent = 'Approved — saving the AI draft into the spotlight…';
+            }
+            const result = await persistSpotAiDraft(app);
+            if (!result.ok && result.reason === 'no-spotlight') {
+                statusEl.textContent = 'Approved, but the spotlight record was not found yet — check Founder Spotlights.';
+                return;
+            }
+            if (!result.ok) throw new Error('The record update was verified against the server and did not match — please try again.');
+            statusEl.textContent = 'Approved — this text is stored as the spotlight draft (Founder Spotlights → Draft).';
+            showAlert('success', 'Application approved and AI draft saved to the spotlight.');
+            // Re-sync the open modal + the lists with what the server now holds.
+            document.getElementById('spot-approve-btn').classList.add('hidden');
+            document.getElementById('spot-reject-btn').classList.add('hidden');
+            renderSpotApplicationDetail(app);
+            await loadSpotApplications();
+            await loadSpotlights();
+        } catch (error) {
+            statusEl.textContent = `Approve failed: ${error.message}`;
+        } finally {
+            setSpotAiButtonsBusy(false);
+        }
+    }
+
+    /* --------------------------------------------------------------------------
+       View 2: Founder Spotlights (list + editor with Save/Publish/Unpublish)
+       -------------------------------------------------------------------------- */
+    function renderSpotListTabs() {
+        const counts = { all: spotState.spotlights.length, draft: 0, published: 0, unpublished: 0 };
+        spotState.spotlights.forEach(row => {
+            const key = (row.status === 'published' || row.status === 'unpublished') ? row.status : 'draft';
+            counts[key] += 1;
+        });
+        SPOT_LIST_STATUS_TABS.forEach(status => {
+            const btn = document.querySelector(`#spot-list-status-tabs [data-spotlist-status="${status}"]`);
+            if (btn) {
+                const active = spotState.listStatus === status;
+                btn.classList.toggle('active', active);
+                btn.setAttribute('aria-selected', active ? 'true' : 'false');
+            }
+            const span = document.querySelector(`#spot-list-status-tabs [data-spotlist-count="${status}"]`);
+            if (span) span.textContent = String(counts[status] || 0);
+        });
+    }
+
+    async function loadSpotlights() {
+        const loading = document.getElementById('spot-list-loading');
+        const errorEl = document.getElementById('spot-list-error');
+        const emptyEl = document.getElementById('spot-list-empty');
+        const table = document.getElementById('spot-list-table-container');
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (table) table.classList.add('hidden');
+        if (loading) loading.classList.remove('hidden');
+        try {
+            const res = await fetch(spotUrl('/spotlight/admin/spotlights'), {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            await requireAdminResponse(res, 'Could not load spotlights');
+            const list = await res.json();
+            spotState.spotlights = Array.isArray(list) ? list : [];
+        } catch (error) {
+            if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove('hidden'); }
+        } finally {
+            if (loading) loading.classList.add('hidden');
+        }
+        renderSpotlights();
+    }
+
+    function renderSpotlights() {
+        renderSpotListTabs();
+        const body = document.getElementById('spot-list-table-body');
+        const emptyEl = document.getElementById('spot-list-empty');
+        const table = document.getElementById('spot-list-table-container');
+        if (!body) return;
+        const visible = spotState.listStatus === 'all'
+            ? spotState.spotlights
+            : spotState.spotlights.filter(row => (row.status || 'draft') === spotState.listStatus);
+        if (!visible.length) {
+            if (table) table.classList.add('hidden');
+            if (emptyEl) {
+                emptyEl.textContent = spotState.listStatus === 'all'
+                    ? 'No spotlights yet — approve an application or add a founder to create one.'
+                    : `No ${spotState.listStatus} spotlights.`;
+                emptyEl.classList.remove('hidden');
+            }
+            return;
+        }
+        body.innerHTML = visible.map(row => {
+            const slug = row.slug || '';
+            const viewLink = row.status === 'published' && slug
+                ? `<a class="spot-view-link" href="/spotlight/${encodeURIComponent(slug)}" target="_blank" rel="noopener noreferrer">View page <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>`
+                : '<span class="text-muted">—</span>';
+            const hires = Number(row.hire_count);
+            return `
+            <tr class="clickable-row" data-spot-id="${escapeHTML(String(row.id))}">
+                <td data-cell="Headline"><strong>${escapeHTML(row.headline || '(untitled draft)')}</strong><br><span class="text-muted spot-slug-note">/spotlight/${escapeHTML(slug)}</span></td>
+                <td data-cell="Startup">${escapeHTML(row.startup_name || '—')}</td>
+                <td data-cell="Founder">${escapeHTML(row.founder_name || '—')}</td>
+                <td data-cell="Status">${spotListStatusBadge(row.status)}</td>
+                <td data-cell="Hires">${Number.isFinite(hires) ? hires : 0}</td>
+                <td data-cell="Updated">${escapeHTML(formatSpotDate(row.updated_at))}</td>
+                <td data-cell="View">${viewLink}</td>
+            </tr>`;
+        }).join('');
+        if (table) table.classList.remove('hidden');
+    }
+
+    function spotEditorAsideHTML(detail) {
+        const app = detail.application || {};
+        const rows = [
+            ['Founder', escapeHTML(app.founder_name || detail.founder_name || '')],
+            ['Startup', escapeHTML(app.startup_name || detail.startup_name || '')],
+            ['State', escapeHTML(app.state || '')],
+            ['Contact email', app.contact_email ? `<a href="mailto:${escapeHTML(app.contact_email)}">${escapeHTML(app.contact_email)}</a>` : ''],
+            ['Website', spotExternalLink(app.startup_website, 'Visit site') || ''],
+            ['Open to work', app.open_to_work ? '<span class="badge active">Open to work</span>' : '']
+        ];
+        return `
+            <h4>Founder application</h4>
+            ${spotThumbHTML(app.photo_url, 'spot-aside-photo')}
+            <dl class="spot-aside-list">
+                ${rows.map(([label, value]) => value ? `<div class="spot-aside-item"><dt>${label}</dt><dd>${value}</dd></div>` : '').join('')}
+            </dl>
+        `;
+    }
+
+    function updateSpotEditorChrome() {
+        const detail = spotState.editingSpotlight;
+        if (!detail) return;
+        document.getElementById('spot-editor-status').innerHTML = spotListStatusBadge(detail.status);
+        document.getElementById('spot-publish-btn').classList.toggle('hidden', detail.status === 'published');
+        document.getElementById('spot-unpublish-btn').classList.toggle('hidden', detail.status !== 'published');
+        const preview = document.getElementById('spot-edit-slug-preview');
+        if (preview) preview.textContent = document.getElementById('spot-edit-slug').value.trim() || '…';
+    }
+
+    async function openSpotEditorModal(row) {
+        const modal = document.getElementById('spot-editor-modal');
+        const loading = document.getElementById('spot-editor-loading');
+        const errorEl = document.getElementById('spot-editor-error');
+        const body = document.getElementById('spot-editor-body');
+        modal.classList.remove('hidden');
+        errorEl.textContent = ''; errorEl.classList.add('hidden');
+        body.classList.add('hidden');
+        loading.classList.remove('hidden');
+        document.getElementById('spot-save-status').textContent = '';
+        try {
+            const res = await fetch(spotUrl(`/spotlight/admin/spotlights/${row.id}`), {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            await requireAdminResponse(res, 'Could not load the spotlight');
+            const detail = await res.json();
+            if (!detail || typeof detail !== 'object') throw new Error('Unexpected spotlight response.');
+            spotState.editingSpotlight = detail;
+            SPOT_DRAFT_FIELDS.forEach(field => {
+                const ta = document.getElementById(`spot-edit-${field}`);
+                if (ta) ta.value = typeof detail[field] === 'string' ? detail[field] : '';
+            });
+            document.getElementById('spot-edit-slug').value = detail.slug || row.slug || '';
+            document.getElementById('spot-editor-app-info').innerHTML = spotEditorAsideHTML(detail);
+            bindSpotPhotoFallbacks(document.getElementById('spot-editor-app-info'));
+            updateSpotEditorChrome();
+            body.classList.remove('hidden');
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.classList.remove('hidden');
+        } finally {
+            loading.classList.add('hidden');
+        }
+    }
+
+    function collectSpotEditorPayload(includeStatus) {
+        const payload = {};
+        SPOT_DRAFT_FIELDS.forEach(field => {
+            const ta = document.getElementById(`spot-edit-${field}`);
+            if (ta) payload[field] = ta.value;
+        });
+        const slugInput = document.getElementById('spot-edit-slug');
+        const slug = slugInput.value.trim();
+        const current = spotState.editingSpotlight || {};
+        if (slug && slug !== current.slug) payload.slug = slug;
+        if (includeStatus) payload.status = includeStatus;
+        return payload;
+    }
+
+    async function saveSpotEditor() {
+        const detail = spotState.editingSpotlight;
+        if (!detail) return;
+        const statusEl = document.getElementById('spot-save-status');
+        const btn = document.getElementById('spot-save-btn');
+        btn.disabled = true;
+        statusEl.textContent = 'Saving…';
+        try {
+            const payload = collectSpotEditorPayload(null);
+            const res = await fetch(spotUrl(`/spotlight/admin/spotlights/${detail.id}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await requireAdminResponse(res, 'Could not save the spotlight');
+            Object.assign(detail, payload);
+            statusEl.textContent = payload.slug ? `Saved — new public URL: /spotlight/${payload.slug}.` : 'Saved.';
+            showAlert('success', 'Spotlight saved.');
+            await loadSpotlights();
+        } catch (error) {
+            statusEl.textContent = error.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function changeSpotEditorStatus(newStatus) {
+        const detail = spotState.editingSpotlight;
+        if (!detail) return;
+        const statusEl = document.getElementById('spot-save-status');
+        const message = newStatus === 'published'
+            ? 'This goes live immediately and emails the founder if they have an account. Continue?'
+            : 'Unpublish this spotlight? It stops being publicly visible right away. Continue?';
+        if (!window.confirm(message)) return;
+        const btn = document.getElementById(newStatus === 'published' ? 'spot-publish-btn' : 'spot-unpublish-btn');
+        btn.disabled = true;
+        statusEl.textContent = newStatus === 'published' ? 'Publishing…' : 'Unpublishing…';
+        try {
+            const payload = collectSpotEditorPayload(newStatus);
+            const res = await fetch(spotUrl(`/spotlight/admin/spotlights/${detail.id}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            await requireAdminResponse(res, `Could not ${newStatus === 'published' ? 'publish' : 'unpublish'} the spotlight`);
+            Object.assign(detail, payload, { status: newStatus });
+            updateSpotEditorChrome();
+            statusEl.textContent = newStatus === 'published' ? 'Published — the page is live.' : 'Unpublished — the page is offline.';
+            showAlert('success', newStatus === 'published' ? 'Spotlight published.' : 'Spotlight unpublished.');
+            await loadSpotlights();
+        } catch (error) {
+            statusEl.textContent = error.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    /* --------------------------------------------------------------------------
+       View 3: Hires (confirm toggle)
+       -------------------------------------------------------------------------- */
+    async function loadSpotHires() {
+        const loading = document.getElementById('spot-hires-loading');
+        const errorEl = document.getElementById('spot-hires-error');
+        const emptyEl = document.getElementById('spot-hires-empty');
+        const table = document.getElementById('spot-hires-table-container');
+        if (errorEl) { errorEl.textContent = ''; errorEl.classList.add('hidden'); }
+        if (emptyEl) emptyEl.classList.add('hidden');
+        if (table) table.classList.add('hidden');
+        if (loading) loading.classList.remove('hidden');
+        try {
+            const res = await fetch(spotUrl('/spotlight/admin/hires'), {
+                headers: { Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            await requireAdminResponse(res, 'Could not load hires');
+            const list = await res.json();
+            spotState.hires = Array.isArray(list) ? list : [];
+        } catch (error) {
+            if (errorEl) { errorEl.textContent = error.message; errorEl.classList.remove('hidden'); }
+        } finally {
+            if (loading) loading.classList.add('hidden');
+        }
+        renderSpotHires();
+    }
+
+    function renderSpotHires() {
+        const body = document.getElementById('spot-hires-table-body');
+        const emptyEl = document.getElementById('spot-hires-empty');
+        const table = document.getElementById('spot-hires-table-container');
+        if (!body) return;
+        if (!spotState.hires.length) {
+            if (table) table.classList.add('hidden');
+            if (emptyEl) {
+                emptyEl.textContent = 'No hires reported yet.';
+                emptyEl.classList.remove('hidden');
+            }
+            return;
+        }
+        body.innerHTML = spotState.hires.map(hire => {
+            const confirmed = Boolean(hire.confirmed);
+            const note = hire.note ? escapeHTML(hire.note) : '<span class="text-muted">—</span>';
+            return `
+            <tr class="spot-hire-row${confirmed ? '' : ' spot-hire-pending'}" data-hire-id="${escapeHTML(String(hire.id))}">
+                <td data-cell="Startup"><strong>${escapeHTML(hire.startup || '—')}</strong></td>
+                <td data-cell="Founder">${escapeHTML(hire.founder || '—')}</td>
+                <td data-cell="Hired by">${escapeHTML(hire.hired_by || '—')}</td>
+                <td data-cell="Note" class="spot-hire-note">${note}</td>
+                <td data-cell="Date">${escapeHTML(formatSpotDate(hire.hired_on))}</td>
+                <td data-cell="Confirmed">
+                    <span class="spot-confirm-cell">
+                        <label class="banner-switch">
+                            <input type="checkbox" data-hire-toggle="${escapeHTML(String(hire.id))}"${confirmed ? ' checked' : ''} aria-label="Toggle confirmed for this hire">
+                            <span class="banner-switch-track"><span class="banner-switch-thumb"></span></span>
+                        </label>
+                        <span class="badge ${confirmed ? 'active' : 'popular'}">${confirmed ? 'Confirmed' : 'Unconfirmed'}</span>
+                    </span>
+                </td>
+            </tr>`;
+        }).join('');
+        if (table) table.classList.remove('hidden');
+    }
+
+    async function toggleSpotHireConfirmed(input) {
+        const hireId = input.dataset.hireToggle;
+        const hire = spotState.hires.find(h => String(h.id) === String(hireId));
+        const confirmed = input.checked;
+        input.disabled = true;
+        try {
+            const res = await fetch(spotUrl(`/spotlight/admin/hires/${hireId}/confirm`), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmed })
+            });
+            await requireAdminResponse(res, 'Could not update the hire');
+            if (hire) hire.confirmed = confirmed;
+            renderSpotHires();
+            showAlert('success', confirmed ? 'Hire confirmed.' : 'Hire marked unconfirmed.');
+        } catch (error) {
+            input.checked = !confirmed;
+            showAlert('error', error.message);
+        } finally {
+            input.disabled = false;
+        }
+    }
+
+    /* --------------------------------------------------------------------------
+       View 4: Add Founder (manual entry, auto-approved + draft spotlight)
+       -------------------------------------------------------------------------- */
+    function renderAfSkillChips() {
+        const list = document.getElementById('spot-af-skills-chip-list');
+        if (!list) return;
+        list.innerHTML = spotState.afSkills.map((skill, index) => `
+            <span class="tag-chip">${escapeHTML(skill)}
+                <button type="button" class="tag-chip-remove" data-af-skill-remove="${index}" aria-label="Remove ${escapeHTML(skill)}">&times;</button>
+            </span>
+        `).join('');
+        const input = document.getElementById('spot-af-skills-input');
+        if (input) input.placeholder = spotState.afSkills.length >= 5 ? 'Maximum 5 skills' : 'Type a skill and press Enter or , (max 5)';
+    }
+
+    function addAfSkill(rawValue) {
+        const value = String(rawValue || '').trim();
+        if (!value) return false;
+        if (spotState.afSkills.length >= 5) return false;
+        if (spotState.afSkills.some(existing => existing.toLowerCase() === value.toLowerCase())) return false;
+        spotState.afSkills.push(value);
+        renderAfSkillChips();
+        return true;
+    }
+
+    function renderAfProductChips() {
+        const list = document.getElementById('spot-af-product-chips');
+        if (!list) return;
+        list.innerHTML = spotState.afProducts.map(product => `
+            <span class="tag-chip">${escapeHTML(product.name)}
+                <button type="button" class="tag-chip-remove" data-af-product-remove="${escapeHTML(String(product.id))}" aria-label="Remove ${escapeHTML(product.name)}">&times;</button>
+            </span>
+        `).join('');
+    }
+
+    function renderAfProductResults(query) {
+        const container = document.getElementById('spot-af-product-results');
+        if (!container) return;
+        const q = String(query || '').trim().toLowerCase();
+        const catalog = Array.isArray(state.products) ? state.products : [];
+        const matches = catalog
+            .filter(p => p && !spotState.afProducts.some(sel => String(sel.id) === String(p.id)))
+            .filter(p => !q
+                || String(p.name || '').toLowerCase().includes(q)
+                || String(p.category || '').toLowerCase().includes(q))
+            .slice(0, 8);
+        if (!matches.length) {
+            container.innerHTML = `<p class="text-muted spot-picker-empty">${catalog.length ? 'No products match.' : 'No products available.'}</p>`;
+            container.classList.remove('hidden');
+            return;
+        }
+        container.innerHTML = matches.map(p => {
+            const logo = p.logo_url ? `<img src="${escapeHTML(p.logo_url)}" alt="" data-spot-photo>` : '<i class="fa-solid fa-box-open" aria-hidden="true"></i>';
+            return `<button type="button" class="spot-pick-option" data-af-product-id="${escapeHTML(String(p.id))}">${logo}<span class="spot-pick-name">${escapeHTML(p.name || 'Unnamed product')}</span><span class="spot-pick-cat">${escapeHTML(p.category || '')}</span></button>`;
+        }).join('');
+        bindSpotPhotoFallbacks(container);
+        container.classList.remove('hidden');
+    }
+
+    function selectAfProduct(productId) {
+        const errorEl = document.getElementById('spot-af-product-error');
+        const product = (Array.isArray(state.products) ? state.products : []).find(p => String(p.id) === String(productId));
+        if (!product) return;
+        if (spotState.afProducts.length >= 2) {
+            if (errorEl) errorEl.classList.remove('hidden');
+            return;
+        }
+        if (errorEl) errorEl.classList.add('hidden');
+        spotState.afProducts.push({ id: product.id, name: product.name });
+        renderAfProductChips();
+        const search = document.getElementById('spot-af-product-search');
+        if (search) { search.value = ''; search.focus(); }
+        renderAfProductResults('');
+    }
+
+    async function ensureSpotlightProductCatalog() {
+        const hint = document.getElementById('spot-af-product-loading');
+        if (Array.isArray(state.products) && state.products.length) {
+            if (hint) hint.classList.add('hidden');
+            renderAfProductResults(document.getElementById('spot-af-product-search').value);
+            return;
+        }
+        if (hint) hint.classList.remove('hidden');
+        try {
+            await fetchProductsData();
+        } catch (catalogError) {
+            console.warn('[spotlight] product catalog unavailable:', catalogError);
+        }
+        if (hint) hint.classList.add('hidden');
+        renderAfProductResults(document.getElementById('spot-af-product-search').value);
+    }
+
+    function initSpotAddFounderView() {
+        ensureSpotlightProductCatalog();
+    }
+
+    function readAfField(id) {
+        const el = document.getElementById(id);
+        return el ? el.value.trim() : '';
+    }
+
+    function validSpotUrl(url) {
+        if (!/^https?:\/\//i.test(url)) return false;
+        try { new URL(url); return true; } catch (err) { return false; }
+    }
+
+    async function submitSpotAddFounder(event) {
+        event.preventDefault();
+        const errorEl = document.getElementById('spot-af-error');
+        const statusEl = document.getElementById('spot-af-status');
+        errorEl.textContent = ''; errorEl.classList.add('hidden');
+
+        // Absorb whatever skill the admin typed but did not commit with Enter yet.
+        const skillInput = document.getElementById('spot-af-skills-input');
+        if (skillInput && skillInput.value.trim()) {
+            addAfSkill(skillInput.value);
+            skillInput.value = '';
+        }
+
+        const fail = message => {
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            errorEl.scrollIntoView({ block: 'center' });
+        };
+
+        // Backend change: every field is optional. Admins fill in only what they
+        // know; URLs are still format-checked when provided (genuinely invalid input).
+        const urlFields = ['spot-af-photo-url', 'spot-af-website'];
+        for (const id of urlFields) {
+            const value = readAfField(id);
+            if (value && !validSpotUrl(value)) {
+                fail('Photo URL and startup website must be full http(s) links.');
+                document.getElementById(id).focus();
+                return;
+            }
+        }
+        const socials = {};
+        SPOT_SOCIAL_KEYS.forEach((key, index) => {
+            const ids = ['spot-af-instagram', 'spot-af-x', 'spot-af-facebook', 'spot-af-linkedin', 'spot-af-tiktok', 'spot-af-github'];
+            const value = readAfField(ids[index]);
+            if (value && validSpotUrl(value)) socials[key] = value;
+            else if (value && !validSpotUrl(value)) socials.__invalid = ids[index];
+        });
+        if (socials.__invalid) {
+            fail('Social links must be full http(s) URLs.');
+            document.getElementById(socials.__invalid).focus();
+            return;
+        }
+        delete socials.__invalid;
+
+        const body = {
+            founder_name: readAfField('spot-af-founder-name'),
+            startup_name: readAfField('spot-af-startup-name'),
+            photo_url: readAfField('spot-af-photo-url'),
+            state: readAfField('spot-af-state'),
+            startup_website: readAfField('spot-af-website'),
+            what_it_does: readAfField('spot-af-what-it-does'),
+            vision: readAfField('spot-af-vision'),
+            challenges: readAfField('spot-af-challenges'),
+            achievement: readAfField('spot-af-achievement'),
+            quote: readAfField('spot-af-quote'),
+            why_nigeria: readAfField('spot-af-why-nigeria'),
+            skills: [...spotState.afSkills],
+            ...socials,
+            open_to_work: document.getElementById('spot-af-open-to-work').checked,
+            product_ids: spotState.afProducts.map(p => p.id),
+            consent: document.getElementById('spot-af-consent').checked,
+            guidelines_agreed: document.getElementById('spot-af-guidelines').checked,
+            save_as_draft: false
+        };
+
+        const submitBtn = document.getElementById('spot-af-submit');
+        submitBtn.disabled = true;
+        statusEl.textContent = 'Creating founder and spotlight draft…';
+        try {
+            const res = await fetch(spotUrl('/spotlight/admin/applications'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(body)
+            });
+            await requireAdminResponse(res, 'Could not create the founder');
+            statusEl.textContent = '';
+            document.getElementById('spot-af-form').reset();
+            document.getElementById('spot-af-consent').checked = true;
+            document.getElementById('spot-af-guidelines').checked = true;
+            spotState.afSkills = [];
+            spotState.afProducts = [];
+            renderAfSkillChips();
+            renderAfProductChips();
+            renderAfProductResults('');
+            const resultEl = document.getElementById('spot-af-result');
+            const who = body.startup_name ? `${body.founder_name} of ${body.startup_name}` : body.founder_name;
+            document.getElementById('spot-af-result-text').textContent =
+                `${who} is approved already, and their draft spotlight was created.`;
+            resultEl.classList.remove('hidden');
+            resultEl.scrollIntoView({ block: 'center' });
+            showAlert('success', 'Founder added and spotlight draft created.');
+        } catch (error) {
+            statusEl.textContent = '';
+            fail(error.message);
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    /* --------------------------------------------------------------------------
+       Wiring
+       -------------------------------------------------------------------------- */
+    function setupSpotlight() {
+        const onClick = (id, handler) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', handler);
+        };
+
+        // Applications view ---------------------------------------------------
+        onClick('spot-add-founder-btn', () => switchAdminPage('spotlight-add-founder-tab'));
+        onClick('spot-af-back-btn', () => switchAdminPage('spotlight-applications-tab'));
+        const appTabs = document.getElementById('spot-app-status-tabs');
+        if (appTabs) {
+            appTabs.addEventListener('click', event => {
+                const btn = event.target.closest('[data-spot-status]');
+                if (!btn || btn.dataset.spotStatus === spotState.appStatus) return;
+                spotState.appStatus = btn.dataset.spotStatus;
+                loadSpotApplications();
+            });
+        }
+        const appBody = document.getElementById('spot-app-table-body');
+        if (appBody) {
+            appBody.addEventListener('click', event => {
+                const row = event.target.closest('tr[data-spot-app-id]');
+                if (!row) return;
+                const app = spotState.applications.find(a => String(a.id) === String(row.dataset.spotAppId));
+                if (app) openSpotApplicationModal(app);
+            });
+        }
+        onClick('spot-app-modal-close', closeSpotApplicationModal);
+        onClick('spot-approve-btn', approveSpotApplication);
+        onClick('spot-reject-btn', openSpotRejectModal);
+        onClick('spot-reject-cancel-btn', () => document.getElementById('spot-reject-modal').classList.add('hidden'));
+        onClick('spot-reject-confirm-btn', confirmSpotReject);
+        onClick('spot-draft-ai-btn', draftSpotWithAI);
+        onClick('spot-copy-btn', copySpotDraftToSpotlight);
+        onClick('spot-ai-save-btn', saveSpotAiDraft);
+        onClick('spot-ai-approve-btn', approveSpotAiDraft);
+
+        // Founder Spotlights view --------------------------------------------
+        const listTabs = document.getElementById('spot-list-status-tabs');
+        if (listTabs) {
+            listTabs.addEventListener('click', event => {
+                const btn = event.target.closest('[data-spotlist-status]');
+                if (!btn || btn.dataset.spotlistStatus === spotState.listStatus) return;
+                spotState.listStatus = btn.dataset.spotlistStatus;
+                renderSpotlights();
+            });
+        }
+        const listBody = document.getElementById('spot-list-table-body');
+        if (listBody) {
+            listBody.addEventListener('click', event => {
+                if (event.target.closest('a.spot-view-link')) return;
+                const row = event.target.closest('tr[data-spot-id]');
+                if (!row) return;
+                const spotlight = spotState.spotlights.find(s => String(s.id) === String(row.dataset.spotId));
+                if (spotlight) openSpotEditorModal(spotlight);
+            });
+        }
+        onClick('spot-editor-close', () => {
+            document.getElementById('spot-editor-modal').classList.add('hidden');
+            spotState.editingSpotlight = null;
+        });
+        onClick('spot-save-btn', saveSpotEditor);
+        onClick('spot-publish-btn', () => changeSpotEditorStatus('published'));
+        onClick('spot-unpublish-btn', () => changeSpotEditorStatus('unpublished'));
+        const slugInput = document.getElementById('spot-edit-slug');
+        if (slugInput) {
+            slugInput.addEventListener('input', () => {
+                const preview = document.getElementById('spot-edit-slug-preview');
+                if (preview) preview.textContent = slugInput.value.trim() || '…';
+            });
+        }
+
+        // Hires view ----------------------------------------------------------
+        const hiresBody = document.getElementById('spot-hires-table-body');
+        if (hiresBody) {
+            hiresBody.addEventListener('change', event => {
+                const input = event.target.closest('[data-hire-toggle]');
+                if (input) toggleSpotHireConfirmed(input);
+            });
+        }
+
+        // Add Founder view -----------------------------------------------------
+        const skillsInput = document.getElementById('spot-af-skills-input');
+        if (skillsInput) {
+            skillsInput.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ',') {
+                    event.preventDefault();
+                    if (addAfSkill(skillsInput.value)) skillsInput.value = '';
+                } else if (event.key === 'Backspace' && !skillsInput.value && spotState.afSkills.length) {
+                    spotState.afSkills.pop();
+                    renderAfSkillChips();
+                }
+            });
+        }
+        const skillChips = document.getElementById('spot-af-skills-chip-list');
+        if (skillChips) {
+            skillChips.addEventListener('click', event => {
+                const removeBtn = event.target.closest('[data-af-skill-remove]');
+                if (!removeBtn) return;
+                spotState.afSkills.splice(Number(removeBtn.dataset.afSkillRemove), 1);
+                renderAfSkillChips();
+            });
+        }
+        const productSearch = document.getElementById('spot-af-product-search');
+        if (productSearch) {
+            productSearch.addEventListener('input', () => renderAfProductResults(productSearch.value));
+            productSearch.addEventListener('focus', () => renderAfProductResults(productSearch.value));
+        }
+        const productResults = document.getElementById('spot-af-product-results');
+        if (productResults) {
+            productResults.addEventListener('click', event => {
+                const option = event.target.closest('[data-af-product-id]');
+                if (option) selectAfProduct(option.dataset.afProductId);
+            });
+        }
+        const productChips = document.getElementById('spot-af-product-chips');
+        if (productChips) {
+            productChips.addEventListener('click', event => {
+                const removeBtn = event.target.closest('[data-af-product-remove]');
+                if (!removeBtn) return;
+                spotState.afProducts = spotState.afProducts.filter(p => String(p.id) !== String(removeBtn.dataset.afProductRemove));
+                document.getElementById('spot-af-product-error').classList.add('hidden');
+                renderAfProductChips();
+                renderAfProductResults(document.getElementById('spot-af-product-search').value);
+            });
+        }
+        const afForm = document.getElementById('spot-af-form');
+        if (afForm) afForm.addEventListener('submit', submitSpotAddFounder);
+        onClick('spot-af-view-spotlight', () => {
+            spotState.listStatus = 'draft';
+            document.getElementById('spot-af-result').classList.add('hidden');
+            switchAdminPage('spotlight-list-tab');
+        });
+    }
+
 })();

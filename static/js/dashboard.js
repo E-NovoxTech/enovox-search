@@ -37,9 +37,336 @@
         setupLogout();
         fetchApprovedProducts(token);
         fetchPendingSubmissions(token);
+        initProductTabs();
+        initDraftsDropdown(token);
+        fetchSpotlightSummary(token);
+        initSpotlightRefetchOnReturn(token);
         setupEditModal(token);
         initDevNotifications(token);
     });
+
+    /* ==========================================================================
+       Product tabs — segmented Approved | Under review switcher. Real tabs:
+       role=tablist / role=tab / role=tabpanel, aria-selected syncing, roving
+       tabindex and arrow-key movement.
+       ========================================================================== */
+    function initProductTabs() {
+        const tabApproved = document.getElementById('db-tab-approved');
+        const tabReview = document.getElementById('db-tab-review');
+        const paneApproved = document.getElementById('db-pane-approved');
+        const paneReview = document.getElementById('db-pane-review');
+        if (!tabApproved || !tabReview || !paneApproved || !paneReview) return;
+        const tabs = [tabApproved, tabReview];
+        const whichOf = (tab) => (tab === tabReview ? 'review' : 'approved');
+
+        function activate(which, moveFocus) {
+            tabs.forEach((tab) => {
+                const selected = whichOf(tab) === which;
+                tab.classList.toggle('is-active', selected);
+                tab.setAttribute('aria-selected', String(selected));
+                tab.tabIndex = selected ? 0 : -1;
+                if (selected && moveFocus) tab.focus();
+            });
+            paneApproved.hidden = which !== 'approved';
+            paneReview.hidden = which !== 'review';
+        }
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => activate(whichOf(tab), false));
+            tab.addEventListener('keydown', (event) => {
+                if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+                event.preventDefault();
+                const dir = event.key === 'ArrowRight' ? 1 : -1;
+                const next = tabs[(tabs.indexOf(tab) + dir + tabs.length) % tabs.length];
+                activate(whichOf(next), true);
+            });
+        });
+    }
+
+    /* ==========================================================================
+       Founder Spotlight card + saved-drafts dropdown — one fresh
+       GET /spotlight/my (cache: no-store, same source the old drafts section
+       used) feeds:
+         - the Spotlight stats tile (Not applied / Pending / Approved)
+         - the spotlight card body — exactly ONE of: intro / pending / approved
+         - the drafts count badge + list inside the disclosure
+       Draft delete runs through DELETE /spotlight/apply/{id} — the rest
+       sibling of the PUT the apply page's edit path already uses
+       (PUT /spotlight/apply/{id}). If the backend names the delete route
+       differently ONLY this call is affected — everything else keeps working.
+       Errors render INSIDE the card/dropdown — never a page-level red box.
+       ========================================================================== */
+    let spotlightTokenCache = null;
+
+    function spotlightDate(rawDate) {
+        if (!rawDate) return '';
+        const when = new Date(rawDate);
+        if (Number.isNaN(when.getTime())) return '';
+        return when.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+        /* ---- Rejection notices: one dismissible notice per rejected application ---- */
+    const DISMISSED_SPOTLIGHT_KEY = 'enovox_dev_spotlight_dismissed';
+
+    function getDismissedSpotlightIds() {
+        try {
+            const raw = JSON.parse(localStorage.getItem(DISMISSED_SPOTLIGHT_KEY) || '[]');
+            return new Set(Array.isArray(raw) ? raw.map(String) : []);
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    function rememberDismissedSpotlight(id) {
+        const dismissed = getDismissedSpotlightIds();
+        dismissed.add(String(id));
+        try {
+            localStorage.setItem(DISMISSED_SPOTLIGHT_KEY, JSON.stringify([...dismissed]));
+        } catch (e) { /* storage blocked: notice still hides for this session */ }
+    }
+
+    function renderSpotlightNotices(apps) {
+        const box = document.getElementById('db-spotlight-notices');
+        if (!box) return;
+        box.replaceChildren();
+        const dismissed = getDismissedSpotlightIds();
+        (apps || [])
+            .filter((app) => app && app.status === 'rejected' && !dismissed.has(String(app.id)))
+            .sort((a, b) => String(b.updated_at || b.created_at || '')
+                .localeCompare(String(a.updated_at || a.created_at || '')))
+            .forEach((app) => {
+                const reason = String(app.rejection_reason || '').trim();
+                const title = app.startup_name
+                    ? `${app.startup_name}: spotlight application not approved`
+                    : 'Spotlight application not approved';
+                const notice = document.createElement('div');
+                notice.className = 'db-notice db-notice-rejected';
+                notice.setAttribute('role', 'alert');
+                notice.innerHTML = `
+                    <i class="fa-solid fa-circle-exclamation db-notice-icon" aria-hidden="true"></i>
+                    <div class="db-notice-copy">
+                        <strong>${escapeHTML(title)}</strong>
+                        <p>${reason ? escapeHTML(reason) : 'No reason was provided.'}</p>
+                    </div>
+                    <button type="button" class="db-notice-dismiss" aria-label="Dismiss notification">&times;</button>`;
+                notice.querySelector('.db-notice-dismiss').addEventListener('click', () => {
+                    rememberDismissedSpotlight(app.id);
+                    notice.remove();
+                });
+                box.appendChild(notice);
+            });
+    }
+
+    function renderSpotlightBody(apps) {
+        const body = document.getElementById('db-spotlight-body');
+        const tile = document.getElementById('db-stat-spotlight');
+        if (!body) return;
+
+        const live = (apps || [])
+            .filter((app) => app && (app.status === 'pending' || app.status === 'approved'))
+            .sort((a, b) => String(b.updated_at || b.created_at || '')
+                .localeCompare(String(a.updated_at || a.created_at || '')));
+        const current = live[0] || null;
+        const pendingApp = live.find((app) => app.status === 'pending') || null;
+
+        /* No pending/approved application -> intro + CTA (rejected ones show as notices above) */
+        if (!current) {
+            if (tile) tile.textContent = 'Not applied';
+            body.innerHTML = `
+                <p class="db-muted db-spotlight-intro">Share your story with people discovering what Nigeria is building.</p>
+                <a class="db-btn-primary db-btn-block db-spotlight-apply" href="/spotlight/apply">Apply for spotlight</a>`;
+            return;
+        }
+
+        const name = escapeHTML(current.startup_name || 'Untitled startup');
+        const submitted = spotlightDate(current.created_at || current.updated_at);
+        const againLink = '<a class="db-link" href="/spotlight/apply">Apply for another startup <span aria-hidden="true">&rarr;</span></a>';
+        const underReview = (app) => `
+            <p class="db-spotlight-status"><span class="db-pill db-pill-amber"><span class="db-dot db-dot-amber" aria-hidden="true"></span>Spotlight application under review</span></p>
+            <p class="db-spotlight-name">${escapeHTML(app.startup_name || 'Untitled startup')}</p>`;
+
+        if (current.status === 'pending') {
+            if (tile) tile.textContent = 'Pending';
+            body.innerHTML = `
+                ${underReview(current)}
+                ${submitted ? `<p class="db-muted db-spotlight-sub">Submitted ${escapeHTML(submitted)}</p>` : '<p class="db-muted db-spotlight-sub">We&rsquo;re reviewing your application.</p>'}
+                ${againLink}`;
+            return;
+        }
+
+        /* Newest entry is approved; if another application is still pending, show that too. */
+        if (tile) tile.textContent = 'Approved';
+        body.innerHTML = `
+            <p class="db-spotlight-status"><span class="db-pill db-pill-green"><span class="db-dot db-dot-green" aria-hidden="true"></span>Approved</span></p>
+            <p class="db-spotlight-name">${name}</p>
+            <p class="db-muted db-spotlight-sub">We'll email you the link to share when it goes live.</p>
+            ${pendingApp ? `<div class="db-spotlight-extra">${underReview(pendingApp)}</div>` : ''}
+            ${againLink}`;
+    }
+
+    /* Re-fetch GET /spotlight/my when the founder returns to this page (back button / bfcache,
+       or switching back to the tab after submitting on /spotlight/apply). A draft that was
+       actually Submitted is "pending" server-side, so it drops out of the drafts list. */
+    let spotlightLastFetch = 0;
+    function initSpotlightRefetchOnReturn(token) {
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) fetchSpotlightSummary(token);
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && Date.now() - spotlightLastFetch > 15000) {
+                fetchSpotlightSummary(token);
+            }
+        });
+    }
+    function buildDraftRow(draft) {
+        const li = document.createElement('li');
+        li.className = 'db-draft';
+        li.dataset.draftId = String(draft.id);
+        const saved = spotlightDate(draft.updated_at || draft.created_at);
+        li.innerHTML = `
+            <div class="db-draft-info">
+                <span class="db-draft-title">${escapeHTML(draft.startup_name || 'Untitled draft')}</span>
+                <span class="db-draft-meta">${saved ? `Saved ${escapeHTML(saved)}` : 'Saved'}</span>
+            </div>
+            <div class="db-draft-actions">
+                <a class="db-draft-continue" href="/spotlight/apply?edit=${encodeURIComponent(String(draft.id))}">Continue</a>
+                <button type="button" class="db-draft-delete" aria-label="Delete draft" title="Delete draft">
+                    <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                </button>
+            </div>`;
+        li.querySelector('.db-draft-delete').addEventListener('click', () => confirmDeleteDraft(li, draft));
+        return li;
+    }
+
+    /* Two-step inline delete: first click arms the row (Delete draft/Cancel),
+       Delete performs the DELETE call, Cancel restores. Failures stay inline
+       on the row, never page-level. */
+    function confirmDeleteDraft(li, draft) {
+        if (li.classList.contains('is-confirming')) return;
+        li.classList.add('is-confirming');
+        const actions = li.querySelector('.db-draft-actions');
+        if (!actions) return;
+        li.dataset.actionsHtml = actions.innerHTML;
+
+        const yes = document.createElement('button');
+        yes.type = 'button';
+        yes.className = 'db-draft-confirm-yes';
+        yes.textContent = 'Delete draft';
+        const no = document.createElement('button');
+        no.type = 'button';
+        no.className = 'db-draft-confirm-no';
+        no.textContent = 'Cancel';
+
+        const restore = (errorText) => {
+            li.classList.remove('is-confirming');
+            actions.innerHTML = li.dataset.actionsHtml || '';
+            const rearmed = li.querySelector('.db-draft-delete');
+            if (rearmed) rearmed.addEventListener('click', () => confirmDeleteDraft(li, draft));
+            const stale = li.querySelector('.db-draft-error');
+            if (stale) stale.remove();
+            if (errorText) {
+                const err = document.createElement('span');
+                err.className = 'db-draft-error';
+                err.setAttribute('role', 'alert');
+                err.textContent = errorText;
+                li.appendChild(err);
+            }
+        };
+
+        no.addEventListener('click', () => restore());
+        yes.addEventListener('click', async () => {
+            yes.disabled = true;
+            no.disabled = true;
+            yes.textContent = 'Deleting...';
+            try {
+                const res = await fetch(`${API_URL}/spotlight/apply/${encodeURIComponent(String(draft.id))}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${spotlightTokenCache}`, Accept: 'application/json' }
+                });
+                if (!res.ok && res.status !== 404) throw new Error(`delete failed (HTTP ${res.status})`);
+                await fetchSpotlightSummary(spotlightTokenCache);
+            } catch (e) {
+                console.error('[dashboard] draft delete failed:', e);
+                restore('Could not delete. Try again.');
+            }
+        });
+
+        actions.replaceChildren(no, yes);
+    }
+
+    function renderDraftsPanel(apps) {
+        const count = document.getElementById('db-drafts-count');
+        const list = document.getElementById('db-drafts-list');
+        const empty = document.getElementById('db-drafts-empty');
+        const loading = document.getElementById('db-drafts-loading');
+        if (loading) loading.hidden = true;
+        const drafts = (apps || []).filter((app) => app && app.status === 'draft');
+        if (count) count.textContent = String(drafts.length);
+        if (!list) return;
+        list.replaceChildren();
+        if (!drafts.length) {
+            if (empty) empty.hidden = false;
+            return;
+        }
+        if (empty) empty.hidden = true;
+        drafts
+            .slice()
+            .sort((a, b) => String(b.updated_at || b.created_at || '')
+                .localeCompare(String(a.updated_at || a.created_at || '')))
+            .forEach((draft) => list.appendChild(buildDraftRow(draft)));
+    }
+
+    async function fetchSpotlightSummary(token) {
+        spotlightTokenCache = token;
+        spotlightLastFetch = Date.now();
+        const body = document.getElementById('db-spotlight-body');
+        const tile = document.getElementById('db-stat-spotlight');
+        const loading = document.getElementById('db-drafts-loading');
+        const error = document.getElementById('db-drafts-error');
+        if (error) error.hidden = true;
+        if (loading) loading.hidden = false;
+        try {
+            const res = await fetch(`${API_URL}/spotlight/my`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+                cache: 'no-store'
+            });
+            if (res.status === 401) { handleExpiredToken(); return; }
+            if (!res.ok) throw new Error(`spotlight summary failed (HTTP ${res.status})`);
+            const data = await res.json();
+            const apps = Array.isArray(data) ? data : [];
+            renderSpotlightNotices(apps);
+            renderSpotlightBody(apps);
+            renderDraftsPanel(apps);
+        } catch (e) {
+            console.error('[dashboard] spotlight summary failed:', e);
+            if (loading) loading.hidden = true;
+            /* Inline, card-local error + Retry — never a page-level red box. */
+            if (error) error.hidden = false;
+            if (tile) tile.textContent = '\u2014';
+            if (body) {
+                body.innerHTML = `
+                    <p class="db-muted db-spotlight-intro">We couldn't load your spotlight status right now.</p>
+                    <button type="button" class="db-btn-secondary db-btn-block" id="db-spotlight-retry">Retry</button>`;
+                const again = document.getElementById('db-spotlight-retry');
+                if (again) again.addEventListener('click', () => fetchSpotlightSummary(token));
+            }
+        }
+    }
+
+    function initDraftsDropdown(token) {
+        const toggle = document.getElementById('db-drafts-toggle');
+        const panel = document.getElementById('db-drafts-panel');
+        const retry = document.getElementById('db-drafts-retry');
+        if (toggle && panel) {
+            toggle.addEventListener('click', () => {
+                const open = panel.hidden;
+                panel.hidden = !open;
+                toggle.setAttribute('aria-expanded', String(open));
+                toggle.classList.toggle('is-open', open);
+            });
+        }
+        if (retry) retry.addEventListener('click', () => fetchSpotlightSummary(token));
+    }
 
     /* ==========================================================================
        Developer notification tray — polls GET /submissions/me, which now
@@ -61,12 +388,12 @@
     function initDevNotifications(token) {
         const NOTIF_KEY = 'enovox_dev_notifications';
         const SEEN_KEY = 'enovox_dev_submission_statuses';
-        const wrapper = document.querySelector('.dev-notif-wrapper');
-        if (!wrapper) return;
+        const card = document.getElementById('db-notifs-card');
+        if (!card) return;
 
-        const dropdown = wrapper.querySelector('.dev-notif-dropdown');
-        const badge = wrapper.querySelector('.dev-notif-badge');
-        const list = wrapper.querySelector('.notification-list');
+        const badge = document.getElementById('db-notifs-badge');
+        const list = document.getElementById('db-notifs-list');
+        const clearBtn = document.getElementById('db-notifs-clear');
 
         let notifications = JSON.parse(localStorage.getItem(NOTIF_KEY) || '[]');
 
@@ -78,34 +405,33 @@
         function render() {
             list.innerHTML = '';
             if (notifications.length === 0) {
-                list.innerHTML = '<p class="notif-empty">No new notifications</p>';
-                badge.style.display = 'none';
+                list.innerHTML = '<p class="db-notif-empty">No new notifications</p>';
+                if (badge) badge.hidden = true;
+                if (clearBtn) clearBtn.classList.add('hidden');
                 return;
             }
-            badge.style.display = 'inline-block';
-            badge.textContent = notifications.length;
+            if (badge) {
+                badge.hidden = false;
+                badge.textContent = `${notifications.length} new`;
+            }
+            if (clearBtn) clearBtn.classList.remove('hidden');
             notifications.forEach((n, i) => {
                 const item = document.createElement('div');
-                item.className = 'notif-item';
-                item.innerHTML = `<div class="notif-item-content"><strong>${escapeHTML(n.title)}</strong><p>${escapeHTML(n.message)}</p></div><button class="notif-delete-btn" data-i="${i}">&times;</button>`;
+                item.className = 'db-notif-item';
+                item.innerHTML = `<span class="db-notif-dot" aria-hidden="true"></span><div class="db-notif-content"><strong>${escapeHTML(n.title)}</strong><p>${escapeHTML(n.message)}</p></div><button type="button" class="db-notif-delete" data-i="${i}" aria-label="Dismiss notification">&times;</button>`;
                 list.appendChild(item);
             });
         }
 
-        wrapper.addEventListener('click', (e) => {
-            if (e.target.closest('.dev-bell-btn')) {
-                dropdown.classList.toggle('hidden');
-            } else if (e.target.closest('.clear-all-notifications')) {
+        card.addEventListener('click', (e) => {
+            if (clearBtn && e.target.closest('#db-notifs-clear')) {
                 notifications = [];
                 save();
-            } else if (e.target.closest('.notif-delete-btn')) {
-                const i = parseInt(e.target.closest('.notif-delete-btn').dataset.i, 10);
+            } else if (e.target.closest('.db-notif-delete')) {
+                const i = parseInt(e.target.closest('.db-notif-delete').dataset.i, 10);
                 notifications.splice(i, 1);
                 save();
             }
-        });
-        document.addEventListener('click', (e) => {
-            if (!wrapper.contains(e.target)) dropdown.classList.add('hidden');
         });
 
         render();
@@ -283,6 +609,15 @@
             const products = await res.json();
             const approved = (products || []).filter(p => p.status === true);
 
+            const statApprovedEl = document.getElementById('db-stat-approved');
+            if (statApprovedEl) statApprovedEl.textContent = String(approved.length);
+            const countApprovedEl = document.getElementById('db-count-approved');
+            if (countApprovedEl) countApprovedEl.textContent = String(approved.length);
+
+            // Subtle second entry point: only when at least one product is live.
+            const featuredEl = document.getElementById('db-products-featured');
+            if (featuredEl) featuredEl.hidden = approved.length === 0;
+
             loadingEl.classList.add('hidden');
 
             if (approved.length === 0) {
@@ -302,21 +637,29 @@
 
     function buildProductCard(product) {
         const card = document.createElement('div');
-        card.className = 'dashboard-product-card non-link';
+        card.className = 'db-product';
 
+        const name = product.name || '';
+        const tint = `db-logo-tint${Math.abs(String(name).charCodeAt(0) || 0) % 6}`;
+        const initial = escapeHTML(getInitial(name));
         const logoHtml = product.logo_url
-            ? `<img src="${escapeAttr(product.logo_url)}" alt="" class="dashboard-product-logo" onerror="this.outerHTML='<div class=\\'dashboard-product-logo\\'>${escapeHTML(getInitial(product.name))}</div>'">`
-            : `<div class="dashboard-product-logo">${escapeHTML(getInitial(product.name))}</div>`;
+            ? `<img src="${escapeAttr(product.logo_url)}" alt="" class="db-product-logo db-product-logo-img" onerror="this.outerHTML='<div class=\\'db-product-logo ${tint}\\'>${initial}</div>'">`
+            : `<div class="db-product-logo ${tint}">${initial}</div>`;
 
         card.innerHTML = `
-            ${logoHtml}
-            <div class="dashboard-product-info">
-                <a href="/product/${escapeAttr(product.slug)}" class="dashboard-product-name">${escapeHTML(product.name)}</a>
-                <div class="dashboard-product-category">${escapeHTML(product.category || '')}</div>
-                <button type="button" class="dashboard-edit-btn" data-kind="product">Edit</button>
+            <div class="db-product-main">
+                ${logoHtml}
+                <div class="db-product-info">
+                    <a href="/product/${escapeAttr(product.slug)}" class="db-product-name" title="${escapeAttr(name)}">${escapeHTML(name)}</a>
+                    <div class="db-product-category">${escapeHTML(product.category || '')}</div>
+                </div>
+            </div>
+            <div class="db-product-side">
+                <button type="button" class="db-edit-btn" data-kind="product">Edit</button>
+                <span class="db-product-status db-status-approved"><span class="db-dot db-dot-green" aria-hidden="true"></span>Approved</span>
             </div>
         `;
-        card.querySelector('.dashboard-edit-btn').addEventListener('click', () => openEditModal(product, 'product'));
+        card.querySelector('.db-edit-btn').addEventListener('click', () => openEditModal(product, 'product'));
         return card;
     }
 
@@ -359,6 +702,11 @@
             const submissions = await res.json();
             const relevant = (submissions || []).filter(s => s.status === 'pending');
 
+            const statReviewEl = document.getElementById('db-stat-review');
+            if (statReviewEl) statReviewEl.textContent = String(relevant.length);
+            const countReviewEl = document.getElementById('db-count-review');
+            if (countReviewEl) countReviewEl.textContent = String(relevant.length);
+
             loadingEl.classList.add('hidden');
 
             if (relevant.length === 0) {
@@ -378,36 +726,41 @@
 
     function buildSubmissionCard(sub) {
         const card = document.createElement('div');
-        card.className = 'dashboard-product-card non-link';
+        card.className = 'db-product';
 
+        const name = sub.name || '';
+        const tint = `db-logo-tint${Math.abs(String(name).charCodeAt(0) || 0) % 6}`;
+        const initial = escapeHTML(getInitial(name));
         const logoHtml = sub.logo_url
-            ? `<img src="${escapeAttr(sub.logo_url)}" alt="" class="dashboard-product-logo" onerror="this.outerHTML='<div class=\\'dashboard-product-logo\\'>${escapeHTML(getInitial(sub.name))}</div>'">`
-            : `<div class="dashboard-product-logo">${escapeHTML(getInitial(sub.name))}</div>`;
+            ? `<img src="${escapeAttr(sub.logo_url)}" alt="" class="db-product-logo db-product-logo-img" onerror="this.outerHTML='<div class=\\'db-product-logo ${tint}\\'>${initial}</div>'">`
+            : `<div class="db-product-logo ${tint}">${initial}</div>`;
 
-        // NOTE: with the pending-only filter above, this card is now only
-        // ever built for status === 'pending' submissions (rejected ones no
-        // longer reach fetchPendingSubmissions at all). The rejected-badge
-        // and rejection-reason branches below are kept as dead-safe fallback
-        // rendering in case this function is ever called with a non-pending
-        // item from elsewhere, but they should not normally trigger.
-        const badge = sub.status === 'rejected'
-            ? `<span class="dashboard-status-badge rejected">Rejected</span>`
-            : `<span class="dashboard-status-badge pending">Pending Review</span>`;
+        // NOTE: with the pending-only filter above, this card is only ever
+        // built for status === 'pending' submissions. The rejected branches
+        // stay as dead-safe fallback rendering in case this function is ever
+        // called with a non-pending item from elsewhere.
+        const statusHtml = sub.status === 'rejected'
+            ? '<span class="db-product-status db-status-rejected"><span class="db-dot db-dot-red" aria-hidden="true"></span>Rejected</span>'
+            : '<span class="db-product-status db-status-pending"><span class="db-dot db-dot-amber" aria-hidden="true"></span>Pending review</span>';
         const reason = sub.status === 'rejected' && sub.rejection_reason
-            ? `<div class="dashboard-rejection-reason">"${escapeHTML(sub.rejection_reason)}"</div>`
+            ? `<div class="db-rejection-reason">"${escapeHTML(sub.rejection_reason)}"</div>`
             : '';
 
         card.innerHTML = `
-            ${logoHtml}
-            <div class="dashboard-product-info">
-                <div class="dashboard-product-name">${escapeHTML(sub.name)}</div>
-                <div class="dashboard-product-category">${escapeHTML(sub.category || '')}</div>
-                ${badge}
-                ${reason}
-                <button type="button" class="dashboard-edit-btn" data-kind="submission">Edit</button>
+            <div class="db-product-main">
+                ${logoHtml}
+                <div class="db-product-info">
+                    <div class="db-product-name" title="${escapeAttr(name)}">${escapeHTML(name)}</div>
+                    <div class="db-product-category">${escapeHTML(sub.category || '')}</div>
+                </div>
             </div>
+            <div class="db-product-side">
+                <button type="button" class="db-edit-btn" data-kind="submission">Edit</button>
+                ${statusHtml}
+            </div>
+            ${reason}
         `;
-        card.querySelector('.dashboard-edit-btn').addEventListener('click', () => openEditModal(sub, 'submission'));
+        card.querySelector('.db-edit-btn').addEventListener('click', () => openEditModal(sub, 'submission'));
         return card;
     }
 

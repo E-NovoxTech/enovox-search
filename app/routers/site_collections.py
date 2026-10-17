@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import date
+from datetime import date, datetime
 from typing import List
 import os
 import re
@@ -39,14 +39,14 @@ def generate_collection_slug(title: str, db: Session) -> str:
 
 
 def get_status(c) -> str:
-    today = date.today()
+    now = datetime.utcnow()
     if c.is_archived:
         return "archived"
     if not c.is_published:
         return "draft"
-    if c.start_date and c.start_date > today:
+    if c.start_date and c.start_date > now:
         return "scheduled"
-    if c.end_date and c.end_date < today:
+    if c.end_date and c.end_date < now:
         return "expired"
     return "live"
 
@@ -97,7 +97,7 @@ def admin_row(c, db: Session) -> dict:
     if status == "live" and live_count < MIN_PRODUCTS:
         warnings.append(f"Only {live_count} live products. Needs at least {MIN_PRODUCTS}, so it is hidden on the site.")
     if status == "live" and c.end_date:
-        days = (c.end_date - date.today()).days
+        days = (c.end_date - datetime.utcnow()).days
         if days <= 3:
             warnings.append("Ends today" if days == 0 else f"Ends in {days} day(s)")
 
@@ -177,6 +177,32 @@ def admin_detail(collection_id: int, admin_key: str, db: Session = Depends(get_d
     ]
     return row
 
+@router.post("/admin/auto-publish-due")
+def auto_publish_due(admin_key: str, db: Session = Depends(get_db)):
+    check_admin(admin_key)
+    now = datetime.utcnow()
+
+    due = (
+        db.query(models.Collection)
+        .filter(
+            models.Collection.is_published == False,
+            models.Collection.is_archived == False,
+            models.Collection.start_date.isnot(None),
+            models.Collection.start_date <= now,
+        )
+        .all()
+    )
+
+    published = []
+    for c in due:
+        if c.end_date and c.end_date < now:
+            continue  # its window already closed before it ever went live, skip it
+        c.is_published = True
+        published.append({"id": c.id, "title": c.title})
+
+    db.commit()
+    return {"message": f"Published {len(published)} collection(s).", "published": published}
+
 
 @router.post("/admin")
 def create_collection(admin_key: str, data: schemas.CollectionCreate, db: Session = Depends(get_db)):
@@ -218,9 +244,12 @@ def update_collection(collection_id: int, admin_key: str, data: schemas.Collecti
         update.pop("title")
 
     product_ids = update.pop("product_ids", None)
-    if product_ids is not None:
+    if product_ids:
         if c.section_type != "manual":
             raise HTTPException(status_code=400, detail="Only manual collections have picked products")
+        if len(set(product_ids)) > MAX_PRODUCTS:
+            raise HTTPException(status_code=400, detail=f"A collection can hold at most {MAX_PRODUCTS} products")
+        set_products(c.id, product_ids, db)
         if len(set(product_ids)) > MAX_PRODUCTS:
             raise HTTPException(status_code=400, detail=f"A collection can hold at most {MAX_PRODUCTS} products")
         set_products(c.id, product_ids, db)

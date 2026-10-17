@@ -1,531 +1,604 @@
 /* ==========================================================================
-   Product Detail Page Styles
+   Product page (single product detail) — redesign, matched to the approved UI
+   All selectors are scoped under .pp-page so nothing leaks into the header,
+   footer or other pages.
+
+   Colours come from the --pp-* tokens below (they are the exact colours of the
+   design file), so the page looks the same regardless of the site variables.
+   Dark mode follows the global .dark-mode class.
    ========================================================================== */
-.product-page {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 3rem 2rem;
+
+.pp-page {
+    /* light tokens */
+    --pp-bg: #F5F8FC;
+    --pp-surface: #FFFFFF;
+    --pp-border: #DEE6F1;
+    --pp-border-strong: #C9D5E6;
+    --pp-text: #0B1F3A;
+    --pp-body: #243650;
+    --pp-muted: #4A5B73;
+    --pp-link: #1D4ED8;
+    --pp-pill: #EAF1FF;
+    --pp-green-bg: #E4F6EC;
+    --pp-green-text: #0B6B43;
+    --pp-claim-bg: #FDE7E7;
+    --pp-claim-text: #A32020;
+    --pp-brand: #2563EB;
+
+    /* sizing */
+    --pp-radius: 24px;
+    --pp-radius-lg: 28px;
+    --pp-gap: 28px;
+    --pp-pad: 32px;
+    --pp-head-font: 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif;
+
     min-height: calc(100vh - 350px);
+    padding: 32px 0 72px;
+    background-color: var(--pp-bg);
+    color: var(--pp-text);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.dark-mode .pp-page {
+    --pp-bg: #1A2437;
+    --pp-surface: #212E45;
+    --pp-border: #33435F;
+    --pp-border-strong: #465A7E;
+    --pp-text: #F1F5FB;
+    --pp-body: #CBD7EA;
+    --pp-muted: #A3B2CB;
+    --pp-link: #8DB2FF;
+    --pp-pill: #1E3768;
+    --pp-green-bg: #0F3326;
+    --pp-green-text: #6FE0A8;
+    --pp-claim-bg: #3D1D22;
+    --pp-claim-text: #FFA6A6;
 }
 
-.product-header-block {
-    margin-bottom: 2rem;
-}
+/* display:flex/grid rules below would otherwise beat the UA [hidden] rule */
+.pp-page [hidden] { display: none !important; }
 
-.product-header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-}
-
-.product-brand-group {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
-    min-width: 0;
-}
-
-.product-logo-container {
-    width: 80px;
-    height: 80px;
-    flex-shrink: 0;
-}
-
-.product-logo-img {
+.pp-container {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    box-shadow: var(--card-shadow);
-}
-
-.product-logo-fallback {
-    width: 100%;
-    height: 100%;
-    background-color: var(--color-blue);
-    color: white;
-    font-size: 2.5rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 16px;
-}
-
-.product-title-group { min-width: 0; }
-
-.product-name {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 2.25rem;
-    font-weight: 800;
-    color: var(--text-main);
-    margin: 0;
-    line-height: 1.2;
-}
-
-/* wraps the title + share icon on one row */
-.product-name-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    position: relative;
-}
-.share-icon-btn { flex-shrink: 0; margin-top: -0.4rem; position: relative; }
-
-/* small hover tooltip on the share icon */
-.icon-tooltip {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #1e293b;
-    color: #fff;
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 0.3rem 0.6rem;
-    border-radius: 6px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.15s ease;
-    z-index: 10;
-}
-.icon-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: #1e293b;
-}
-.share-icon-btn:hover .icon-tooltip { opacity: 1; }
-
-/* share popover */
-.share-popover {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 0.6rem 0.7rem;
-    margin: 0.5rem 0;
-    box-shadow: var(--card-shadow);
-    max-width: 420px;
-    position: relative;
-}
-.share-url-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    position: relative;
-}
-.share-url-text {
-    flex: 1;
-    font-size: 0.85rem;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.share-menu-row {
-    display: flex;
-    gap: 0.5rem;
-    border-top: 1px solid var(--border-color);
-    padding-top: 0.6rem;
-}
-.share-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    background-color: var(--bg-secondary);
-    color: var(--text-muted);
-    font-size: 1.05rem;
-    transition: all 0.2s;
-}
-.share-menu-btn:hover {
-    background-color: var(--color-blue);
-    color: #fff;
-}
-.copy-confirm {
-    position: absolute;
-    right: 0.5rem;
-    top: -1.6rem;
-    background-color: var(--color-blue);
-    color: #fff;
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 0.2rem 0.55rem;
-    border-radius: 6px;
-    white-space: nowrap;
-}
-
-/* Category pill + Free/Paid pill — more breathing room below the name,
-   and squared-off (small radius) instead of fully round */
-.product-badges {
-    display: flex;
-    gap: 0.6rem;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 0.75rem;
-}
-
-.product-badges .category-pill {
-    border-radius: 8px;
-    padding: 0.35rem 0.85rem;
-}
-
-.pricing-pill {
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 0.35rem 0.85rem;
-    border-radius: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.pricing-pill.free { background-color: #dcfce7; color: #166534; }
-.pricing-pill.paid { background-color: #f1f5f9; color: #475569; }
-.dark-mode .pricing-pill.paid { background-color: #334155; color: #e2e8f0; }
-
-/* Claim badge — square-ish (small radius), top right, only rendered
-   server-side when a claim is actually available (no developer_id) */
-.claim-badge-btn {
-    flex-shrink: 0;
-    background-color: #fee2e2;
-    color: #dc2626;
-    border: 1px solid transparent;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background-color 0.2s;
-}
-.claim-badge-btn:hover { background-color: #fecaca; }
-.dark-mode .claim-badge-btn { background-color: rgba(220, 38, 38, 0.18); color: #fca5a5; }
-.dark-mode .claim-badge-btn:hover { background-color: rgba(220, 38, 38, 0.28); }
-
-/* Pricing Details — a real dropdown (not an overlay). Plain text + chevron,
-   no box around the toggle itself; the panel is a normal block that pushes
-   the Visit Website button down when it opens. Only present in the DOM
-   for paid products. */
-.pricing-dropdown-wrap {
-    margin-bottom: 0.85rem;
-}
-
-.pricing-toggle-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-main);
-    cursor: pointer;
-}
-.pricing-toggle-btn:hover { color: var(--color-blue); }
-.chevron-icon { transition: transform 0.2s ease; }
-.pricing-toggle-btn[aria-expanded="true"] .chevron-icon { transform: rotate(180deg); }
-
-.pricing-details-panel {
-    margin-top: 0.6rem;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 0.85rem 1rem;
-}
-.pricing-details-panel.hidden { display: none; }
-
-.pricing-details-text {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    margin: 0;
-    line-height: 1.4;
-}
-
-/* Visit website — its own full-width row, squared with a slight curve */
-.visit-website-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    width: 100%;
-    padding: 0.9rem 1.5rem;
-    border-radius: 8px;
-    background-color: var(--color-blue);
-    color: #fff;
-    font-weight: 700;
-    font-size: 1rem;
-    text-decoration: none;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 32px;
     box-sizing: border-box;
 }
 
-/* Description Block */
-.product-description-card {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: var(--card-shadow);
-    font-size: 1.1rem;
-    line-height: 1.7;
-    color: var(--text-main);
-}
-
-/* Store Buttons Row */
-.product-stores-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-bottom: 3rem;
-}
-
-.store-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.25rem;
-    background-color: #1e293b;
-    color: white;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: transform 0.2s, background-color 0.2s;
-}
-
-.store-btn:hover {
-    transform: translateY(-2px);
-    background-color: #0f172a;
-}
-
-.store-btn i { font-size: 1.25rem; }
-
-/* Details Section */
-.product-details-section {
-    margin-bottom: 4rem;
-    border-top: 1px solid var(--border-color);
-    padding-top: 2rem;
-}
-
-.company-name {
-    font-size: 1.5rem;
-    color: var(--text-main);
-    margin-bottom: 0.5rem;
-}
-
-.founder-name {
-    font-size: 1.05rem;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-}
-
-.product-socials {
-    display: flex;
-    gap: 1rem;
-}
-
-.product-socials a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-muted);
-    font-size: 1.25rem;
-    transition: all 0.2s;
-}
-
-.product-socials a:hover {
-    background-color: var(--color-blue);
-    color: white;
-    border-color: var(--color-blue);
-    transform: translateY(-2px);
-}
-
-/* Similar Products */
-.similar-products-section h3 {
-    font-size: 1.5rem;
-    color: var(--text-main);
-    margin-bottom: 1.5rem;
-}
-
-/* ==========================================================================
-   Mobile Responsiveness — smaller, tighter, everything aligned in one
-   column, header row stays on one line (logo/name/share left, claim
-   badge top right) same as the reference layout, just scaled down.
-   ========================================================================== */
-@media (max-width: 768px) {
-    .product-page { padding: 1.75rem 1.1rem; }
-
-    .product-logo-container { width: 56px; height: 56px; }
-    .product-logo-fallback { font-size: 1.6rem; border-radius: 12px; }
-    .product-logo-img { border-radius: 12px; }
-
-    .product-brand-group { gap: 0.85rem; }
-
-    .product-name { font-size: 1.35rem; }
-    .share-icon-btn { margin-top: 0; }
-
-    .product-badges { margin-top: 0.5rem; gap: 0.5rem; }
-    .product-badges .category-pill,
-    .pricing-pill {
-        font-size: 0.7rem;
-        padding: 0.3rem 0.6rem;
-    }
-
-    .claim-badge-btn {
-        font-size: 0.75rem;
-        padding: 0.4rem 0.75rem;
-    }
-
-    .pricing-toggle-btn { font-size: 0.85rem; }
-
-    .visit-website-box {
-        padding: 0.75rem 1.25rem;
-        font-size: 0.9rem;
-    }
-
-    .product-stores-row {
-        justify-content: flex-start;
-        flex-direction: column;
-    }
-    
-    .store-btn {
-        justify-content: center;
-        padding: 0.55rem 1.1rem;
-        font-size: 0.85rem;
-    }
-    
-    .product-description-card {
-        padding: 1.25rem;
-        font-size: 1rem;
-    }
-
-    .share-popover { max-width: 100%; }
-}
-
-/* ==========================================================================
-   Similar Products Grid & Card Styling (Strict Layout)
-   ========================================================================== */
-.grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.5rem;
-}
-
-.product-card {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
+.pp-stack {
     display: flex;
     flex-direction: column;
-    text-align: left; /* Forces text to the left, overriding global center */
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.2s ease;
+    gap: var(--pp-gap);
 }
 
-.product-card:hover {
-    border-color: var(--color-blue);
-    box-shadow: var(--card-shadow);
-}
-
-.card-header {
+/* ---------- Breadcrumb ---------- */
+.pp-breadcrumb { margin-bottom: var(--pp-gap); font-size: 0.875rem; }
+.pp-breadcrumb ol {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start; /* Pins logo and arrow to the top */
-    margin-bottom: 1.25rem;
-    width: 100%;
-}
-
-.card-logo, .card-logo-fallback {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    flex-shrink: 0;
-}
-
-.card-logo {
-    object-fit: cover;
-    border: 1px solid var(--border-color);
-}
-
-.card-logo-fallback {
-    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    font-weight: 800;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    border: none;
+    gap: 4px 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
-
-.arrow-icon {
-    color: #cbd5e1;
-    width: 20px;
-    height: 20px;
-    transition: transform 0.2s ease, color 0.2s ease;
+.pp-breadcrumb li { color: var(--pp-muted); min-width: 0; overflow-wrap: anywhere; }
+.pp-breadcrumb li + li::before { content: "/"; margin-right: 8px; color: var(--pp-muted); }
+.pp-breadcrumb a {
+    position: relative;
+    color: var(--pp-muted);
+    text-decoration: none;
 }
+/* 44px-tall hit area without changing how the row looks */
+.pp-breadcrumb a::after { content: ""; position: absolute; inset: -12px -4px; }
+.pp-breadcrumb a:hover { color: var(--pp-link); text-decoration: underline; }
+.pp-breadcrumb a:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 2px; border-radius: 4px; }
+.pp-breadcrumb li[aria-current="page"] { color: var(--pp-text); font-weight: 600; }
 
-.product-card:hover .arrow-icon {
-    color: var(--color-blue);
-    transform: translate(4px, -4px);
+/* ---------- Cards ---------- */
+.pp-card {
+    min-width: 0;
+    padding: var(--pp-pad);
+    background-color: var(--pp-surface);
+    border: 1px solid var(--pp-border);
+    border-radius: var(--pp-radius);
+    box-sizing: border-box;
 }
-
-.card-body {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex-grow: 1;
-    width: 100%;
-}
-
-.product-title {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 1.15rem;
+.pp-card-title,
+.pp-section-title {
+    margin: 0 0 22px;
+    font-family: var(--pp-head-font);
+    font-size: 1.625rem;
     font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    color: var(--text-main);
-    text-align: left;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    color: var(--pp-text);
 }
 
-.product-desc {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin: 0 0 1.25rem 0;
-    text-align: left;
-    line-height: 1.5;
+/* ---------- Tags (category link, Free/Paid) ---------- */
+.pp-page .pp-tag {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-decoration: none;
+    white-space: nowrap;
+}
+/* Category tags are always the brand-blue pill (also overrides the per-category
+   .pill-* colours on the cards generated by product.js) */
+.pp-page .pp-tag--cat,
+.pp-page .pp-tag.category-pill { background-color: var(--pp-pill); color: var(--pp-link); }
+/* Linked tags get a 44px-tall hit area without growing visually */
+.pp-page .pp-tag--link::after { content: ""; position: absolute; inset: -8px 0; }
+.pp-page .pp-tag--link:hover { filter: brightness(0.96); text-decoration: underline; }
+.pp-page .pp-tag--link:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 2px; }
+.pp-page .pp-tag--free { background-color: var(--pp-green-bg); color: var(--pp-green-text); }
+.pp-page .pp-tag--paid { background-color: var(--pp-pill); color: var(--pp-link); }
+
+/* ---------- Top card (hero) ---------- */
+.pp-top {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+    padding: 40px;
+    border-radius: var(--pp-radius-lg);
+}
+.pp-top-head { flex-shrink: 0; }
+.pp-top-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+/* keep the long product name clear of the Claim pill on desktop */
+.pp-top--claimable .pp-top-body { padding-right: 170px; }
+
+.pp-logo { width: 120px; height: 120px; flex-shrink: 0; }
+.pp-logo-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 26px;
+    border: 1px solid var(--pp-border);
+    background-color: #ffffff;
+}
+.pp-logo-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 26px;
+    background-color: var(--pp-brand);
+    color: #ffffff;
+    font-family: var(--pp-head-font);
+    font-size: 3rem;
+    font-weight: 700;
+}
+
+.pp-title-group { display: flex; flex-direction: column; gap: 12px; }
+.pp-name {
+    margin: 0;
+    font-family: var(--pp-head-font);
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    color: var(--pp-text);
+    overflow-wrap: anywhere;
+}
+.pp-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pp-summary {
+    margin: 0;
+    max-width: 640px;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--pp-body);
+    overflow-wrap: anywhere;
+    /* safety net: never more than two lines even if the server text is long */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    white-space: normal;
-    word-break: break-word;
+}
+/* Reserved for a future rating / follower count (not rendered today) */
+.pp-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; font-size: 0.875rem; color: var(--pp-muted); }
+
+/* Claim pill: top-right of the card on desktop */
+.pp-claim-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background-color: var(--pp-claim-bg);
+    color: var(--pp-claim-text);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+.pp-claim-btn:hover:not(:disabled) { filter: brightness(0.96); }
+.pp-claim-btn:disabled { cursor: default; opacity: 0.8; }
+.pp-claim-btn:focus-visible { outline: 2px solid var(--pp-claim-text); outline-offset: 2px; }
+
+/* ---------- Actions row (flex so a Follow button can be added later) ---------- */
+.pp-actions {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding-top: 4px;
+}
+.pp-visit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 28px;
+    border-radius: 14px;
+    background-color: var(--pp-brand);
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    box-sizing: border-box;
+    transition: filter 0.2s;
+}
+.pp-visit-btn:hover { filter: brightness(1.08); color: #ffffff; }
+.pp-visit-btn:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 3px; }
+
+.pp-actions .pp-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    flex: none;
+    padding: 0;
+    border: 1px solid var(--pp-border-strong);
+    border-radius: 14px;
+    background-color: var(--pp-surface);
+    color: var(--pp-text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+.pp-actions .pp-icon-btn:hover { border-color: var(--pp-brand); color: var(--pp-link); }
+.pp-actions .pp-icon-btn:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 2px; }
+/* Saved state (the shared bookmark script flips aria-pressed on the button) */
+.pp-actions .pp-icon-btn[aria-pressed="true"],
+.pp-actions .pp-icon-btn.is-saved,
+.pp-actions .pp-icon-btn.saved,
+.pp-actions .pp-icon-btn.bookmarked {
+    border-color: var(--pp-brand);
+    background-color: var(--pp-pill);
+    color: var(--pp-link);
+}
+.pp-icon-btn[aria-pressed="true"] .bm-icon { font-weight: 900; } /* regular -> solid glyph */
+
+/* Share popover */
+.pp-share-popover {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(360px, 100%);
+    padding: 12px;
+    border: 1px solid var(--pp-border);
+    border-radius: 14px;
+    background-color: var(--pp-surface);
+    box-shadow: 0 12px 32px rgba(11, 31, 58, 0.14);
+}
+.dark-mode .pp-share-popover { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+.pp-share-url-row { position: relative; display: flex; align-items: center; gap: 8px; }
+.pp-share-url-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: var(--pp-text);
+}
+.pp-share-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 1px solid var(--pp-border-strong);
+    border-radius: 10px;
+    background: var(--pp-bg);
+    color: var(--pp-text);
+    cursor: pointer;
+}
+.pp-share-copy-btn:hover { border-color: var(--pp-brand); color: var(--pp-link); }
+.pp-copy-confirm {
+    position: absolute;
+    right: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 4px 10px;
+    border-radius: 6px;
+    background-color: var(--pp-brand);
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.pp-share-menu-row { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--pp-border); }
+.pp-share-menu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background-color: var(--pp-bg);
+    color: var(--pp-muted);
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+.pp-share-menu-btn:hover { background-color: var(--pp-brand); color: #ffffff; }
+
+/* ---------- Two columns ---------- */
+.pp-columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--pp-gap);
+    align-items: start;
+}
+/* left column is a list of separate cards so "Reviews" can be added under About */
+.pp-main-col { display: flex; flex-direction: column; gap: var(--pp-gap); min-width: 0; }
+.pp-aside-col { min-width: 0; }
+
+.pp-about-text {
+    margin: 0;
+    font-size: 1.0625rem; /* 17px */
+    line-height: 1.75;
+    color: var(--pp-body);
+    white-space: pre-line; /* preserves the author's paragraph breaks */
+    overflow-wrap: anywhere;
 }
 
-.card-body .category-pill {
-    margin-top: auto; 
+/* ---------- Details card ---------- */
+.pp-details { display: flex; flex-direction: column; gap: 18px; margin: 0; }
+.pp-detail-row { min-width: 0; }
+.pp-detail-row dt {
+    margin: 0 0 6px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--pp-muted);
+}
+.pp-detail-row dd { margin: 0; min-width: 0; }
+
+/* Pricing: Free/Paid pill + "Pricing details" dropdown (same dropdown as before) */
+.pp-disclosure { margin-top: 10px; }
+.pp-disclosure-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--pp-border-strong);
+    border-radius: 12px;
+    background-color: var(--pp-bg);
+    color: var(--pp-text);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.pp-disclosure-btn:hover { border-color: var(--pp-brand); }
+.pp-disclosure-btn:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 2px; }
+.pp-chevron { flex-shrink: 0; transition: transform 0.15s ease; }
+.pp-disclosure-btn[aria-expanded="true"] .pp-chevron { transform: rotate(180deg); }
+.pp-disclosure-panel {
+    margin-top: 10px;
+    padding: 0 2px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--pp-body);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.pp-founders { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.pp-founder { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 0.9375rem; font-weight: 600; color: var(--pp-text); }
+.pp-founder-name { min-width: 0; overflow-wrap: anywhere; }
+.pp-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background-color: var(--pp-pill);
+    color: var(--pp-link);
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+
+.pp-company { font-weight: 600; font-size: 0.9375rem; color: var(--pp-text); overflow-wrap: anywhere; }
+
+.pp-store-list { display: flex; flex-direction: column; gap: 10px; }
+.pp-store-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--pp-border-strong);
+    border-radius: 12px;
+    background-color: var(--pp-bg);
+    color: var(--pp-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+.pp-store-btn:hover { border-color: var(--pp-brand); color: var(--pp-link); }
+.pp-store-btn i { font-size: 1.15rem; }
+
+/* Social icons (logo only). When a founder is listed they sit right under the name. */
+.pp-socials { display: flex; flex-wrap: wrap; gap: 10px; }
+.pp-founders + .pp-socials { margin-top: 14px; }
+.pp-socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--pp-border-strong);
+    border-radius: 12px;
+    background-color: var(--pp-bg);
+    color: var(--pp-muted);
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.pp-socials a:hover { background-color: var(--pp-brand); border-color: var(--pp-brand); color: #ffffff; }
+.pp-socials a:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 2px; }
+
+/* ---------- Similar products ---------- */
+.pp-sim-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    gap: 20px;
+}
+.pp-sim-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid var(--pp-border);
+    border-radius: 20px;
+    background-color: var(--pp-surface);
+    color: var(--pp-text);
+    text-align: left;
+    text-decoration: none;
+    transition: border-color 0.2s;
+}
+.pp-sim-card:hover { border-color: var(--pp-brand); }
+.pp-sim-card:focus-visible { outline: 2px solid var(--pp-brand); outline-offset: 2px; }
+.pp-sim-head { display: flex; align-items: center; justify-content: space-between; }
+.pp-sim-logo,
+.pp-sim-logo-fallback {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 12px;
+}
+.pp-sim-logo { object-fit: cover; border: 1px solid var(--pp-border); background-color: #ffffff; }
+.pp-sim-logo-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1875rem;
+    font-weight: 700;
+}
+.pp-sim-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.pp-sim-arrow { color: var(--pp-muted); transition: transform 0.2s ease, color 0.2s ease; }
+.pp-sim-card:hover .pp-sim-arrow { color: var(--pp-link); transform: translateX(3px); }
+.pp-sim-body { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; flex-grow: 1; min-width: 0; width: 100%; }
+.pp-sim-name {
+    margin: 0;
+    font-family: var(--pp-head-font);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--pp-text);
+    overflow-wrap: anywhere;
+}
+.pp-sim-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--pp-muted);
+    overflow-wrap: anywhere;
+}
+.pp-sim-body .pp-tag { margin-top: auto; font-size: 0.75rem; padding: 4px 10px; }
+
+/* fallback letter tiles (readable in both themes) */
+.pp-tint0, .pp-tint4 { background-color: #EAF1FF; color: #1D4ED8; }
+.pp-tint1 { background-color: #E4F6EC; color: #0B6B43; }
+.pp-tint2 { background-color: #FFF1E0; color: #8A4B00; }
+.pp-tint3 { background-color: #E0F5F8; color: #0E6B7A; }
+.dark-mode .pp-tint0, .dark-mode .pp-tint4 { background-color: #2A3E66; color: #8DB2FF; }
+.dark-mode .pp-tint1 { background-color: #0F3326; color: #6FE0A8; }
+.dark-mode .pp-tint2 { background-color: #3A2A12; color: #FFC27A; }
+.dark-mode .pp-tint3 { background-color: #12333A; color: #7FDDEB; }
+
+/* Bookmark cluster inside similar cards (button style comes from style.css) */
+.card-header-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+/* Desktop (>= 1024): About + Details side by side */
+@media (min-width: 1024px) {
+    .pp-columns { grid-template-columns: minmax(0, 1fr) 360px; }
+}
+
+/* Mobile (< 768): single column. Top row = logo (left) + Claim (right). */
+@media (max-width: 767px) {
+    .pp-page { --pp-gap: 20px; --pp-pad: 22px; padding: 20px 0 72px; }
+    .pp-container { padding: 0 20px; }
+
+    .pp-top { flex-direction: column; gap: 20px; padding: 24px 20px; }
+    .pp-top-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        width: 100%;
+    }
+    .pp-top-body { width: 100%; }
+    .pp-top--claimable .pp-top-body { padding-right: 0; }
+
+    .pp-logo { width: 88px; height: 88px; }
+    .pp-logo-fallback { font-size: 2.2rem; }
+
+    .pp-claim-btn { position: static; }
+
+    /* Visit Website full width; Save + Share sit side by side underneath */
+    .pp-visit-btn { flex: 1 1 100%; width: 100%; }
+    .pp-share-popover { width: 100%; }
+
+    .pp-card-title, .pp-section-title { font-size: 1.375rem; }
+    .pp-card { padding: 22px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pp-chevron, .pp-sim-arrow, .pp-visit-btn, .pp-icon-btn { transition: none; }
 }
 
 /* ==========================================================================
-   Claim product modal
+   Claim product modal (unchanged behaviour)
    ========================================================================== */
 .overlay {
     position: fixed;
@@ -554,9 +627,9 @@
     margin-bottom: 1.25rem;
 }
 .modal-header h2 { font-size: 1.15rem; font-weight: 700; color: var(--text-main); }
-.close-btn { background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer; line-height: 1; }
+.close-btn { background: none; border: none; font-size: 1.4rem; color: var(--text-muted); cursor: pointer; line-height: 1; min-width: 44px; min-height: 44px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
-.btn-secondary { background: var(--bg-secondary); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.55rem 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+.btn-secondary { background: var(--bg-secondary); color: var(--text-main); border: 1px solid var(--border-color); padding: 0.55rem 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 600; min-height: 44px; }
 
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem; }
@@ -578,16 +651,9 @@
 .dark-mode .alert.success { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; }
 .dark-mode .alert.error { background: rgba(225, 29, 72, 0.15); color: #fda4af; }
 
+/* Claim modal step 2: code-entry / review-offer blocks */
+.claim-step-message { margin: 0 0 1rem; color: var(--text-muted); font-size: 0.9rem; line-height: 1.55; }
+#claim_code { text-align: center; letter-spacing: 0.45em; font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+
 /* Generic .hidden utility */
 .hidden { display: none !important; }
-
-/* ==========================================================================
-   Bookmark + arrow cluster on Similar Products cards
-   (.card-bookmark-btn itself is the shared toggle style from style.css)
-   ========================================================================== */
-.card-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}

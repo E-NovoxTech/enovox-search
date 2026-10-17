@@ -761,3 +761,14 @@
         transition: none;
     }
 }
+
+.alternative-section {
+    /* width: min(100%, 1200px); */
+    margin: 0 auto 1.5rem;
+    padding: 1.75rem 1.5rem 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 22px;
+    /* fallback, then a subtle tint that adapts to light and dark themes */
+    background: var(--bg-secondary);
+    background: color-mix(in srgb, var(--text-main) 4%, var(--bg-main));
+}

@@ -1,0 +1,706 @@
+/* ==========================================================================
+   Homepage — three new sections: Alternatives, Founder Spotlight, Collections
+   Loaded AFTER style.css. Everything is scoped to .home-section so nothing
+   else on the page is affected. Uses the site's own variables
+   (--bg-card, --bg-secondary, --border-color, --text-main, --text-muted,
+   --hover-bg, --color-blue, --card-shadow) and its Plus Jakarta Sans headings.
+   Dark mode follows the global .dark-mode class.
+   ========================================================================== */
+
+.home-section {
+    --hs-link: var(--color-blue);
+    --hs-green-bg: #dcfce7;
+    --hs-green-text: #166534;
+    --hs-green-dot: #0f9d63;
+    --hs-pill: #eaf1ff;
+    --hs-ph: #dce6f7;
+    --hs-ph-text: #2f4a73;
+    --hs-stripe: rgba(37, 99, 235, 0.07);
+
+    max-width: 1200px;
+    margin: 0 auto 4.5rem;
+    padding: 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.dark-mode .home-section {
+    --hs-link: #93c5fd;
+    --hs-green-bg: rgba(16, 185, 129, 0.16);
+    --hs-green-text: #6ee7b7;
+    --hs-green-dot: #34d399;
+    --hs-pill: rgba(37, 99, 235, 0.2);
+    --hs-ph: #1b2d4a;
+    --hs-ph-text: #a9bee0;
+    --hs-stripe: rgba(141, 178, 255, 0.08);
+}
+.home-section[hidden] { display: none !important; }
+@media (min-width: 1440px) { .home-section { max-width: 1400px; } }
+
+/* ---------- Section header ---------- */
+.home-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+}
+.home-section-copy { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.home-eyebrow {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hs-link);
+}
+.home-section-copy h2 {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--text-main);
+}
+.home-section-sub {
+    margin: 0;
+    max-width: 560px;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+.home-section-actions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+
+.home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 1.25rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.2s, background-color 0.2s, filter 0.2s;
+}
+.home-btn-outline { border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); }
+.home-btn-outline:hover { border-color: var(--color-blue); }
+.home-btn-solid { border: 1px solid transparent; background: var(--color-blue); color: #ffffff; }
+.home-btn-solid:hover { filter: brightness(1.08); }
+.home-text-link { font-size: 0.875rem; font-weight: 700; color: var(--hs-link); text-decoration: none; }
+.home-text-link:hover { text-decoration: underline; }
+.home-section a:focus-visible,
+.home-section button:focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; border-radius: 8px; }
+
+/* ---------- Letter tile (logo fallback) ---------- */
+.home-logo,
+.home-logo-fallback {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 12px;
+}
+.home-logo { object-fit: cover; border: 1px solid var(--border-color); background: #ffffff; }
+.home-logo-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--hs-pill);
+    color: var(--hs-link);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+.home-logo-fallback--foreign { background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border-color); }
+.home-tint0 { background: #eaf1ff; color: #1d4ed8; }
+.home-tint1 { background: #e4f6ec; color: #0b6b43; }
+.home-tint2 { background: #fff1e0; color: #8a4b00; }
+.home-tint3 { background: #f6e7fa; color: #7a2d8c; }
+.dark-mode .home-tint0 { background: #2a3e66; color: #8db2ff; }
+.dark-mode .home-tint1 { background: #12392b; color: #6fe0a8; }
+.dark-mode .home-tint2 { background: #3d2b10; color: #ffc27a; }
+.dark-mode .home-tint3 { background: #3a1f3f; color: #e3a6f0; }
+
+/* ==========================================================================
+   1. Alternatives
+   All groups sit in the SAME grid cell, so the stage is always as tall as the
+   tallest group (no jump while crossfading). Only .is-active is visible.
+   ========================================================================== */
+.home-alt-stage { display: grid; }
+.home-alt-group {
+    grid-area: 1 / 1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+    min-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(14px);
+    transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0.5s;
+}
+.home-alt-group.is-active {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0s;
+}
+
+.home-alt-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    min-width: 0;
+    padding: 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    box-sizing: border-box;
+}
+.home-alt-labelrow { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
+.home-alt-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.home-alt-viewall { font-size: 0.75rem; font-weight: 700; color: var(--hs-link); text-decoration: none; }
+.home-alt-viewall:hover { text-decoration: underline; }
+.home-alt-tool { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.home-alt-tool-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.home-alt-tool-name { font-size: 1.05rem; font-weight: 700; color: var(--text-main); overflow-wrap: anywhere; }
+.home-alt-tool-cat { font-size: 0.75rem; color: var(--text-muted); }
+
+.home-alt-divider { display: flex; align-items: center; gap: 0.6rem; }
+.home-alt-divider > span:not(.home-alt-arrow) { flex: 1; height: 1px; background: var(--border-color); }
+.home-alt-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--hs-pill);
+    color: var(--hs-link);
+}
+
+.home-alt-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.9rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    color: var(--text-main);
+    text-decoration: none;
+    transition: border-color 0.2s;
+}
+.home-alt-panel:hover { border-color: var(--color-blue); }
+.home-alt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--hs-green-text);
+}
+.home-alt-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--hs-green-dot); }
+.home-alt-product { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.home-alt-product-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.home-alt-product-name { font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+.home-alt-product-desc {
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+/* ==========================================================================
+   2. Founder Spotlight
+   ========================================================================== */
+.home-spot-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.home-spot-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+.home-spot-card:hover,
+.home-spot-card:focus-within { border-color: var(--color-blue); }
+.home-spot-photo {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--hs-ph);
+    background-image: repeating-linear-gradient(135deg, var(--hs-stripe) 0 14px, transparent 14px 28px);
+    color: var(--hs-ph-text);
+}
+.home-spot-photo > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.home-spot-badge {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--hs-green-bg);
+    color: var(--hs-green-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+.home-spot-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--hs-green-dot); }
+.home-spot-body { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; padding: 1.25rem 1.4rem 1.4rem; }
+.home-spot-title {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--text-main);
+    overflow-wrap: anywhere;
+}
+.home-spot-by { margin: 0; font-size: 0.875rem; color: var(--text-muted); overflow-wrap: anywhere; }
+.home-spot-summary {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--text-main);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+.home-spot-link { margin-top: auto; padding-top: 0.5rem; font-size: 0.875rem; font-weight: 700; color: var(--hs-link); text-decoration: none; }
+/* the whole card is clickable through this one real link */
+.home-spot-link::after { content: ""; position: absolute; inset: 0; }
+.home-spot-link:focus-visible { outline: none; }
+.home-spot-card:has(.home-spot-link:focus-visible) { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+
+/* ==========================================================================
+   3. Collections
+   ========================================================================== */
+.home-col-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.home-col-tile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1.1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-main);
+    text-decoration: none;
+    transition: border-color 0.2s;
+}
+.home-col-tile:hover { border-color: var(--color-blue); }
+.home-col-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 15px;
+    font-size: 1.6rem;
+    line-height: 1;
+}
+.home-col-icon--0 { background: #2563eb; }
+.home-col-icon--1 { background: #0b8a57; }
+.home-col-icon--2 { background: #c2610a; }
+.home-col-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.home-col-title { font-size: 1.05rem; font-weight: 700; overflow-wrap: anywhere; }
+.home-col-count { font-size: 0.8rem; color: var(--text-muted); }
+.home-col-arrow { flex-shrink: 0; color: var(--hs-link); }
+
+/* ==========================================================================
+   Newsletter + Submit Product: ONE section, two cards side by side
+   (one column on mobile). Message colours come from the footer's
+   .footer-subscribe-msg .success / .error classes, so they match exactly.
+   ========================================================================== */
+.home-cta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.home-cta-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 2rem 2.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 28px;
+}
+.home-cta-card h2 {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--text-main);
+}
+.home-eyebrow--green { color: var(--hs-green-text); }
+.home-nl-form { margin-top: 0.5rem; }
+.home-nl-row { display: flex; gap: 0.6rem; }
+.home-nl-row input[type="email"] {
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    padding: 0 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-main);
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.home-nl-row input[type="email"]::placeholder { color: var(--text-muted); opacity: 0.75; }
+.home-nl-row input[type="email"]:focus { outline: none; border-color: var(--color-blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+.home-nl-row .home-btn { height: 52px; padding: 0 1.5rem; cursor: pointer; font-family: inherit; }
+.home-nl-row .home-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.home-btn-dark { align-self: flex-start; margin-top: 0.5rem; height: 52px; padding: 0 1.6rem; border: 1px solid transparent; background: var(--text-main); color: var(--bg-main); }
+.home-btn-dark:hover { filter: brightness(1.2); }
+.home-builders-card .home-btn-dark { margin-top: auto; }
+@media (max-width: 768px) {
+    .home-cta-grid { grid-template-columns: 1fr; }
+    .home-cta-card { padding: 1.5rem 1.25rem; border-radius: 24px; }
+    .home-cta-card h2 { font-size: 1.4rem; }
+}
+@media (max-width: 480px) { .home-nl-row { flex-direction: column; } .home-nl-row .home-btn { width: 100%; } }
+
+/* ==========================================================================
+   Sponsored products: full-width coloured band + carousel (arrows + swipe)
+   The band has its own background so the white cards stand out sharply.
+   ========================================================================== */
+.home-sponsored {
+    position: relative;
+    margin: 0 0 4.5rem;
+    padding: 3.5rem 0;
+    background:
+        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.07) 1px, transparent 0) 0 0 / 22px 22px,
+        linear-gradient(135deg, #0b1f3a 0%, #123a7a 100%);
+    color: #ffffff;
+}
+.dark-mode .home-sponsored {
+    background:
+        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.05) 1px, transparent 0) 0 0 / 22px 22px,
+        linear-gradient(135deg, #050b18 0%, #0c1d3d 100%);
+}
+.home-sponsored[hidden] { display: none !important; }
+.home-sponsored-inner { max-width: 1200px; margin: 0 auto; padding: 0 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+@media (min-width: 1440px) { .home-sponsored-inner { max-width: 1400px; } }
+.home-sponsored .home-section-copy h2 { color: #ffffff; }
+.home-sponsored .home-section-sub { color: #c9d6f5; }
+.home-eyebrow--gold { color: #fbbf24; display: inline-flex; align-items: center; gap: 0.45rem; }
+.home-eyebrow--gold::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fbbf24; }
+
+.home-sp-nav { display: flex; gap: 0.6rem; }
+.home-sp-nav[hidden] { display: none; }
+.home-sp-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
+}
+.home-sp-arrow:hover:not(:disabled) { background: rgba(255, 255, 255, 0.22); border-color: #ffffff; }
+.home-sp-arrow:disabled { opacity: 0.35; cursor: default; }
+.home-sponsored a:focus-visible,
+.home-sponsored button:focus-visible,
+.home-sp-track:focus-visible { outline: 2px solid #fbbf24; outline-offset: 3px; border-radius: 12px; }
+
+.home-sp-track {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.5rem 0.25rem 1.25rem;
+    margin: 0 -0.25rem;
+    scrollbar-width: none;
+}
+.home-sp-track::-webkit-scrollbar { display: none; }
+
+.home-sp-card {
+    --sp-bg: #ffffff;
+    --sp-text: #0b1f3a;
+    --sp-muted: #4a5b73;
+    --sp-pill: #eaf1ff;
+    --sp-pill-text: #1d4ed8;
+    position: relative;
+    flex: 0 0 340px;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    min-width: 0;
+    padding: 1.6rem 1.5rem 1.4rem;
+    border-radius: 26px;
+    background: var(--sp-bg);
+    color: var(--sp-text);
+    text-decoration: none;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 14px 34px rgba(2, 8, 23, 0.38);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.dark-mode .home-sp-card {
+    --sp-bg: #1c2b4a;
+    --sp-text: #f1f5fb;
+    --sp-muted: #a3b2cb;
+    --sp-pill: rgba(37, 99, 235, 0.25);
+    --sp-pill-text: #93c5fd;
+    border-color: rgba(147, 197, 253, 0.25);
+}
+.home-sp-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 6px;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24 45%, #60a5fa);
+}
+.home-sp-card:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(2, 8, 23, 0.5); }
+.home-sp-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.35rem; }
+.home-sp-card .home-logo,
+.home-sp-card .home-logo-fallback { width: 60px; height: 60px; border-radius: 18px; font-size: 1.4rem; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.16); }
+.home-sp-tag {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.dark-mode .home-sp-tag { background: rgba(251, 191, 36, 0.16); color: #fcd34d; }
+.home-sp-name {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--sp-text);
+    overflow-wrap: anywhere;
+}
+.home-sp-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.home-sp-pill { padding: 3px 10px; border-radius: 999px; background: var(--sp-pill); color: var(--sp-pill-text); font-size: 0.72rem; font-weight: 700; }
+.home-sp-pill--free { background: var(--hs-green-bg); color: var(--hs-green-text); }
+.home-sp-desc {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--sp-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+.home-sp-cta {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    background: var(--color-blue);
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: filter 0.2s;
+}
+.home-sp-card:hover .home-sp-cta { filter: brightness(1.1); }
+/* the whole card is clickable through the one real link */
+.home-sp-cta::after { content: ""; position: absolute; inset: 0; }
+.home-sp-cta:focus-visible { outline: none; }
+.home-sp-card:has(.home-sp-cta:focus-visible) { outline: 2px solid #fbbf24; outline-offset: 3px; }
+
+.home-skel--sp { flex: 0 0 340px; min-height: 300px; border-radius: 26px; opacity: 0.35; }
+@media (max-width: 768px) {
+    .home-sponsored { padding: 2.5rem 0; margin-bottom: 3.25rem; }
+    .home-sponsored-inner { padding: 0 1.25rem; }
+    .home-sp-track { margin: 0 -1.25rem; padding: 0.5rem 1.25rem 1.25rem; scroll-padding-left: 1.25rem; }
+    .home-sp-card, .home-skel--sp { flex-basis: 82%; max-width: 330px; }
+    .home-sp-arrow { width: 42px; height: 42px; }
+}
+
+/* ==========================================================================
+   Sharper cards across the homepage: stronger border, soft shadow (not deep)
+   and a blue hover tint on every card (this file only loads on the home page).
+   ========================================================================== */
+/* Card tokens */
+:root {
+    /* Built on the site's own palette (style.css): slate greys, white cards. */
+    --hc-border: #cbd5e1;
+    --hc-card-bg: var(--bg-card);
+    /* light, modern shadow: thin contact line + one soft spread */
+    --hc-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.06),
+        0 4px 10px -3px rgba(15, 23, 42, 0.10);
+    --hc-shadow-hover:
+        0 1px 2px rgba(37, 99, 235, 0.10),
+        0 8px 18px -6px rgba(37, 99, 235, 0.22);
+    --hc-hover-bg: #f1f7ff;
+    --hc-panel-bg: #f1f5f9;
+    --hc-panel-border: #dbe3ee;
+
+    /* Section bands: alternate the site's own --bg-main / a slightly deeper slate */
+    --hb-main: var(--bg-main);
+    --hb-alt: #f1f5f9;
+}
+.dark-mode {
+    --hc-border: #475569;
+    --hc-card-bg: var(--bg-card);          /* #1e293b: lighter than the bands below */
+    --hc-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.04),
+        0 1px 2px rgba(0, 0, 0, 0.30),
+        0 4px 10px -3px rgba(0, 0, 0, 0.35);
+    --hc-shadow-hover:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 0 0 1px rgba(96, 165, 250, 0.30),
+        0 8px 18px -6px rgba(37, 99, 235, 0.35);
+    --hc-hover-bg: #273449;
+    --hc-panel-bg: #131c2e;
+    --hc-panel-border: #263248;
+
+    --hb-main: var(--bg-main);             /* #0f172a */
+    --hb-alt: #131c2e;                     /* a touch darker than cards so they pop */
+}
+
+/* ---------- Section background bands ----------
+   Full-width colour behind each new section without wrapper markup (a spread
+   shadow clipped to a horizontal strip). They only alternate between the
+   site's own page colour and one slightly deeper slate; hero, stats, mission
+   and FAQ keep their original style.css backgrounds. */
+.home-alt-section,
+.home-spot-section,
+.home-col-section,
+.home-cta-section {
+    position: relative;
+    margin-top: 0;
+    margin-bottom: 0;
+    clip-path: inset(0 -100vmax);
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+}
+.home-alt-section { background-color: var(--hb-alt);  box-shadow: 0 0 0 100vmax var(--hb-alt); }
+.home-spot-section { background-color: var(--hb-main); box-shadow: 0 0 0 100vmax var(--hb-main); }
+.home-col-section { background-color: var(--hb-alt);  box-shadow: 0 0 0 100vmax var(--hb-alt); }
+.home-cta-section { background-color: var(--hb-alt);  box-shadow: 0 0 0 100vmax var(--hb-alt); }
+/* the AI band keeps its rounded blue card, with breathing room around it */
+.ai-cta { margin-top: 4rem; }
+@media (max-width: 768px) {
+    .home-alt-section, .home-spot-section, .home-col-section, .home-cta-section { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+}
+
+.product-grid-section { background-color: var(--hc-panel-bg); border: 1px solid var(--hc-panel-border); }
+.product-card,
+.home-alt-card,
+.home-spot-card,
+.home-col-tile,
+.home-cta-card {
+    border-color: var(--hc-border);
+    background-color: var(--hc-card-bg);
+    box-shadow: var(--hc-shadow);
+    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.product-card:hover,
+.home-alt-card:hover,
+.home-spot-card:hover,
+.home-spot-card:focus-within,
+.home-col-tile:hover,
+.home-cta-card:hover {
+    border-color: var(--color-blue);
+    background-color: var(--hc-hover-bg);
+    box-shadow: var(--hc-shadow-hover);
+}
+.product-card:hover,
+.home-col-tile:hover,
+.home-spot-card:hover,
+.home-alt-card:hover { transform: translateY(-2px); }
+.home-alt-panel { border-color: var(--hc-border); }
+@media (prefers-reduced-motion: reduce) {
+    .product-card:hover, .home-col-tile:hover, .home-spot-card:hover, .home-alt-card:hover, .home-sp-card:hover { transform: none; }
+    .home-sp-track { scroll-behavior: auto; }
+}
+
+/* ==========================================================================
+   Loading skeletons (same footprint as the real content)
+   ========================================================================== */
+.home-skel {
+    background: linear-gradient(90deg, var(--hover-bg) 0%, var(--border-color) 50%, var(--hover-bg) 100%);
+    background-size: 200% 100%;
+    animation: homeShimmer 1.4s ease-in-out infinite;
+    border-radius: 24px;
+}
+.home-skel--alt { min-height: 268px; }
+.home-skel--spot { display: flex; flex-direction: column; border-radius: 24px; min-height: 420px; }
+.home-skel--col { min-height: 88px; border-radius: 20px; }
+@keyframes homeShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+/* Narrow desktop / tablet: Alternatives and Spotlight turn into swipe rows */
+@media (max-width: 1100px) {
+    .home-alt-group,
+    .home-spot-grid {
+        display: flex;
+        gap: 0.9rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -1rem;
+        padding: 0 1rem 0.6rem;
+        scroll-padding-left: 1rem;
+        scrollbar-width: thin;
+    }
+    .home-alt-group > *,
+    .home-spot-grid > * { flex: 0 0 min(300px, 82%); scroll-snap-align: start; }
+    .home-col-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+    .home-section { padding-left: 1.25rem; padding-right: 1.25rem; gap: 1.25rem; }
+    .home-section-copy h2 { font-size: 1.6rem; }
+    .home-section-sub { font-size: 0.95rem; }
+    .home-alt-group,
+    .home-spot-grid { margin: 0 -1.25rem; padding: 0 1.25rem 0.6rem; scroll-padding-left: 1.25rem; }
+    .home-alt-group > *,
+    .home-spot-grid > * { flex-basis: 82%; max-width: 320px; }
+    .home-col-grid { grid-template-columns: 1fr; }
+    .home-section-actions { width: 100%; }
+    .home-section-actions .home-btn { flex: 1 1 auto; }
+    .home-section-head > .home-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-alt-group,
+    .home-alt-group.is-active { transition: none; transform: none; }
+    .home-skel { animation: none; }
+}

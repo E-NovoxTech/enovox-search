@@ -11,10 +11,14 @@ from app.routers import google_auth
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse
 from app.routers import site_collections
+from app.routers import spotlight
+from app.routers import sponsored
+
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Enovox Search")
-OLD_HOST = "enovox-search.onrender.com"  
+OLD_HOST = "enovox-search.onrender.com"
 NEW_DOMAIN = "https://search.enovoxtech.com"
 
 class RedirectOldDomainMiddleware(BaseHTTPMiddleware):
@@ -37,13 +41,20 @@ app.add_middleware(
 )
 app.include_router(products.router)
 app.include_router(submissions.router)
+# spotlight API must be registered before pages, because pages.py has the
+# catch-all HTML route GET /spotlight/{slug} that would otherwise swallow
+# /spotlight/public and /spotlight/my.
+app.include_router(spotlight.router)
 app.include_router(pages.router)
 app.include_router(developers.router)
 app.include_router(ai.router)
-app.include_router(site_collections.router)                                                      
+app.include_router(site_collections.router)
+
 app.include_router(users.router)
 app.include_router(verification.router)
 app.include_router(google_auth.router)
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 

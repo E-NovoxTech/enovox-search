@@ -1,15 +1,33 @@
 /**
  * js/collection.js
- * Public /collection page: renders the curated sections returned by
- * GET /collections/public in the order they arrive.
+ * Public /collection page — rebuilt to the 2026-10 Collections design.
  *
- * - Each section shows compact product cards (logo, short name, one-line
- *   description). Text is cut in JS and again with CSS ellipsis.
- * - 3 cards per row on desktop, 2 per row on mobile.
- * - Bookmark buttons come from EnovoxBookmarks.cardButtonHtml and behave
- *   exactly like the homepage/Explore cards.
- * - Data fetching, slugs/ids, chips, hash scrolling and copy-link logic are
- *   unchanged from the previous version.
+ * Data (unchanged contract): GET /collections/public -> array of sections
+ *   { id, title, slug, emoji, description, section_type, total, has_more,
+ *     products: [{ id, slug, name, description, logo_url, ... }] }
+ *
+ * Behavior carried over unchanged from the previous version:
+ *   - Share on each collection (navigator.share where available, clipboard
+ *     fallback with Copied/Failed feedback).
+ *   - Bookmark buttons via window.EnovoxBookmarks.cardButtonHtml(product.id),
+ *     exactly like the homepage/Explore cards (existing save behaviour and
+ *     its logged-out handling are untouched).
+ *   - Data fetching, hash scrolling, error + retry and empty states.
+ *
+ * New in this rebuild:
+ *   - Card = tinted header band (icon, title, description, REAL total count)
+ *     + product area, one card per collection.
+ *   - Theme from the title keywords (money/fintech -> blue wallet,
+ *     education -> green cap) else cycles blue, green, amber with a star.
+ *   - At most 6 product tiles per collection, in the given order. Empty
+ *     collections are hidden; if none are renderable, the empty state shows.
+ *   - "See all" only when the collection's real total > 6 (and the section
+ *     isn't an auto section — same no-link rule as before, since auto slugs
+ *     have no detail page): header-band button labelled "See all →" on
+ *     desktop/tablet, full-width "See all <n> products →" under the carousel
+ *     on mobile (both rendered, CSS decides which shows).
+ *   - Mobile product area is a CSS scroll-snap carousel of equal-sized
+ *     tiles; desktop is a 3-column grid, tablet 2.
  */
 (() => {
     const sectionsEl = document.getElementById('collection-sections');
@@ -20,9 +38,29 @@
 
     const COLLECTIONS_URL = '/collections/public';
     const COPY_RESET_MS = 1800;
-    const NAME_MAX = 26;
-    const DESC_MAX = 58;
+    const MAX_SHOWN = 6;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Accent theme + icon rules. Keywords are matched against the lowercase
+    // collection title; unmatched titles cycle blue -> green -> amber and
+    // keep the generic star icon (exactly the rule in the design brief).
+    const THEME_NAMES = ['blue', 'green', 'amber'];
+    const THEME_ICONS = { blue: 'fa-wallet', green: 'fa-graduation-cap', amber: 'fa-star' };
+    const KEYWORD_THEMES = [
+        { words: ['fintech', 'payment', 'bank', 'money'], theme: 'blue', icon: 'fa-wallet' },
+        { words: ['education', 'learn', 'school'], theme: 'green', icon: 'fa-graduation-cap' },
+    ];
+
+    function themeFor(title, index) {
+        const lower = String(title || '').toLowerCase();
+        for (const rule of KEYWORD_THEMES) {
+            if (rule.words.some(word => lower.includes(word))) {
+                return { theme: rule.theme, icon: rule.icon };
+            }
+        }
+        const theme = THEME_NAMES[index % THEME_NAMES.length];
+        return { theme, icon: theme === 'blue' || theme === 'green' ? 'fa-star' : THEME_ICONS[theme] };
+    }
 
     const copyTimers = new WeakMap();
     let sectionObserver = null;
@@ -41,10 +79,8 @@
         return name.charAt(0).toUpperCase();
     }
 
-    // Hard cut: if the text is too long, trim it and add an ellipsis.
-    function truncate(str, max) {
-        const text = String(str == null ? '' : str).replace(/\s+/g, ' ').trim();
-        return text.length > max ? text.slice(0, max).trimEnd() + '…' : text;
+    function plainText(str) {
+        return String(str == null ? '' : str).replace(/\s+/g, ' ').trim();
     }
 
     function setBusy(isBusy) {
@@ -74,58 +110,68 @@
     }
 
     /* ------------------------------------------------------------------
-     * Compact product card
+     * Product tile — link to the product page + separate bookmark button
      * ------------------------------------------------------------------ */
 
-    function buildCard(product) {
-        const fullName = String(product.name || 'Untitled product');
-        const fullDesc = String(product.description || '');
-        const bookmarkHtml = (window.EnovoxBookmarks && product.id != null)
-            ? window.EnovoxBookmarks.cardButtonHtml(product.id)
-            : '';
+    function buildTile(product) {
+        const fullName = plainText(product.name) || 'Untitled product';
+        const fullDesc = plainText(product.description);
 
-        const card = document.createElement('a');
-        card.href = `/product/${encodeURIComponent(product.slug)}`;
-        card.className = 'collection-card';
-        card.title = fullName;
+        const tile = document.createElement('a');
+        tile.href = `/product/${encodeURIComponent(product.slug)}`;
+        tile.className = 'cl-tile';
+        tile.title = fullName;
 
+        // Logo with pastel letter-tile fallback (tint derived from the name
+        // so the same product always reads in the same colour).
+        const tint = `cl-tint${Math.abs((fullName.charCodeAt(0) || 0)) % 6}`;
         const logoWrap = document.createElement('span');
-        logoWrap.className = 'collection-card-logo';
+        logoWrap.className = 'cl-tile-logo';
         const fallback = () => {
+            logoWrap.className = `cl-tile-logo ${tint} is-fallback`;
             logoWrap.replaceChildren(document.createTextNode(getInitials(fullName)));
-            logoWrap.classList.add('is-fallback');
         };
         if (product.logo_url) {
             const img = document.createElement('img');
             img.src = product.logo_url;
             img.alt = '';
             img.loading = 'lazy';
+            img.className = 'cl-tile-logo-img';
             img.addEventListener('error', fallback, { once: true });
+            logoWrap.classList.add('has-img');
             logoWrap.appendChild(img);
         } else {
             fallback();
         }
 
         const info = document.createElement('span');
-        info.className = 'collection-card-info';
+        info.className = 'cl-tile-info';
         info.innerHTML = `
-            <span class="collection-card-name">${escapeHTML(truncate(fullName, NAME_MAX))}</span>
-            <span class="collection-card-desc">${escapeHTML(truncate(fullDesc, DESC_MAX))}</span>
+            <span class="cl-tile-name">${escapeHTML(fullName)}</span>
+            <span class="cl-tile-desc">${escapeHTML(fullDesc)}</span>
         `;
 
-        card.append(logoWrap, info);
+        tile.append(logoWrap, info);
 
+        const bookmarkHtml = (window.EnovoxBookmarks && product.id != null)
+            ? window.EnovoxBookmarks.cardButtonHtml(product.id)
+            : '';
         if (bookmarkHtml) {
-            const bookmark = document.createElement('span');
-            bookmark.className = 'collection-card-bookmark';
-            bookmark.innerHTML = bookmarkHtml;
-            card.appendChild(bookmark);
+            // Separate control inside the link: EnovoxBookmarks' document-level
+            // handler preventDefaults + stopPropagations, so tapping it never
+            // triggers the tile's navigation.
+            const wrap = document.createElement('span');
+            wrap.className = 'cl-tile-bookmark';
+            wrap.innerHTML = bookmarkHtml;
+            const btn = wrap.querySelector('button');
+            if (btn) btn.setAttribute('aria-label', 'Save product');
+            tile.appendChild(wrap);
         }
-        return card;
+        return tile;
     }
 
     /* ------------------------------------------------------------------
-     * Copy-permalink control
+     * Share control (existing behaviour: native share sheet or copy link)
      * ------------------------------------------------------------------ */
 
     async function copyText(text) {
@@ -153,8 +199,8 @@
     }
 
     function setCopyFeedback(button, state, title) {
-        const baseLabel = button.dataset.baseLabel || 'Copy link';
-        const baseAria = button.dataset.baseAria || `Copy link to ${title}`;
+        const baseLabel = button.dataset.baseLabel || 'Share';
+        const baseAria = button.dataset.baseAria || `Share ${title}`;
         const readyLabel = button.dataset.readyLabel || baseAria;
         if (state === 'copied') {
             button.classList.add('is-copied');
@@ -177,7 +223,7 @@
         copyTimers.set(button, window.setTimeout(() => resetCopyButton(button, baseLabel, readyLabel), COPY_RESET_MS));
     }
 
-    function buildCopyButton(title, slug) {
+    function buildShareButton(title, slug) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'collection-copy';
@@ -191,7 +237,6 @@
         `;
         button.addEventListener('click', async () => {
             const url = `${window.location.origin}/collection#${slug}`;
-            // Native share sheet where available (most phones); otherwise copy the link.
             if (typeof navigator.share === 'function') {
                 try {
                     await navigator.share({ title, url });
@@ -213,41 +258,14 @@
     }
 
     /* ------------------------------------------------------------------
-     * Quick-jump chips
+     * Hash scrolling (unchanged) — the quick-jump chip bar stays unused
      * ------------------------------------------------------------------ */
 
-    function centerChip(chip) {
-        if (!chip || !jumpTrack) return;
-        const targetLeft = Math.max(chip.offsetLeft - ((jumpTrack.clientWidth - chip.clientWidth) / 2), 0);
-        if (typeof jumpTrack.scrollTo === 'function') {
-            try {
-                jumpTrack.scrollTo({ left: targetLeft, behavior: prefersReducedMotion.matches ? 'auto' : 'smooth' });
-                return;
-            } catch (error) {
-                /* Older engines reject smooth-scroll options; use scrollLeft. */
-            }
-        }
-        jumpTrack.scrollLeft = targetLeft;
-    }
-
-    function setActiveChip(slug, scrollChipIntoView = false) {
-        let activeChip = null;
-        jumpTrack.querySelectorAll('.collection-jump-chip').forEach(chip => {
-            const isActive = chip.dataset.target === slug;
-            chip.classList.toggle('active', isActive);
-            if (isActive) {
-                chip.setAttribute('aria-current', 'true');
-                activeChip = chip;
-            } else {
-                chip.removeAttribute('aria-current');
-            }
-        });
-        if (scrollChipIntoView && activeChip) centerChip(activeChip);
-    }
+    function setActiveChip() { /* chip bar intentionally not rendered */ }
 
     function scrollToSectionSlug(slug, smooth = true) {
         const target = slug ? document.getElementById(slug) : null;
-        if (!target || !target.classList.contains('collection-section')) return false;
+        if (!target || !target.classList.contains('cl-card')) return false;
         if (typeof target.scrollIntoView === 'function') {
             try {
                 target.scrollIntoView({ behavior: smooth && !prefersReducedMotion.matches ? 'smooth' : 'auto', block: 'start' });
@@ -255,147 +273,154 @@
                 try { target.scrollIntoView(); } catch (ignored) { /* no scroll support */ }
             }
         }
-        setActiveChip(slug, true);
         return true;
     }
 
-    function onChipClick(event) {
-        event.preventDefault();
-        const slug = event.currentTarget.dataset.target;
-        if (!scrollToSectionSlug(slug, true)) return;
+    function currentHashSlug() {
+        if (!window.location.hash) return '';
+        const raw = window.location.hash.slice(1);
         try {
-            if (window.history && typeof window.history.replaceState === 'function') {
-                window.history.replaceState(null, '', `#${slug}`);
-            }
+            return decodeURIComponent(raw);
         } catch (error) {
-            /* History APIs can throw in sandboxed contexts; the scroll still worked. */
+            return raw;
         }
     }
 
-    function buildChip(section) {
-        const slug = String(section.slug || '').trim();
-        const title = String(section.title || 'Untitled collection').trim() || 'Untitled collection';
-        const emoji = String(section.emoji || '').trim();
-
-        const chip = document.createElement('a');
-        chip.className = 'collection-jump-chip';
-        chip.href = `#${slug}`;
-        chip.dataset.target = slug;
-        chip.title = `Jump to ${title}`;
-        if (emoji) {
-            const emojiEl = document.createElement('span');
-            emojiEl.className = 'collection-jump-chip-emoji';
-            emojiEl.setAttribute('aria-hidden', 'true');
-            emojiEl.textContent = emoji;
-            chip.appendChild(emojiEl);
-        }
-        const label = document.createElement('span');
-        label.className = 'collection-jump-chip-label';
-        label.textContent = title;
-        chip.appendChild(label);
-        chip.addEventListener('click', onChipClick);
-        return chip;
+    function scrollToCurrentHash() {
+        const slug = currentHashSlug();
+        if (!slug) return;
+        window.requestAnimationFrame(() => {
+            window.setTimeout(() => {
+                const target = document.getElementById(slug);
+                if (target && target.classList.contains('cl-card')) {
+                    scrollToSectionSlug(slug, true);
+                }
+            }, 60);
+        });
     }
+
+    window.addEventListener('hashchange', () => {
+        const slug = currentHashSlug();
+        if (slug) scrollToSectionSlug(slug, true);
+    });
+    window.addEventListener('load', () => {
+        const slug = currentHashSlug();
+        if (slug) scrollToSectionSlug(slug, false);
+    });
 
     /* ------------------------------------------------------------------
-     * Sections
+     * Collection card
      * ------------------------------------------------------------------ */
 
-    function buildSection(section, index) {
+    function buildCard(section, index) {
         const slug = String(section.slug || '').trim();
         const title = String(section.title || 'Untitled collection').trim() || 'Untitled collection';
-        const emoji = String(section.emoji || '').trim();
         const description = String(section.description || '').trim();
         const sectionType = String(section.section_type || '').trim();
 
-        const sectionEl = document.createElement('section');
-        sectionEl.className = 'collection-section';
-        if (slug) sectionEl.id = slug;
-        sectionEl.setAttribute('aria-labelledby', `collection-heading-${index}`);
+        const products = (Array.isArray(section.products) ? section.products : [])
+            .filter(product => product && product.slug && product.name)
+            .slice(0, MAX_SHOWN);
 
-        const header = document.createElement('header');
-        header.className = 'collection-section-header';
+        // Hide whole collections that have no products (all-empty handled by
+        // the caller: if no card renders, the friendly empty state shows).
+        if (!products.length) return null;
 
-        // Left: emoji badge + title + description
+        // The payload carries the REAL total — the band count and the mobile
+        // "See all <n>" label both use it, never the number of tiles shown.
+        const totalRaw = Number(section.total);
+        const total = Number.isFinite(totalRaw) ? totalRaw : products.length;
+        const countLabel = `${total} product${total === 1 ? '' : 's'}`;
+
+        // "See all" ONLY when more than 6 exist. Auto sections never link out
+        // (unchanged rule: their slugs have no detail page).
+        const hasSeeAll = total > MAX_SHOWN && !!slug && sectionType !== 'auto';
+
+        const { theme, icon } = themeFor(title, index);
+
+        const card = document.createElement('section');
+        card.className = `cl-card cl-theme-${theme}`;
+        if (slug) card.id = slug;
+        card.setAttribute('aria-labelledby', `cl-heading-${index}`);
+
+        /* --- tinted header band --- */
+        const band = document.createElement('div');
+        band.className = 'cl-band';
+
         const main = document.createElement('div');
-        main.className = 'collection-section-main';
+        main.className = 'cl-band-main';
 
-        if (emoji) {
-            const badge = document.createElement('span');
-            badge.className = 'collection-section-emoji';
-            badge.setAttribute('aria-hidden', 'true');
-            badge.textContent = emoji;
-            main.appendChild(badge);
-        }
+        const iconEl = document.createElement('span');
+        iconEl.className = 'cl-icon';
+        iconEl.setAttribute('aria-hidden', 'true');
+        iconEl.innerHTML = `<i class="fa-solid ${icon}"></i>`;
+        main.appendChild(iconEl);
 
         const textWrap = document.createElement('div');
-        textWrap.className = 'collection-section-text';
+        textWrap.className = 'cl-band-text';
 
         const heading = document.createElement('h2');
-        heading.className = 'collection-section-title';
-        heading.id = `collection-heading-${index}`;
-        const name = document.createElement('span');
-        name.className = 'collection-section-name';
-        name.textContent = title;
-        heading.appendChild(name);
+        heading.className = 'cl-title';
+        heading.id = `cl-heading-${index}`;
+        heading.textContent = title;
         textWrap.appendChild(heading);
 
         if (description) {
             const desc = document.createElement('p');
-            desc.className = 'collection-section-desc';
+            desc.className = 'cl-desc';
             desc.textContent = description;
             textWrap.appendChild(desc);
         }
+
+        const count = document.createElement('p');
+        count.className = 'cl-count';
+        count.textContent = countLabel;
+        textWrap.appendChild(count);
+
         main.appendChild(textWrap);
-        header.appendChild(main);
+        band.appendChild(main);
 
-        // Right: copy link + View all (View all only when backend says more exist;
-        // auto sections never link out)
         const actions = document.createElement('div');
-        actions.className = 'collection-section-actions';
-        if (slug) actions.appendChild(buildCopyButton(title, slug));
-        if (slug && section.has_more === true && sectionType !== 'auto') {
-            const viewAll = document.createElement('a');
-            viewAll.className = 'collection-view-all';
-            viewAll.href = `/collection/${encodeURIComponent(slug)}`;
-            viewAll.setAttribute('aria-label', `View all ${title} products`);
-            viewAll.textContent = 'View all →';
-            actions.appendChild(viewAll);
+        actions.className = 'cl-band-actions';
+        if (slug) actions.appendChild(buildShareButton(title, slug));
+        if (hasSeeAll) {
+            const seeAll = document.createElement('a');
+            seeAll.className = 'cl-seeall';
+            seeAll.href = `/collection/${encodeURIComponent(slug)}`;
+            seeAll.setAttribute('aria-label', `See all ${countLabel} in ${title}`);
+            seeAll.innerHTML = 'See all <span aria-hidden="true">&rarr;</span>';
+            actions.appendChild(seeAll);
         }
-        header.appendChild(actions);
-        sectionEl.appendChild(header);
+        band.appendChild(actions);
+        card.appendChild(band);
 
-        const products = (Array.isArray(section.products) ? section.products : [])
-            .filter(product => product && product.slug && product.name);
+        /* --- product area (grid on desktop/tablet, snap carousel on mobile) --- */
+        const area = document.createElement('div');
+        area.className = 'cl-products';
+        area.setAttribute('role', 'group');
+        // Focusable so keyboard users can arrow-scroll the carousel on mobile.
+        area.tabIndex = 0;
+        area.setAttribute('aria-label', `Products in ${title}`);
+        products.forEach(product => area.appendChild(buildTile(product)));
+        card.appendChild(area);
 
-        if (products.length) {
-            const grid = document.createElement('div');
-            grid.className = 'collection-products-grid';
-            grid.setAttribute('role', 'group');
-            grid.setAttribute('aria-label', `${title} products`);
-            products.forEach(product => grid.appendChild(buildCard(product)));
-            sectionEl.appendChild(grid);
-        } else {
-            const note = document.createElement('div');
-            note.className = 'collection-section-empty-note';
-            note.textContent = 'Products are being added to this collection.';
-            sectionEl.appendChild(note);
+        if (hasSeeAll) {
+            // Full-width button under the carousel — mobile-only (CSS hides it
+            // at >= 640px), labelled with the real total.
+            const seeAllMobile = document.createElement('a');
+            seeAllMobile.className = 'cl-seeall-mobile';
+            seeAllMobile.href = `/collection/${encodeURIComponent(slug)}`;
+            seeAllMobile.setAttribute('aria-label', `See all ${countLabel} in ${title}`);
+            seeAllMobile.innerHTML = `See all ${total} product${total === 1 ? '' : 's'} <span aria-hidden="true">&rarr;</span>`;
+            card.appendChild(seeAllMobile);
         }
 
-        return sectionEl;
+        return card;
     }
 
     /* ------------------------------------------------------------------
      * Skeleton / empty states
      * ------------------------------------------------------------------ */
-
-    function buildSkeletonCard() {
-        const skeleton = document.createElement('div');
-        skeleton.className = 'collection-card-skeleton';
-        skeleton.setAttribute('aria-hidden', 'true');
-        skeleton.innerHTML = '<span class="collection-skeleton-logo"></span><span class="collection-skeleton-lines"><span></span><span></span></span>';
-        return skeleton;
-    }
 
     function showSkeletons() {
         setBusy(true);
@@ -404,14 +429,12 @@
         const fragment = document.createDocumentFragment();
         for (let s = 0; s < 2; s += 1) {
             const block = document.createElement('div');
-            block.className = 'collection-section collection-section-skeleton';
+            block.className = 'cl-card cl-skel';
             block.setAttribute('aria-hidden', 'true');
-            const heading = document.createElement('div');
-            heading.className = 'collection-skeleton-heading';
-            const grid = document.createElement('div');
-            grid.className = 'collection-products-grid';
-            for (let c = 0; c < 6; c += 1) grid.appendChild(buildSkeletonCard());
-            block.append(heading, grid);
+            block.innerHTML = `
+                <div class="cl-skel-band"><span class="cl-skel-icon"></span>
+                    <span class="cl-skel-band-text"><span class="cl-skel-line cl-skel-lg"></span><span class="cl-skel-line"></span><span class="cl-skel-line cl-skel-short"></span></span></div>
+                <div class="cl-skel-tiles"><span class="cl-skel-tile"></span><span class="cl-skel-tile"></span><span class="cl-skel-tile"></span></div>`;
             fragment.appendChild(block);
         }
         sectionsEl.replaceChildren(fragment);
@@ -446,70 +469,29 @@
     }
 
     /* ------------------------------------------------------------------
-     * Active chip tracking + hash navigation
-     * ------------------------------------------------------------------ */
-
-    function observeSections() {
-        if (sectionObserver) {
-            sectionObserver.disconnect();
-            sectionObserver = null;
-        }
-        if (typeof IntersectionObserver !== 'function') return;
-        const sections = Array.from(sectionsEl.querySelectorAll('.collection-section[id]'));
-        if (!sections.length) return;
-        sectionObserver = new IntersectionObserver(entries => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) setActiveChip(entry.target.id, false);
-            });
-        }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
-        sections.forEach(sectionEl => sectionObserver.observe(sectionEl));
-    }
-
-    function currentHashSlug() {
-        if (!window.location.hash) return '';
-        const raw = window.location.hash.slice(1);
-        try {
-            return decodeURIComponent(raw);
-        } catch (error) {
-            return raw;
-        }
-    }
-
-    function scrollToCurrentHash() {
-        const slug = currentHashSlug();
-        if (!slug) return;
-        window.requestAnimationFrame(() => {
-            window.setTimeout(() => {
-                const target = document.getElementById(slug);
-                if (target && target.classList.contains('collection-section')) {
-                    scrollToSectionSlug(slug, true);
-                }
-            }, 60);
-        });
-    }
-
-    window.addEventListener('hashchange', () => {
-        const slug = currentHashSlug();
-        if (slug) scrollToSectionSlug(slug, true);
-    });
-    window.addEventListener('load', () => {
-        const slug = currentHashSlug();
-        if (slug) scrollToSectionSlug(slug, false);
-    });
-
-    /* ------------------------------------------------------------------
      * Load + render
      * ------------------------------------------------------------------ */
 
     function renderCollections(sections) {
         const fragment = document.createDocumentFragment();
-        // The quick-jump chip bar is intentionally not rendered anymore.
+        let rendered = 0;
         sections.forEach((section, index) => {
-            fragment.appendChild(buildSection(section, index));
+            const card = buildCard(section, index);
+            if (card) {
+                fragment.appendChild(card);
+                rendered += 1;
+            }
         });
         jumpTrack.replaceChildren();
-        sectionsEl.replaceChildren(fragment);
         jumpNav.hidden = true;
+
+        if (!rendered) {
+            // Everything was empty — show the friendly empty state instead of
+            // a blank page. setBusy was already cleared by the caller.
+            showEmptyState();
+            return;
+        }
+        sectionsEl.replaceChildren(fragment);
         scrollToCurrentHash();
     }
 

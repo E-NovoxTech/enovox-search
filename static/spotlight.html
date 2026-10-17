@@ -3,19 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotlight — Coming Soon | Enovox Search</title>
-    <meta name="description" content="Spotlight is coming soon: founder stories and the journeys behind products built in Nigeria.">
+    <title>Nigerian Tech Founders & Startup Stories | Enovox Search</title>
+    <meta name="description" content="Meet the founders building Nigeria: real stories from the people building Nigerian products.">
     <meta name="robots" content="index,follow">
-    <link rel="canonical" href="https://search.enovoxtech.com/spotlight">
-    <link rel="stylesheet" href="/static/css/style.css?v=category-grid-20261008-1">
+    <link rel="canonical" href="https://search.enovoxtech.com/spotlight" />
+    <link rel="stylesheet" href="/static/css/style.css?v=spotlight-20261012-1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
     <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
-    <link rel="manifest" href="/static/assets/site.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KWLYDKBTN2"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-KWLYDKBTN2');
+    </script>
 </head>
-<body style="min-height:100vh; margin:0; display:flex; flex-direction:column; background:var(--bg-main); color:var(--text-main); font-family:Inter,Arial,sans-serif;">
-    <!-- Navigation Bar -->
+<body>
     <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
     <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
         <div class="site-banner-inner">
@@ -30,6 +38,7 @@
             </button>
         </div>
     </div>
+    <!-- Navigation Bar (Identical to Homepage) -->
     <header class="navbar">
         <div class="nav-container">
             <a href="/" class="brand-logo" aria-label="Enovox Search home">
@@ -141,19 +150,103 @@
         </div>
         <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
     </header>
-    <main style="box-sizing:border-box; flex:1; width:100%; display:grid; place-items:center; padding:clamp(56px,12vh,120px) 20px;">
-        <section aria-labelledby="spotlight-title" style="width:min(100%,680px); text-align:center;">
-            <p style="display:inline-block; margin:0 0 18px; padding:7px 11px; border:1px solid var(--border-color); border-radius:999px; background:var(--bg-card); color:var(--color-green); font-size:11px; font-weight:800; letter-spacing:0.12em;">SPOTLIGHT · COMING SOON</p>
-            <h1 id="spotlight-title" style="margin:0; color:var(--text-main); font-family:'Plus Jakarta Sans',Inter,sans-serif; font-size:clamp(38px,7vw,68px); font-weight:800; letter-spacing:-0.055em; line-height:1.05;">Stories worth sharing are on the way.</h1>
-            <p style="max-width:540px; margin:20px auto 0; color:var(--text-muted); font-size:clamp(16px,2.2vw,19px); line-height:1.7;">We’re getting ready to spotlight the founders, ideas, and journeys behind products built in Nigeria. Check back soon.</p>
-            <a href="/explore" style="display:inline-block; margin-top:30px; padding:12px 18px; border-radius:10px; background:var(--color-green); color:#ffffff; font-size:14px; font-weight:700; text-decoration:none;">Explore products <span aria-hidden="true">→</span></a>
-        </section>
+    <main id="main-content" class="spotlight-page" aria-labelledby="spotlight-page-title">
+        <div class="spotlight-container">
+            <header class="spotlight-header">
+                <span class="spotlight-kicker"><span class="spotlight-kicker-dot" aria-hidden="true"></span>Founder Spotlight</span>
+                <h1 id="spotlight-page-title" class="spotlight-title">Meet the founders building Nigeria</h1>
+                <p class="spotlight-subtitle">Real stories from the people building Nigerian products.</p>
+            </header>
+
+            <p id="spotlight-status" class="spotlight-status" role="status" aria-live="polite" hidden></p>
+
+            <section id="spotlight-featured" aria-label="Latest spotlight" aria-busy="true">
+                <div class="spotlight-featured-card spotlight-skeleton-card" aria-hidden="true">
+                    <span class="spotlight-skel spotlight-skeleton-photo"></span>
+                    <div class="spotlight-skeleton-body">
+                        <span class="spotlight-skel spotlight-skel-line w-30" aria-hidden="true"></span>
+                        <span class="spotlight-skel spotlight-skel-line w-70 t-lg" aria-hidden="true"></span>
+                        <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                        <span class="spotlight-skel spotlight-skel-line w-90" aria-hidden="true"></span>
+                        <span class="spotlight-skel spotlight-skel-line w-85" aria-hidden="true"></span>
+                        <span class="spotlight-skel spotlight-skel-btn" aria-hidden="true"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="spotlight-more-wrap" aria-labelledby="spotlight-more-heading">
+                <h2 id="spotlight-more-heading" class="spotlight-more-heading"><span class="spotlight-skel spotlight-more-heading-skel" aria-hidden="true"></span></h2>
+                <div id="spotlight-more" class="spotlight-grid" aria-busy="true">
+                    <div class="spotlight-card spotlight-skeleton-card" aria-hidden="true">
+                        <span class="spotlight-skel spotlight-skeleton-tile-photo"></span>
+                        <div class="spotlight-skeleton-tile-body">
+                            <span class="spotlight-skel spotlight-skel-line w-55" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-35" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="spotlight-card spotlight-skeleton-card" aria-hidden="true">
+                        <span class="spotlight-skel spotlight-skeleton-tile-photo"></span>
+                        <div class="spotlight-skeleton-tile-body">
+                            <span class="spotlight-skel spotlight-skel-line w-55" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-35" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="spotlight-card spotlight-skeleton-card" aria-hidden="true">
+                        <span class="spotlight-skel spotlight-skeleton-tile-photo"></span>
+                        <div class="spotlight-skeleton-tile-body">
+                            <span class="spotlight-skel spotlight-skel-line w-55" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-35" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="spotlight-card spotlight-skeleton-card" aria-hidden="true">
+                        <span class="spotlight-skel spotlight-skeleton-tile-photo"></span>
+                        <div class="spotlight-skeleton-tile-body">
+                            <span class="spotlight-skel spotlight-skel-line w-55" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-35" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="spotlight-card spotlight-skeleton-card" aria-hidden="true">
+                        <span class="spotlight-skel spotlight-skeleton-tile-photo"></span>
+                        <div class="spotlight-skeleton-tile-body">
+                            <span class="spotlight-skel spotlight-skel-line w-55" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-35" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    <div class="spotlight-card spotlight-skeleton-card" aria-hidden="true">
+                        <span class="spotlight-skel spotlight-skeleton-tile-photo"></span>
+                        <div class="spotlight-skeleton-tile-body">
+                            <span class="spotlight-skel spotlight-skel-line w-55" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-40" aria-hidden="true"></span>
+                            <span class="spotlight-skel spotlight-skel-line w-35" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="spotlight-cta" aria-labelledby="spotlight-cta-title">
+                <div class="spotlight-cta-copy">
+                    <p class="spotlight-cta-kicker">FOR NIGERIAN FOUNDERS</p>
+                    <h2 class="spotlight-cta-title" id="spotlight-cta-title">Building something in Nigeria? Tell your story.</h2>
+                    <p class="spotlight-cta-text">Apply with your own story and photo, and we'll email you when it goes live.</p>
+                </div>
+                <div class="spotlight-cta-action">
+                    <button type="button" id="spotlight-apply-btn" class="spotlight-apply-btn">Apply for spotlight</button>
+                    <p class="spotlight-cta-note">Sign up or log in as a developer to apply.</p>
+                </div>
+            </section>
+        </div>
     </main>
+
+    <!-- Footer -->
     <footer>
         <div class="footer-top">
-            <!-- Column 1: Brand & Social -->
             <div class="footer-col brand-col">
-                <a href="/" class="logo" style="text-decoration: none; ">Enovox <span class="logo-accent" style="color: rgb(13, 132, 243);">Search</span></a>
+                <a href="/" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
                 <p>Discover what Nigeria is building.</p>
                 <div class="footer-social">
                     <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
@@ -171,8 +264,6 @@
                     </form>
                 </div>
             </div>
-
-            <!-- Column 2: Quick Links -->
             <div class="footer-col">
                 <h4>Quick Links</h4>
                 <a href="/">Home</a>
@@ -182,24 +273,21 @@
                 <a href="/about">About</a>
                 <a href="/contact">Contact</a>
             </div>
-
-            <!-- Column 3: Community -->
             <div class="footer-col">
                 <h4>Community</h4>
                 <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
                 <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
             </div>
-
-            <!-- Column 4: Legal -->
             <div class="footer-col">
                 <h4>Legal</h4>
                 <a href="/privacy">Privacy Policy</a>
-                <a href="/term">Terms & Conditions</a>
+                <a href="/term">Terms &amp; Conditions</a>
             </div>
         </div>
     </footer>
     <script src="/static/js/config.js"></script>
     <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
+    <script src="/static/js/spotlight.js?v=spotlight-20261012-2"></script>
     <script src="/static/js/nav-auth.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a478227e5afad5d8',t:'MTc5MTQ5Mzg1MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a499313239d05329',t:'MTc5MTg0MDQ4NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

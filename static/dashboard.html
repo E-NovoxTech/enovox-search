@@ -150,64 +150,141 @@
         <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
     </header>
 
-    <main class="dashboard-page">
-        <div class="dashboard-container">
+    <main class="dashboard-page db-page">
+        <div class="db-container">
 
-            <!-- Profile card: email + joined date (decoded from the JWT — no
-                 extra API call), plus Logout -->
-            <section class="profile-card">
-                <div class="profile-avatar" id="profile-avatar">?</div>
-                <div class="profile-info">
-                    <p class="profile-email" id="profile-email">Loading...</p>
-                    <p class="profile-joined" id="profile-joined"></p>
+            <!-- 1 - Welcome row: avatar letter + label + email + joined date,
+                 Submit action on the right (drops full-width under the identity
+                 block on mobile). Logout lives in the site header only - no
+                 button on this page. -->
+            <section class="db-card db-welcome" aria-labelledby="db-welcome-label">
+                <div class="db-welcome-identity">
+                    <div class="db-avatar" id="profile-avatar">?</div>
+                    <div class="db-welcome-text">
+                        <p class="db-eyebrow" id="db-welcome-label">Developer dashboard</p>
+                        <p class="db-email" id="profile-email">Loading...</p>
+                        <p class="db-joined" id="profile-joined"></p>
+                    </div>
                 </div>
-                <button type="button" id="dashboard-logout-btn" class="btn-primary">Logout</button>
+                <a class="db-btn-primary db-submit-new" href="/submit">+ Submit New Product</a>
             </section>
 
-            <!-- Notification tray, same pattern as the admin dashboard -->
-            <div class="admin-notifications-wrapper dev-notif-wrapper">
-                <button class="notification-bell-btn dev-bell-btn" aria-label="Notifications">
-                    <i class="fa-solid fa-bell"></i><span class="notification-badge dev-notif-badge">0</span>
-                </button>
-                <div class="notification-dropdown dev-notif-dropdown hidden">
-                    <div class="notif-dropdown-header">
-                        <strong>Notifications</strong>
-                        <button class="clear-all-notifications">Clear All</button>
+            <!-- 2 - Stats row: three equal tiles, filled from the real fetches -->
+            <section class="db-stats" aria-label="Your overview">
+                <div class="db-card db-stat">
+                    <p class="db-stat-label">Approved</p>
+                    <p class="db-stat-value" id="db-stat-approved">&mdash;</p>
+                </div>
+                <div class="db-card db-stat">
+                    <p class="db-stat-label">Under review</p>
+                    <p class="db-stat-value" id="db-stat-review">&mdash;</p>
+                </div>
+                <div class="db-card db-stat">
+                    <p class="db-stat-label">Spotlight</p>
+                    <p class="db-stat-value db-stat-value-text" id="db-stat-spotlight">Not applied</p>
+                </div>
+            </section>
+
+            <!-- 3 - Two-column region: products left, spotlight + notifications right.
+                 DOM order already gives the required mobile stack:
+                 products -> spotlight -> notifications. -->
+            <div class="db-grid">
+
+                <!-- LEFT: Your products with the Approved | Under review segmented tabs -->
+                <section class="db-card db-products" aria-labelledby="db-products-heading">
+                    <div class="db-products-head">
+                        <div class="db-products-headingwrap">
+                            <h2 class="db-card-title" id="db-products-heading">Your products</h2>
+                            <a class="db-inline-link" id="db-products-featured" href="/spotlight/apply" hidden>Get featured <span aria-hidden="true">&rarr;</span></a>
+                        </div>
+                        <div class="db-seg" role="tablist" aria-label="Your products views">
+                            <button type="button" class="db-seg-btn is-active" role="tab" id="db-tab-approved"
+                                aria-selected="true" aria-controls="db-pane-approved">
+                                Approved <span class="db-seg-count" id="db-count-approved">0</span>
+                            </button>
+                            <button type="button" class="db-seg-btn" role="tab" id="db-tab-review"
+                                aria-selected="false" tabindex="-1" aria-controls="db-pane-review">
+                                Under review <span class="db-seg-count" id="db-count-review">0</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="notification-list"><p class="notif-empty">No new notifications</p></div>
+
+                    <div id="db-pane-approved" role="tabpanel" aria-labelledby="db-tab-approved">
+                        <div id="dashboard-products-loading" class="dashboard-status">Loading your products...</div>
+                        <div id="dashboard-products-empty" class="dashboard-status hidden">
+                            You don't have any approved products yet. Once your submission is reviewed and approved, it'll show up here.
+                        </div>
+                        <div id="dashboard-products-error" class="dashboard-status error hidden"></div>
+                        <div id="dashboard-products-grid" class="db-product-grid"></div>
+                    </div>
+
+                    <div id="db-pane-review" role="tabpanel" aria-labelledby="db-tab-review" hidden>
+                        <div id="dashboard-pending-loading" class="dashboard-status">Loading your submissions...</div>
+                        <div id="dashboard-pending-empty" class="dashboard-status db-empty-dashed hidden">
+                            Nothing pending right now. Anything you submit will show up here while it's being reviewed.
+                        </div>
+                        <div id="dashboard-pending-error" class="dashboard-status error hidden"></div>
+                        <div id="dashboard-pending-grid" class="db-product-grid"></div>
+                    </div>
+                </section>
+
+                <!-- RIGHT column (capped near 380px): Founder Spotlight + Notifications -->
+                <div class="db-side">
+
+                    <!-- Founder Spotlight: exactly one of intro / pending / approved
+                         renders into #db-spotlight-body from GET /spotlight/my. -->
+                    <section class="db-card db-spotlight" id="db-spotlight-card" aria-labelledby="db-spotlight-heading">
+                        <div class="db-spotlight-head">
+                            <h2 class="db-card-title" id="db-spotlight-heading">Founder Spotlight</h2>
+                            <i class="fa-regular fa-star db-spotlight-star" aria-hidden="true"></i>
+                        </div>
+                        <!-- Dismissible rejection notices from GET /spotlight/my (status "rejected") -->
+                        <div class="db-spotlight-notices" id="db-spotlight-notices" aria-live="polite"></div>
+                        <div class="db-spotlight-body" id="db-spotlight-body">
+                            <div class="db-skel db-skel-line" aria-hidden="true"></div>
+                            <div class="db-skel db-skel-line db-skel-short" aria-hidden="true"></div>
+                        </div>
+
+                        <hr class="db-divider">
+
+                        <!-- Saved drafts disclosure (replaces the old page-level
+                             "My Spotlight Drafts" section). Errors + Retry live
+                             INSIDE this panel only. -->
+                        <div class="db-drafts" id="db-drafts">
+                            <button type="button" class="db-drafts-toggle" id="db-drafts-toggle"
+                                aria-expanded="false" aria-controls="db-drafts-panel">
+                                <span class="db-drafts-toggle-label">Saved drafts</span>
+                                <span class="db-drafts-count" id="db-drafts-count">0</span>
+                                <i class="fa-solid fa-chevron-down db-drafts-chevron" aria-hidden="true"></i>
+                            </button>
+                            <div class="db-drafts-panel" id="db-drafts-panel" hidden>
+                                <div class="db-drafts-loading" id="db-drafts-loading">
+                                    <div class="db-skel db-skel-row" aria-hidden="true"></div>
+                                    <div class="db-skel db-skel-row" aria-hidden="true"></div>
+                                </div>
+                                <p class="db-drafts-empty" id="db-drafts-empty" hidden>No drafts yet. Anything you save from the application form appears here.</p>
+                                <div class="db-drafts-error" id="db-drafts-error" hidden>
+                                    <span id="db-drafts-error-text">We couldn't load your drafts right now.</span>
+                                    <button type="button" class="db-drafts-retry" id="db-drafts-retry">Retry</button>
+                                </div>
+                                <ul class="db-drafts-list" id="db-drafts-list"></ul>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Notifications card (replaces the bell tray). The badge
+                         counts new items; unread rows carry the blue dot. -->
+                    <section class="db-card db-notifications" id="db-notifs-card" aria-labelledby="db-notifs-heading">
+                        <div class="db-notifs-head">
+                            <h2 class="db-card-title" id="db-notifs-heading">Notifications</h2>
+                            <span class="db-notifs-badge" id="db-notifs-badge" hidden>0 new</span>
+                        </div>
+                        <div class="db-notifs-list" id="db-notifs-list"></div>
+                        <button type="button" class="db-notifs-clear hidden" id="db-notifs-clear">Clear all</button>
+                    </section>
+
                 </div>
             </div>
-
-            <!-- Approved products -->
-            <section class="products-section">
-                <div class="section-header">
-                    <h2>Your Approved Products</h2>
-                    <a href="/submit" class="btn-accent">+ Submit New Product</a>
-                </div>
-
-                <div id="dashboard-products-loading" class="dashboard-status">Loading your products...</div>
-                <div id="dashboard-products-empty" class="dashboard-status hidden">
-                    You don't have any approved products yet. Once your submission is reviewed and approved, it'll show up here.
-                </div>
-                <div id="dashboard-products-error" class="dashboard-status error hidden"></div>
-
-                <div id="dashboard-products-grid" class="dashboard-products-grid"></div>
-            </section>
-
-            <!-- NEW: Under Review / Rejected submissions -->
-            <section class="products-section">
-                <div class="section-header">
-                    <h2 style="margin-top: 50px;">Under Review</h2>
-                </div>
-
-                <div id="dashboard-pending-loading" class="dashboard-status">Loading your submissions...</div>
-                <div id="dashboard-pending-empty" class="dashboard-status hidden">
-                    Nothing pending right now — anything you submit will show up here while it's being reviewed.
-                </div>
-                <div id="dashboard-pending-error" class="dashboard-status error hidden"></div>
-
-                <div id="dashboard-pending-grid" class="dashboard-products-grid"></div>
-            </section>
 
         </div>
     </main>
@@ -440,5 +517,5 @@
     <script src="/static/js/home.js?v=header-nav-20261007-1"></script>
     <script src="/static/js/dashboard.js"></script>
     <script src="/static/js/nav-auth.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a49e19f5ea736634',t:'MTc5MTg5MTk2MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

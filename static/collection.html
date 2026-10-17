@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collections - Enovox Search</title>
+    <title>Curated Tech Product Collections | Enovox Search</title>
     <link rel="canonical" href="https://search.enovoxtech.com/collection" />
-    <link rel="stylesheet" href="/static/css/style.css?v=collections-20261009-1">
+    <link rel="stylesheet" href="/static/css/style.css?v=collections-20261014-2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
@@ -75,13 +75,14 @@
                         </div>
                     </div>
 
-                    <div class="nav-dropdown" data-nav-dropdown>
+                     <div class="nav-dropdown" data-nav-dropdown>
                         <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-categories-menu">
                             <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Categories</span></span>
                             <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </button>
                         <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
                             <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
+                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
                         </div>
                     </div>
 
@@ -154,7 +155,7 @@
             <header class="collection-page-header">
                 <span class="collection-page-kicker"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>Curated Lists</span>
                 <h1 id="collection-page-title" class="collection-page-title">Collections</h1>
-                <p class="collection-page-subtitle">Curated lists of Nigerian products.</p>
+                <p class="collection-page-subtitle">Curated lists of Nigerian products, grouped by what they help you do.</p>
             </header>
 
             <nav class="collection-jump" id="collection-jump" aria-label="Jump to a collection" hidden>
@@ -164,28 +165,18 @@
             <p id="collection-status" class="collection-status" role="status" aria-live="polite" hidden></p>
 
             <div id="collection-sections" class="collection-sections" aria-busy="true" aria-label="Collections">
-                <div class="collection-section collection-section-skeleton">
-                    <div class="collection-skeleton-heading"></div>
-                    <div class="popular-products-grid collection-products-grid">
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                    </div>
+                <div class="cl-card cl-skel" aria-hidden="true">
+
+                    <div class="cl-skel-band"><span class="cl-skel-icon"></span><span class="cl-skel-band-text"><span class="cl-skel-line cl-skel-lg"></span><span class="cl-skel-line"></span><span class="cl-skel-line cl-skel-short"></span></span></div>
+                    <div class="cl-skel-tiles"><span class="cl-skel-tile" aria-hidden="true"></span><span class="cl-skel-tile" aria-hidden="true"></span><span class="cl-skel-tile" aria-hidden="true"></span></div>
                 </div>
-                <div class="collection-section collection-section-skeleton">
-                    <div class="collection-skeleton-heading"></div>
-                    <div class="popular-products-grid collection-products-grid">
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                        <div class="popular-card-skeleton" aria-hidden="true"><span class="popular-skeleton-logo"></span><span class="popular-skeleton-line"></span><span class="popular-skeleton-line short"></span><span class="popular-skeleton-line"></span></div>
-                    </div>
+
+                <div class="cl-card cl-skel" aria-hidden="true">
+
+                    <div class="cl-skel-band"><span class="cl-skel-icon"></span><span class="cl-skel-band-text"><span class="cl-skel-line cl-skel-lg"></span><span class="cl-skel-line"></span><span class="cl-skel-line cl-skel-short"></span></span></div>
+                    <div class="cl-skel-tiles"><span class="cl-skel-tile" aria-hidden="true"></span><span class="cl-skel-tile" aria-hidden="true"></span><span class="cl-skel-tile" aria-hidden="true"></span></div>
                 </div>
+
             </div>
         </div>
     </main>
@@ -235,7 +226,7 @@
     </footer>
     <script src="/static/js/config.js"></script>
     <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
-    <script src="/static/js/collection.js?v=collections-20261009-1"></script>
+    <script src="/static/js/collection.js?v=collections-20261014-2"></script>
     <script src="/static/js/nav-auth.js"></script>
 <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47d83cdbb548b7c',t:'MTc5MTU1MDI2Ng=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

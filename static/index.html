@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enovox Search - Discover Nigerian Tech</title>
+    <title>Enovox Search - Discover Nigerian Tech Products & Tools</title>
     <link rel="canonical" href="https://search.enovoxtech.com" />
     <!-- Link to the shared stylesheet -->
     <link rel="stylesheet" href="/static/css/style.css?v=category-grid-20261008-1">
+    <link rel="stylesheet" href="/static/css/home-sections.css?v=home-sections-20261016-1">
     <!-- FontAwesome for footer icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
@@ -216,18 +217,6 @@
     </div>
 </section>
 
-        <!-- TEMPORARY INDEPENDENCE DAY PROMO — START
-             After the celebration, remove this section and the matching CSS block in style.css. -->
-        <section class="independence-day-feature" aria-labelledby="independence-day-feature-title">
-            <div class="independence-day-feature-copy">
-                <p class="independence-day-feature-kicker">Nigeria @ 66</p>
-                <h2 id="independence-day-feature-title">Happy Independence Day, Nigeria! <svg class="nigeria66-flag-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="12" viewBox="0 0 30 20" role="img" aria-label="Nigerian flag" focusable="false"><rect width="30" height="20" fill="#ffffff"/><path d="M0 0h10v20H0zM20 0h10v20H20z" fill="#008751"/></svg></h2>
-                <p>Celebrating the ideas and products built by Nigerians.</p>
-            </div>
-            <a class="independence-day-feature-link" href="/nigeria-66">Check out what we built <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
-        </section>
-        <!-- TEMPORARY INDEPENDENCE DAY PROMO — END -->
-
         <!-- 3-Column Content Grid -->
         <section class="product-grid-section">
             <div class="grid-container">
@@ -269,6 +258,94 @@
             </div>
         </section>
 
+        <!-- ==================================================================
+             HOME SECTIONS 1-3 (added): Alternatives, Founder Spotlight, Collections.
+             Filled by /static/js/home-sections.js. Each hides itself if its data
+             request fails or comes back empty. Styles: /static/css/home-sections.css
+             ================================================================== -->
+
+        <!-- 1) Alternatives (GET /products/alternatives/daily-comparisons) -->
+        <section class="home-section home-alt-section" id="home-alt-section" aria-labelledby="home-alt-heading">
+            <div class="home-section-head">
+                <div class="home-section-copy">
+                    <p class="home-eyebrow">Alternatives</p>
+                    <h2 id="home-alt-heading">Nigerian alternatives to foreign tools</h2>
+                    <p class="home-section-sub">Discover Nigerian-built alternative to popular fpreign tools you already use</p>
+                </div>
+                <a class="home-btn home-btn-outline" href="/alternative">View all alternatives &rarr;</a>
+            </div>
+            <div class="home-alt-stage" id="home-alt-stage" aria-busy="true">
+                <div class="home-alt-group is-active">
+                    <div class="home-skel home-skel--alt" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--alt" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--alt" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--alt" aria-hidden="true"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2) Sponsored products (GET /sponsored/public) — coloured band + carousel -->
+        <section class="home-sponsored" id="home-sponsored-section" aria-labelledby="home-sponsored-heading">
+            <div class="home-sponsored-inner">
+                <div class="home-section-head">
+                    <div class="home-section-copy">
+                        <p class="home-eyebrow home-eyebrow--gold">Sponsored</p>
+                        <h2 id="home-sponsored-heading">Sponsored products</h2>
+                        <p class="home-section-sub">Discover featured product from Nigerian innovators.</p>
+                    </div>
+                    <div class="home-sp-nav" id="home-sp-nav">
+                        <button type="button" class="home-sp-arrow" id="home-sp-prev" aria-label="Previous sponsored products" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+                        </button>
+                        <button type="button" class="home-sp-arrow" id="home-sp-next" aria-label="Next sponsored products" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="home-sp-track" id="home-sp-track" role="region" aria-label="Sponsored products" tabindex="0" aria-busy="true">
+                    <div class="home-skel home-skel--sp" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--sp" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--sp" aria-hidden="true"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3) Founder Spotlight (GET /spotlight/public) -->
+        <section class="home-section home-spot-section" id="home-spot-section" aria-labelledby="home-spot-heading">
+            <div class="home-section-head">
+                <div class="home-section-copy">
+                    <p class="home-eyebrow">Founder Spotlight</p>
+                    <h2 id="home-spot-heading">Meet the founders building Nigeria</h2>
+                    <p class="home-section-sub">Real stories from the people behind the products.</p>
+                </div>
+                <div class="home-section-actions">
+                    <a class="home-btn home-btn-outline" href="/spotlight">View all spotlights &rarr;</a>
+                    <a class="home-btn home-btn-solid" href="/spotlight/apply">Apply for spotlight</a>
+                </div>
+            </div>
+            <div class="home-spot-grid" id="home-spot-grid" aria-busy="true">
+                    <div class="home-skel home-skel--spot" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--spot" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--spot" aria-hidden="true"></div>
+            </div>
+        </section>
+
+        <!-- 4) Collections (GET /collections/public) -->
+        <section class="home-section home-col-section" id="home-col-section" aria-labelledby="home-col-heading">
+            <div class="home-section-head">
+                <div class="home-section-copy">
+                    <p class="home-eyebrow">Collections</p>
+                    <h2 id="home-col-heading">Curated lists, by what you need</h2>
+                </div>
+                <a class="home-text-link" href="/collection">Browse all collections &rarr;</a>
+            </div>
+            <div class="home-col-grid" id="home-col-grid" aria-busy="true">
+                    <div class="home-skel home-skel--col" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--col" aria-hidden="true"></div>
+                    <div class="home-skel home-skel--col" aria-hidden="true"></div>
+            </div>
+        </section>
+
         <!-- Mission Section -->
         <section class="mission">
             <div class="mission-content">
@@ -296,6 +373,32 @@
             <a href="/explore" class="see-all popular-category-see-all hidden" id="popular-category-see-all">See all &rarr;</a>
         </section>
 
+        <!-- Newsletter + Submit Product: one section, two cards (one column on mobile).
+             The newsletter form uses the same endpoint/logic as the footer subscribe form
+             (POST /products/newsletter/subscribe), wired in home-sections.js -->
+        <section class="home-section home-cta-section" aria-label="Newsletter and product submission">
+            <div class="home-cta-grid">
+                <div class="home-cta-card home-nl-card">
+                    <p class="home-eyebrow">Newsletter</p>
+                    <h2 id="home-nl-heading">New Nigerian products, in your inbox</h2>
+                    <p class="home-section-sub">A short update on new launches and founder stories. No spam.</p>
+                    <form id="home-nl-form" class="home-nl-form" novalidate aria-labelledby="home-nl-heading">
+                        <div class="home-nl-row">
+                            <input type="email" id="home-nl-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+                            <button type="submit" class="home-btn home-btn-solid">Subscribe</button>
+                        </div>
+                        <p class="footer-subscribe-msg" id="home-nl-msg" role="status" aria-live="polite"></p>
+                    </form>
+                </div>
+                <div class="home-cta-card home-builders-card">
+                    <p class="home-eyebrow home-eyebrow--green">For builders</p>
+                    <h2>Built something? Get it listed.</h2>
+                    <p class="home-section-sub">Add your product so people across Nigeria and beyond can find it.</p>
+                    <a class="home-btn home-btn-dark" href="/submit">Submit Product</a>
+                </div>
+            </div>
+        </section>
+
         <!-- AI CTA Section -->
         <section class="ai-cta">
             <div class="ai-cta-text">
@@ -309,16 +412,6 @@
                 <!-- Changed type to button and added the coming soon popup -->
                 <button type="button" class="btn-primary small " onclick="alert('This feature is coming soon!')">Ask Enovox AI &rarr;</button>
             </form>
-        </section>
-
-        <!-- Submit CTA Section -->
-        <section class="submit-cta">
-            <div>
-                <div class="accent-bar"></div>
-                <h3>Built something in Nigeria?</h3>
-                <p>Get your product discovered by people looking for Nigerian technology.</p>
-            </div>
-            <a href="/submit" class="btn-accent">Submit Your Product &rarr;</a>
         </section>
     </main>
 
@@ -474,6 +567,7 @@
     </footer>
     <script src="/static/js/config.js"></script>
     <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
+    <script src="/static/js/home-sections.js?v=home-sections-20261016-1"></script>
     <script src="/static/js/nav-auth.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a470dffd9d6f38ee',t:'MTc5MTQxNzcyNw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>

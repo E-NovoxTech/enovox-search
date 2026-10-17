@@ -12,7 +12,7 @@
     <meta property="og:description" content="{{ page_desc }}">
     <meta property="og:url" content="https://search.enovoxtech.com/collection/{{ collection.slug }}">
     <link rel="canonical" href="https://search.enovoxtech.com/collection/{{ collection.slug }}" />
-    <link rel="stylesheet" href="/static/css/style.css?v=collections-20261009-1">
+    <link rel="stylesheet" href="/static/css/style.css?v=collections-20261014-2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
@@ -126,7 +126,8 @@
             gap: 0.75rem;
             min-width: 0;
         }
-        .collection-detail-grid .collection-card { align-items: center; }
+        /* Product cards now match the /collection index tiles (style.css COMPAT block): rows, top-aligned. */
+        .collection-detail-grid .collection-card { align-items: flex-start; }
         .collection-card-category {
             align-self: flex-start;
             max-width: 100%;
@@ -143,10 +144,10 @@
             font-weight: 600;
             line-height: 1.5;
         }
-        .collection-card-logo.is-fallback { background: var(--hover-bg); }
+        .collection-card-logo.is-fallback { background: #dbeafe; color: #0f172a; }
 
         @media (max-width: 960px) {
-            .collection-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .collection-detail-grid { grid-template-columns: minmax(0, 1fr); } /* one card per row on tablet & mobile */
         }
         @media (max-width: 640px) {
             .collection-detail-header { flex-direction: column; padding: 1.1rem 0.95rem; gap: 0.9rem; border-radius: 18px; }
@@ -154,14 +155,9 @@
             .collection-detail-emoji { width: 48px; height: 48px; border-radius: 14px; font-size: 1.5rem; }
             .collection-detail-desc { font-size: 0.9rem; }
             .collection-detail-grid { gap: 0.55rem; }
-            .collection-detail-grid .collection-card {
-                align-items: flex-start;
-                flex-direction: column;
-                gap: 0.55rem;
-                padding: 0.7rem 0.7rem 0.75rem;
-            }
-            .collection-detail-grid .collection-card-info { width: 100%; }
-            .collection-detail-grid .collection-card-bookmark { top: 0.5rem; right: 0.4rem; transform: none; }
+            /* Overrides removed: detail cards keep the same tile layout as the
+               /collection index on mobile too (style.css COMPAT block owns it). */
+            .collection-detail-grid .collection-card-bookmark { transform: none; }
         }
         @media (max-width: 320px) {
             .collection-detail-grid { grid-template-columns: minmax(0, 1fr); }
@@ -222,13 +218,14 @@
                         </div>
                     </div>
 
-                    <div class="nav-dropdown" data-nav-dropdown>
+                     <div class="nav-dropdown" data-nav-dropdown>
                         <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-categories-menu">
                             <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Categories</span></span>
                             <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                         </button>
                         <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
                             <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
+                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
                         </div>
                     </div>
 
@@ -454,5 +451,5 @@
         });
     })();
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4aa600fcb6b0bdb',t:'MTc5MjAyMDY2MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

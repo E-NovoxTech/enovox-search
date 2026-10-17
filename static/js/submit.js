@@ -288,7 +288,10 @@
             if (alternativeState.selected.size) clearFieldError('alternatives-group', 'alternatives-error');
             if (!matching.length) {
                 summary.textContent = 'No foreign tools in this category';
-                status.textContent = 'No foreign tools are available here. Choose another category.';
+                // Alternative To is optional when a category has no foreign tools,
+                // so tell the user they can carry on instead of asking them to
+                // switch category.
+                status.textContent = 'No foreign tools are available for this category, so you can skip this field.';
             } else {
                 const rows = document.createDocumentFragment();
                 matching.forEach(tool => {
@@ -349,11 +352,22 @@
               details = get('pricing_details'), website = get('website'), logo = get('logo_url'),
               keywords = get('keywords'), users = get('user_count_range');
 
+        /* Alternative To is only compulsory when the chosen category actually
+           has foreign tools to pick from. alternativeState.available holds the
+           tool IDs the server returned for the current category: when it is
+           empty there is nothing to choose, so the field must not block the
+           user. We still require the list to have finished loading for THIS
+           category (ready + matching category), so a slow or failed request
+           can never be mistaken for "this category has no tools". */
+        const altListLoaded = alternativeState.ready && alternativeState.category === category?.value;
+        const altNothingToPick = alternativeState.available.size === 0;
+        const altOk = altListLoaded && (altNothingToPick || alternativeState.selected.size > 0);
+
         const checks = [
             { ok: !name || name.value.trim().length >= 2, group: 'name-group', err: 'name-error', msg: 'Please enter the product name (at least 2 characters).', el: name },
             { ok: !description || description.value.trim().length >= 20, group: 'description-group', err: 'description-error', msg: 'Please describe your tool in at least 20 characters.', el: description },
             { ok: !category || category.value !== '', group: 'category-group', err: 'category-error', msg: 'Please choose a category.', el: category },
-            { ok: alternativeState.ready && alternativeState.category === category?.value && alternativeState.selected.size > 0,
+            { ok: altOk,
               group: 'alternatives-group', err: 'alternatives-error', msg: 'Alternative is compulsory, pick one.', el: get('alternative-trigger') },
             { ok: !productType || productType.value !== '', group: 'product-type-group', err: 'product-type-error', msg: 'Please choose a product type.', el: productType },
             { ok: !pricing || pricing.value !== '', group: 'pricing-group', err: 'pricing-error', msg: 'Please choose a pricing model.', el: pricing },

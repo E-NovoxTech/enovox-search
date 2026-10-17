@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
@@ -10,7 +10,11 @@ from ..utils import send_claim_alert
 from fastapi import UploadFile, File
 from ..bulk_upload_utils import parse_csv_to_rows
 from ..newsletter_utils import get_all_recipients, build_product_update_html, wrap_in_template, send_newsletter
-
+from ..email_utils import send_claim_code_email
+from ..email_utils import generate_verification_code
+from datetime import timezone
+from zoneinfo import ZoneInfo
+from fastapi import Response
 from fastapi.responses import StreamingResponse
 import csv
 import io
@@ -32,7 +36,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 def normalize_sql(column):
     return func.replace(func.replace(func.lower(column), '-', ''), ' ', '')
 
-def apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival):
+def apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival, db=None):
     if query:
         normalized_query = query.lower().replace('-', '').replace(' ', '')
         words = query.split()
@@ -43,6 +47,22 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
             word_filters.append(normalize_sql(models.Product.description).ilike(f"%{normalized_word}%"))
             word_filters.append(normalize_sql(models.Product.category).ilike(f"%{normalized_word}%"))
             word_filters.append(normalize_sql(models.Product.keywords).ilike(f"%{normalized_word}%"))
+
+        if db is not None:
+            matching_tool_ids = [
+                t.id for t in db.query(models.ForeignTool.id).filter(
+                    normalize_sql(models.ForeignTool.name).ilike(f"%{normalized_query}%")
+                ).all()
+            ]
+            if matching_tool_ids:
+                alt_product_ids = [
+                    row.product_id for row in db.query(models.ProductAlternative.product_id).filter(
+                        models.ProductAlternative.foreign_tool_id.in_(matching_tool_ids)
+                    ).all()
+                ]
+                if alt_product_ids:
+                    word_filters.append(models.Product.id.in_(alt_product_ids))
+
         q = q.filter(or_(*word_filters))
 
     if category:
@@ -68,7 +88,6 @@ def apply_filters(q, query, category, pricing, product_type, platform, featured,
         q = q.filter(models.Product.is_new_arrival == is_new_arrival)
 
     return q
-
 
 def score_product_relevance(product, query: str) -> int:
     if not query:
@@ -207,9 +226,8 @@ def count_products(
     db: Session = Depends(get_db)
 ):
     q = db.query(models.Product).filter(models.Product.status == True)
-    q = apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival)
+    q = apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival, db)
     return {"total": q.count()}
-
 
 @router.get("/", response_model=List[schemas.ProductOut])
 def search_products(
@@ -227,7 +245,7 @@ def search_products(
     db: Session = Depends(get_db)
 ):
     q = db.query(models.Product).filter(models.Product.status == True)
-    q = apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival)
+    q = apply_filters(q, query, category, pricing, product_type, platform, featured, is_popular, is_new_arrival, db)
 
     if query and not sort:
         all_matches = q.all()
@@ -467,18 +485,16 @@ def extract_domain(url: str) -> str:
     return domain.replace("www.", "")
 
 
-@router.post("/{product_id}/claim")
-def claim_product(
+@router.post("/{product_id}/claim/start")
+def start_claim(
     product_id: int,
-    background_tasks: BackgroundTasks,
-    data: schemas.ClaimSubmit,
+    data: schemas.ClaimStart,
     db: Session = Depends(get_db),
     current_dev: models.Developer = Depends(get_current_developer)
 ):
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
     if product.developer_id is not None:
         raise HTTPException(status_code=400, detail="This product already has an owner")
 
@@ -492,38 +508,84 @@ def claim_product(
 
     claimant_domain = extract_domain(data.email.split("@")[-1])
     product_domain = extract_domain(product.website)
+    domain_matches = claimant_domain and product_domain and claimant_domain == product_domain
 
-    auto_verified = claimant_domain and product_domain and claimant_domain == product_domain
-
-    new_claim = models.ClaimRequest(
+    code = generate_verification_code()
+    claim = models.ClaimRequest(
         product_id=product_id,
         developer_id=current_dev.id,
         name=data.name,
         email=data.email,
         role=data.role,
         social_url=data.social_url,
-        status="approved" if auto_verified else "pending"
+        status="pending",
+        verification_code=code if domain_matches else None,
+        verification_code_expires=datetime.utcnow() + timedelta(minutes=15) if domain_matches else None,
     )
-    db.add(new_claim)
+    db.add(claim)
+    db.commit()
+    db.refresh(claim)
 
-    if auto_verified:
-        product.developer_id = current_dev.id
-        db.commit()
-        db.refresh(product)
-        return {"message": "Ownership verified automatically — you now manage this listing.", "auto_verified": True}
-    else:
-        db.commit()
-        db.refresh(new_claim)
-        # Notify admin
-        
-        background_tasks.add_task(
-            send_claim_alert,
-            product_name=product.name,
-            claimant_name=data.name,
-            claimant_email=data.email,
-            role=data.role
-        )
-        return {"message": "Claim submitted for review. We'll verify ownership and get back to you.", "auto_verified": False}
+    if domain_matches:
+        send_claim_code_email(data.email, code, product.name)
+        return {"claim_id": claim.id, "needs_code": True, "message": f"We sent a code to {data.email}. Enter it to verify ownership."}
+
+    return {"claim_id": claim.id, "needs_code": False, "message": "That email doesn't match the product's domain, so this needs admin review instead."}
+
+
+@router.post("/{product_id}/claim/{claim_id}/verify")
+def verify_claim(
+    product_id: int,
+    claim_id: int,
+    data: schemas.ClaimVerify,
+    db: Session = Depends(get_db),
+    current_dev: models.Developer = Depends(get_current_developer)
+):
+    claim = db.query(models.ClaimRequest).filter(
+        models.ClaimRequest.id == claim_id,
+        models.ClaimRequest.product_id == product_id,
+        models.ClaimRequest.developer_id == current_dev.id,
+    ).first()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if claim.status != "pending":
+        raise HTTPException(status_code=400, detail="This claim was already processed")
+    if not claim.verification_code or claim.verification_code != data.code:
+        raise HTTPException(status_code=400, detail="Invalid code")
+    if claim.verification_code_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Code expired, request a new claim")
+
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product.developer_id = current_dev.id
+    claim.status = "approved"
+    claim.verification_code = None
+    db.commit()
+    return {"message": "Ownership verified — you now manage this listing."}
+
+
+@router.post("/{product_id}/claim/{claim_id}/submit-for-review")
+def submit_claim_for_review(
+    product_id: int,
+    claim_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_dev: models.Developer = Depends(get_current_developer)
+):
+    claim = db.query(models.ClaimRequest).filter(
+        models.ClaimRequest.id == claim_id,
+        models.ClaimRequest.product_id == product_id,
+        models.ClaimRequest.developer_id == current_dev.id,
+    ).first()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if claim.status != "pending":
+        raise HTTPException(status_code=400, detail="This claim was already processed")
+
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    claim.verification_code = None
+    background_tasks.add_task(send_claim_alert, product_name=product.name, claimant_name=claim.name, claimant_email=claim.email, role=claim.role)
+    db.commit()
+    return {"message": "Claim submitted for review. We'll verify ownership and get back to you."}
 
 @router.post("/admin/bulk-preview")
 async def bulk_preview(admin_key: str, file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -861,6 +923,150 @@ def delete_foreign_tool(tool_id: int, admin_key: str, db: Session = Depends(get_
     db.commit()
     return {"message": f"{tool.name} deleted."}
 
+# ---------- Homepage daily foreign-tool comparisons ----------
+
+# Display order of categories. Names must match ForeignTool.category (case-insensitive).
+# TODO: complete this list with all your real categories.
+HOMEPAGE_CATEGORY_ORDER = [
+    "AI & Automation",
+    "Fintech",
+    "Education",
+    "Business", 
+    "Productivity",
+    "E-commerce",
+    "Web3 & Blockchain",
+    "Design & Creative",
+    "Transportation & Logistics", 
+    "Health & Wellness",
+    "Entertainment & Media",
+    "Freelance & Gig Work",
+    "Real Estate & Housing",
+    "Agriculture",
+    "Social & Community",
+    "Developer Tools",
+    "Legal & Compliance",
+    "Energy & Utilities",
+    "Travel & Tourism",
+    "Gaming & Esports",
+    "Other"
+]
+
+try:
+    LAGOS_TZ = ZoneInfo("Africa/Lagos")
+except Exception:
+    LAGOS_TZ = timezone(timedelta(hours=1))  # Lagos has no DST, so a fixed offset is safe
+
+_DAILY_EPOCH = date(2024, 1, 1)
+_DAILY_CACHE = {"date": None, "built_at": None, "payload": None}
+_DAILY_CACHE_TTL_SECONDS = 300  # admin edits show up within 5 minutes
+
+
+def _tool_dict(t):
+    return {"id": t.id, "name": t.name, "slug": t.slug,
+            "logo_url": t.logo_url, "description": t.description}
+
+
+def _alt_dict(p):
+    return {"id": p.id, "name": p.name, "slug": p.slug, "logo_url": p.logo_url,
+            "description": p.description, "category": p.category}
+
+
+def _build_daily_comparisons(db: Session, today: date, expires_at: datetime):
+    # One bulk query: every foreign tool joined to its ACTIVE linked products
+    rows = (
+        db.query(models.ForeignTool, models.Product)
+        .join(models.ProductAlternative, models.ProductAlternative.foreign_tool_id == models.ForeignTool.id)
+        .join(models.Product, models.Product.id == models.ProductAlternative.product_id)
+        .filter(models.Product.status == True)
+        .filter(models.ForeignTool.category.isnot(None))
+        .order_by(models.ForeignTool.id.asc(), models.Product.id.asc())
+        .all()
+    )
+
+    # tool_id -> {"tool": ForeignTool, "alts": [Product, ...]}
+    tools = {}
+    for tool, product in rows:
+        if not (tool.category or "").strip():
+            continue
+        entry = tools.setdefault(tool.id, {"tool": tool, "alts": []})
+        entry["alts"].append(product)
+
+    # category (lowercase key) -> {"display": str, "tools": [entry, ...]}
+    categories = {}
+    for tool_id in sorted(tools):
+        entry = tools[tool_id]
+        display = entry["tool"].category.strip()
+        cat = categories.setdefault(display.lower(), {"display": display, "tools": []})
+        cat["tools"].append(entry)
+
+    # Category order: listed ones first, then the rest alphabetically
+    ordered_keys = []
+    for name in HOMEPAGE_CATEGORY_ORDER:
+        k = name.strip().lower()
+        if k in categories and k not in ordered_keys:
+            ordered_keys.append(k)
+    ordered_keys += sorted(k for k in categories if k not in ordered_keys)
+
+    base = {"date": today.isoformat(), "expires_at": expires_at.isoformat()}
+    if not ordered_keys:
+        return {**base, "groups": []}
+
+    # Daily deterministic pick per category
+    day_number = (today - _DAILY_EPOCH).days
+    cards_by_key = {}
+    for cat_index, key in enumerate(ordered_keys):
+        cat = categories[key]
+        n = len(cat["tools"])
+        seed = day_number + cat_index
+        entry = cat["tools"][seed % n]
+        alts = entry["alts"]
+        alt = alts[(seed // n) % len(alts)]
+        cards_by_key[key] = {
+            "category": cat["display"],
+            "foreign_tool": _tool_dict(entry["tool"]),
+            "alternative": _alt_dict(alt),
+            "view_all_url": f"/alternative/{entry['tool'].slug}",
+        }
+
+    # Groups of 4 (fewer than 4 categories = one smaller group, no padding)
+    if len(ordered_keys) < 4:
+        key_groups = [ordered_keys]
+    else:
+        key_groups = []
+        for i in range(0, len(ordered_keys), 4):
+            chunk = ordered_keys[i:i + 4]
+            if len(chunk) < 4:
+                chunk = chunk + ordered_keys[:4 - len(chunk)]  # wrap to the start
+            key_groups.append(chunk)
+
+    groups = [
+        {"group_index": gi, "cards": [cards_by_key[k] for k in chunk]}
+        for gi, chunk in enumerate(key_groups)
+    ]
+    return {**base, "groups": groups}
+
+
+@router.get("/alternatives/daily-comparisons")
+def get_daily_comparisons(response: Response, db: Session = Depends(get_db)):
+    now = datetime.now(LAGOS_TZ)
+    today = now.date()
+    next_midnight = datetime.combine(today + timedelta(days=1), datetime.min.time(), tzinfo=LAGOS_TZ)
+    seconds_left = max(60, int((next_midnight - now).total_seconds()))
+
+    cache = _DAILY_CACHE
+    fresh = (
+        cache["date"] == today.isoformat()
+        and cache["built_at"] is not None
+        and (now - cache["built_at"]).total_seconds() < _DAILY_CACHE_TTL_SECONDS
+    )
+    if not fresh:
+        cache["payload"] = _build_daily_comparisons(db, today, next_midnight)
+        cache["date"] = today.isoformat()
+        cache["built_at"] = now
+
+    # Browsers/CDN may cache up to 5 min or until midnight, whichever is sooner
+    response.headers["Cache-Control"] = f"public, max-age={min(seconds_left, _DAILY_CACHE_TTL_SECONDS)}"
+    return cache["payload"]
 
 @router.get("/alternatives/foreign-tools")
 def list_foreign_tools_public(category: Optional[str] = None, db: Session = Depends(get_db)):
@@ -952,4 +1158,62 @@ def dashboard_summary(admin_key: str, db: Session = Depends(get_db)):
         "developers": db.query(models.Developer).count(),
         "newsletter_subscribers": len(get_all_recipients(db)),
         "total_searches": db.query(models.SearchLog).count(),
+        "pending_spotlights": db.query(models.SpotlightApplication).filter(models.SpotlightApplication.status == "pending").count(),
     }
+
+
+@router.get("/admin/claims/all")
+def list_all_claims(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    return db.query(models.ClaimRequest).order_by(models.ClaimRequest.id.desc()).all()
+
+
+MAX_SPONSORED = 10
+
+@router.get("/sponsored/public")
+def public_sponsored(db: Session = Depends(get_db)):
+    return (
+        db.query(models.Product)
+        .filter(models.Product.is_sponsored == True, models.Product.status == True)
+        .order_by(models.Product.sponsored_position.asc())
+        .limit(MAX_SPONSORED)
+        .all()
+    )
+
+
+
+
+@router.put("/{product_id}/sponsor")
+def toggle_sponsor(product_id: int, admin_key: str, sponsored: Optional[bool] = None, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    target = (not product.is_sponsored) if sponsored is None else sponsored
+
+    if target and not product.is_sponsored:
+        active_count = db.query(models.Product).filter(models.Product.is_sponsored == True).count()
+        if active_count >= MAX_SPONSORED:
+            raise HTTPException(status_code=400, detail=f"Only {MAX_SPONSORED} sponsored slots allowed at once")
+        max_pos = db.query(func.max(models.Product.sponsored_position)).scalar() or 0
+        product.sponsored_position = max_pos + 1
+
+    product.is_sponsored = target
+    if not target:
+        product.sponsored_position = None
+
+    db.commit()
+    return {"message": "Updated.", "is_sponsored": product.is_sponsored}
+
+@router.put("/sponsored/reorder")
+def reorder_sponsored(admin_key: str, data: schemas.SponsoredReorder, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+    for index, pid in enumerate(data.ids):
+        db.query(models.Product).filter(models.Product.id == pid).update({"sponsored_position": index})
+    db.commit()
+    return {"message": "Order saved."}

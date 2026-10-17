@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ spotlight.headline }} - Enovox Search</title>
+    <meta name="description" content="{{ spotlight.summary | truncate(160) }}">
+    <meta property="og:title" content="{{ spotlight.headline }} - Enovox Search">
+    <meta property="og:description" content="{{ spotlight.summary | truncate(150) }}">
+    {% if application.photo_url %}
+    <meta property="og:image" content="{{ application.photo_url }}">
+    {% endif %}
+    <meta name="robots" content="index,follow">
+    <link rel="canonical" href="https://search.enovoxtech.com/spotlight/{{ spotlight.slug }}" />
+    <link rel="stylesheet" href="/static/css/style.css?v=spotlight-detail-20261014-1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/assets/apple-touch-icon.png">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KWLYDKBTN2"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-KWLYDKBTN2');
+    </script>
+</head>
+<body>
+    <!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
+    <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
+        <div class="site-banner-inner">
+            <div class="site-banner-content" id="site-banner-content">
+                <span class="site-banner-track" id="site-banner-track">
+                    <span class="site-banner-text" id="site-banner-text"></span>
+                    <a class="site-banner-link hidden" id="site-banner-link" href="#" target="_blank" rel="noopener"></a>
+                </span>
+            </div>
+            <button type="button" class="site-banner-close" id="site-banner-close" aria-label="Dismiss announcement">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Navigation Bar (Identical to Homepage) -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                <span class="brand-name">Enovox <span>Search</span></span>
+            </a>
+
+            <nav class="nav-links" id="primary-navigation" aria-label="Primary navigation">
+                <div class="mobile-nav-header">
+                    <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                        <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                        <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                        <span class="brand-name">Enovox <span>Search</span></span>
+                    </a>
+                    <button type="button" class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <div class="nav-menu-list">
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-explore-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m16.2 7.8-2.8 6.4-5.6 2.8 2.8-6.4 5.6-2.8Z"></path></svg><span>Explore</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu" id="header-explore-menu">
+                            <a class="nav-dropdown-item nav-dropdown-featured" href="/explore">
+                                <span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">All Products</span><span class="nav-dropdown-description">Explore products built by Nigerians.</span></span>
+                                <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                            </a>
+                            <a class="nav-dropdown-item" href="/collection"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Collection</span><span class="nav-dropdown-description">Curated product lists by category.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/spotlight"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Spotlight <span class="nav-badge-new">NEW</span></span><span class="nav-dropdown-description">Founder stories and how they built it.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/alternative" data-alternative-nav><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Nigeria Alternatives</span><span class="nav-dropdown-description">Local alternatives to popular global tools.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-categories-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Categories</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
+                            <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
+                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-developers-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Developers</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-developers-menu" id="header-developers-menu">
+                            <div class="developer-menu-links" data-developer-links hidden>
+                                <a class="nav-dropdown-item" href="/dashboard"><span class="nav-dropdown-title">Developer Dashboard</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/submit"><span class="nav-dropdown-title">Submit Product</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/guidelines"><span class="nav-dropdown-title">Developer Guidelines</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                            <div class="developer-menu-guest" data-developer-guest>
+                                <a class="nav-dropdown-item" href="/signup?type=developer"><span class="nav-dropdown-title">Join as a Developer</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/login?type=developer"><span class="nav-dropdown-title">Developer Login</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/submit" class="header-submit-product">Submit Product</a>
+                </div>
+
+                <a class="mobile-submit-product" href="/submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M20 16.5v2A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5v-2"></path></svg>
+                    <span>Submit Product</span>
+                </a>
+                <div class="mobile-nav-divider" aria-hidden="true"></div>
+                <a href="/ai" class="mobile-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="mobile-ask-ai-copy"><strong>Ask AI</strong><small>Need help finding a product?</small></span>
+                    <svg class="mobile-row-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+                <button type="button" id="mobile-theme-toggle" class="mobile-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <span class="mobile-theme-label"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>Dark Mode</span>
+                    <span class="mobile-theme-switch" aria-hidden="true"><span></span></span>
+                </button>
+                <div class="nav-auth-mobile">
+                    <a href="/login" class="mobile-auth-link auth-login-slot">Log in</a>
+                    <a href="/signup" class="mobile-auth-link mobile-auth-signup auth-signup-slot"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg><span>Sign up</span></a>
+                </div>
+            </nav>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="icon-btn header-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <a href="/explore" class="icon-btn header-search-icon" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+                <a href="/ai" class="header-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="header-ask-ai-copy"><strong>Ask AI <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></strong><small>Need help finding a product?</small></span>
+                </a>
+                <div class="header-auth-desktop">
+                    <a href="/login" class="header-auth-login auth-login-slot">Log in</a>
+                    <a href="/signup" class="header-auth-signup auth-signup-slot">Sign up</a>
+                </div>
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Open navigation" aria-controls="primary-navigation" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
+        <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
+    </header>
+    <main id="main-content" class="slug-page" aria-labelledby="slug-headline">
+            <div class="slug-container">
+                <nav class="apply-breadcrumb slug-breadcrumb" aria-label="Breadcrumb">
+                    <a href="/spotlight"><i class="fa-solid fa-star" aria-hidden="true"></i> Spotlight</a>
+                    <span class="apply-breadcrumb-sep" aria-hidden="true">/</span>
+                    <span aria-current="page">{{ spotlight.slug }}</span>
+                </nav>
+
+                <section class="slug-hero">
+                    <div class="slug-hero-copy">
+                        <div class="slug-hero-meta">
+                            <span class="spotlight-kicker"><i class="fa-solid fa-star" aria-hidden="true"></i> Founder Spotlight</span>
+                            <span class="slug-date" id="slug-published-at" data-iso="{{ spotlight.published_at }}">Published {{ spotlight.published_at }}</span>
+                            {% if spotlight.updated_at and spotlight.updated_at != spotlight.published_at %}
+                            <span class="slug-date slug-date-sep" id="slug-updated-at" data-iso="{{ spotlight.updated_at }}">Updated {{ spotlight.updated_at }}</span>
+                            {% endif %}
+                            <span class="slug-date slug-readtime" id="slug-readtime" hidden></span>
+                        </div>
+                        <h1 class="slug-headline" id="slug-headline">{{ spotlight.headline }}</h1>
+                        {% if spotlight.summary %}
+                        <p class="slug-summary">{{ spotlight.summary }}</p>
+                        {% endif %}
+                        <div class="slug-byline">
+                            <span class="slug-byline-avatar" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+                            <div class="slug-byline-copy">
+                                <strong>{{ application.founder_name }}</strong>
+                                <small>Founder, {{ application.startup_name }}{% if application.state %} · {{ application.state }}, Nigeria{% endif %}</small>
+                            </div>
+                        </div>
+                        {#
+                            Link row under the founder name:
+                              1) "Visit {Startup} →"  -> startup_website (only if provided)
+                              2) ONE social button    -> X preferred, else the first provided of
+                                                         Instagram / LinkedIn / Facebook / TikTok / GitHub
+                            Order below IS the preference order.
+                        #}
+                        {% set socials = [
+                            ('x', 'fa-brands fa-x-twitter', 'X', application.x_url),
+                            ('instagram', 'fa-brands fa-instagram', 'Instagram', application.instagram_url),
+                            ('linkedin', 'fa-brands fa-linkedin', 'LinkedIn', application.linkedin_url),
+                            ('facebook', 'fa-brands fa-facebook', 'Facebook', application.facebook_url),
+                            ('tiktok', 'fa-brands fa-tiktok', 'TikTok', application.tiktok_url),
+                            ('github', 'fa-brands fa-github', 'GitHub', application.github_url)
+                        ] %}
+                        {% set present_socials = socials | selectattr(3) | list %}
+                        {% if application.startup_website or present_socials %}
+                        <div class="slug-social-pills" id="slug-social-pills">
+                            {% if present_socials %}
+                            {% set chosen = present_socials[0] %}
+                            <a class="slug-social-pill" id="slug-social-primary" href="{{ chosen[3] }}" target="_blank" rel="noopener" aria-label="Follow on {{ chosen[2] }}"><i class="{{ chosen[1] }}" aria-hidden="true"></i><span>Follow on {{ chosen[2] }}</span></a>
+                            {% endif %}
+                            {% if application.startup_website %}
+                            <a class="slug-social-pill slug-visit-pill" id="slug-website-link" href="{{ application.startup_website }}" target="_blank" rel="noopener noreferrer" aria-label="Visit {{ application.startup_name }} website"><span class="slug-visit-label">Visit {{ application.startup_name }}</span><span aria-hidden="true">→</span></a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <figure class="slug-hero-photo-wrap" id="slug-hero-photo-wrap">
+                        <div class="slug-photo" id="slug-photo">
+                            {% if application.photo_url %}
+                            <img id="slug-photo-img" src="{{ application.photo_url }}" alt="{{ application.founder_name }}, founder of {{ application.startup_name }}">
+                            {% else %}
+                            <span class="slug-photo-placeholder" aria-hidden="true"><i class="fa-regular fa-user"></i></span>
+                            {% endif %}
+                        </div>
+                        {% if application.open_to_work %}
+                        <span class="spotlight-open-badge"><span class="spotlight-open-dot" aria-hidden="true"></span>Open to work</span>
+                        {% endif %}
+                    </figure>
+                </section>
+
+                <div class="slug-body-grid">
+                    <article class="slug-story" id="slug-story">
+                        {% if spotlight.body_opening %}<p class="slug-opening">{{ spotlight.body_opening }}</p>{% endif %}
+                        {% if spotlight.body_building %}
+                        <h2 class="slug-h2">What they're building</h2>
+                        <p>{{ spotlight.body_building }}</p>
+                        {% endif %}
+                        {% if spotlight.quote %}
+                        <figure class="slug-quote">
+                            <span class="slug-quote-icon" aria-hidden="true"><i class="fa-solid fa-quote-left"></i></span>
+                            <blockquote>"{{ spotlight.quote }}"</blockquote>
+                            <figcaption>{{ application.founder_name }} · {{ application.startup_name }}</figcaption>
+                        </figure>
+                        {% endif %}
+                        {% if spotlight.body_why_started %}
+                        <h2 class="slug-h2">Why they started</h2>
+                        <p>{{ spotlight.body_why_started }}</p>
+                        {% endif %}
+                        {% if spotlight.body_headed %}
+                        <h2 class="slug-h2">Where they're headed</h2>
+                        <p>{{ spotlight.body_headed }}</p>
+                        {% endif %}
+                        {% if spotlight.why_believe %}
+                        <h2 class="slug-h2">Why they believe in Nigeria</h2>
+                        <p>{{ spotlight.why_believe }}</p>
+                        {% endif %}
+                        <p class="slug-built-with">Built with <a href="/">Enovox Search</a>.</p>
+                    </article>
+
+                    <aside class="slug-aside">
+                        {% if application.open_to_work %}
+                        <section class="slug-panel slug-build-panel" aria-label="Work with the founder">
+                            <span class="slug-panel-badge"><span class="spotlight-open-dot" aria-hidden="true"></span>Open to work</span>
+                            <h2 class="slug-panel-title">Build with {{ application.founder_name }}</h2>
+                            <p class="slug-panel-text">{{ application.founder_name }} is open to work. Send them a message.</p>
+                            <div class="slug-panel-actions" id="slug-build-actions">
+                                {# Message buttons: X and LinkedIn first; only if neither exists, fall back to any other provided social. Max 2 buttons. #}
+                                {% set msg = [] %}
+                                {% if application.x_url %}{% set _ = msg.append(('X', 'fa-brands fa-x-twitter', application.x_url)) %}{% endif %}
+                                {% if application.linkedin_url %}{% set _ = msg.append(('LinkedIn', 'fa-brands fa-linkedin', application.linkedin_url)) %}{% endif %}
+                                {% if not msg %}
+                                    {% if application.instagram_url %}{% set _ = msg.append(('Instagram', 'fa-brands fa-instagram', application.instagram_url)) %}{% endif %}
+                                    {% if application.facebook_url %}{% set _ = msg.append(('Facebook', 'fa-brands fa-facebook', application.facebook_url)) %}{% endif %}
+                                    {% if application.tiktok_url %}{% set _ = msg.append(('TikTok', 'fa-brands fa-tiktok', application.tiktok_url)) %}{% endif %}
+                                    {% if application.github_url %}{% set _ = msg.append(('GitHub', 'fa-brands fa-github', application.github_url)) %}{% endif %}
+                                {% endif %}
+                                {% for platform, icon, url in msg[:2] %}
+                                <a class="slug-msg-btn {{ 'is-primary' if loop.first else 'is-ghost' }}" href="{{ url }}" target="_blank" rel="noopener"><i class="{{ icon }}" aria-hidden="true"></i> Message on {{ platform }}</a>
+                                {% endfor %}
+                            </div>
+                            {% set skills_list = (application.skills.split(',') | map('trim') | list) if application.skills else [] %}
+                            {% if skills_list %}
+                            <div class="slug-skills-block" id="slug-skills">
+                                <h3 class="slug-skills-title">Founder skills</h3>
+                                <ul class="slug-skills-list">
+                                    {% for skill in skills_list if skill %}
+                                    <li>{{ skill | title }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </section>
+                        {% endif %}
+
+                        <section class="slug-panel slug-react-panel" id="slug-react-panel" data-slug="{{ spotlight.slug }}" data-spotlight-id="{{ spotlight.id }}" aria-label="Reactions">
+                            <h2 class="slug-panel-title">What did you think of this story?</h2>
+                            <div class="slug-react-row">
+                                <button type="button" class="slug-react-btn" id="slug-like-btn" data-reaction="like" aria-pressed="false">
+                                    <i class="fa-regular fa-thumbs-up" aria-hidden="true"></i> Like <span class="slug-react-count" id="slug-like-count">{{ likes }}</span>
+                                </button>
+                                <button type="button" class="slug-react-btn" id="slug-dislike-btn" data-reaction="dislike" aria-pressed="false">
+                                    <i class="fa-regular fa-thumbs-down" aria-hidden="true"></i> Dislike <span class="slug-react-count" id="slug-dislike-count">{{ dislikes }}</span>
+                                </button>
+                            </div>
+                            <p class="slug-react-hint" id="slug-react-hint"><a href="/login?redirect=/spotlight/{{ spotlight.slug }}">Log in</a> to react. One reaction per account.</p>
+                        </section>
+
+                        <section class="slug-panel slug-share-panel" aria-label="Share">
+                            <h2 class="slug-panel-title">Share this spotlight</h2>
+                            <div class="slug-share-row">
+                                <a class="slug-share-btn" id="slug-share-x" target="_blank" rel="noopener"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i> X</a>
+                                <a class="slug-share-btn" id="slug-share-wa" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp</a>
+                                <a class="slug-share-btn" id="slug-share-li" target="_blank" rel="noopener"><i class="fa-brands fa-linkedin" aria-hidden="true"></i> LinkedIn</a>
+                            </div>
+                            <button type="button" class="slug-share-btn slug-copy-btn" id="slug-copy-btn"><i class="fa-solid fa-link" aria-hidden="true"></i> <span id="slug-copy-label">Copy link</span></button>
+                        </section>
+                    </aside>
+                </div>
+
+                {% if products %}
+                <section class="slug-products" aria-labelledby="slug-products-title">
+                    <h2 class="slug-section-title" id="slug-products-title">Products by {{ application.founder_name }}</h2>
+                    <p class="slug-section-sub">Built by this founder and listed on Enovox Search.</p>
+                    <div class="slug-products-grid">
+                        {% for product in products[:2] %}
+                        <article class="slug-product-card">
+                            <div class="slug-product-head">
+                                {% if product.logo_url %}
+                                <img class="slug-product-logo" src="{{ product.logo_url }}" alt="" loading="lazy">
+                                {% else %}
+                                <span class="slug-product-logo slug-product-logo-fallback" aria-hidden="true">{{ (product.name or 'P')[0] | upper }}</span>
+                                {% endif %}
+                                <div class="slug-product-titles">
+                                    <h3 class="slug-product-name">{{ product.name }}</h3>
+                                    <div class="slug-product-tags">
+                                        {% if product.category %}<span class="slug-product-tag">{{ product.category }}</span>{% endif %}
+                                        {% if product.pricing %}<span class="slug-product-tag slug-product-tag-price">{{ product.pricing }}</span>{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% set product_desc = product.description or product.summary or product.tagline %}
+                            {% if product_desc %}
+                            <p class="slug-product-desc">{{ product_desc | truncate(90) }}</p>
+                            {% endif %}
+                            <a class="slug-product-link" href="/product/{{ product.slug or product.id }}">View product →</a>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                <section class="slug-more" id="slug-more" aria-labelledby="slug-more-heading" hidden>
+                    <div class="slug-more-head">
+                        <h2 class="slug-section-title" id="slug-more-heading">More founders to watch</h2>
+                        <a class="slug-more-all" href="/spotlight">See all spotlights →</a>
+                    </div>
+                    <div class="slug-more-grid" id="slug-more-grid"></div>
+                </section>
+
+                <section class="spotlight-cta slug-cta" aria-labelledby="slug-cta-title">
+                    <div class="spotlight-cta-copy">
+                        <p class="spotlight-cta-kicker">FOR NIGERIAN FOUNDERS</p>
+                        <h2 class="spotlight-cta-title" id="slug-cta-title">Building something in Nigeria? Tell your story.</h2>
+                        <p class="spotlight-cta-text">Apply with your own story and photo. If it's selected, we publish it and email you a link to share.</p>
+                    </div>
+                    <div class="spotlight-cta-action">
+                        <button type="button" id="slug-apply-btn" class="spotlight-apply-btn">Apply for spotlight</button>
+                        <p class="spotlight-cta-note">Sign up or log in as a developer to apply.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-top">
+            <div class="footer-col brand-col">
+                <a href="/" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div class="footer-subscribe">
+                    <h4 class="footer-subscribe-title">Discover more. Stay updated.</h4>
+                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, updates, and news from Enovox Search.</p>
+                    <form id="footer-subscribe-form" class="footer-subscribe-form" novalidate>
+                        <div class="footer-subscribe-row">
+                            <input type="email" id="footer-subscribe-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+                            <button type="submit" class="footer-subscribe-btn">Subscribe</button>
+                        </div>
+                        <p class="footer-subscribe-msg" id="footer-subscribe-msg" role="status" aria-live="polite"></p>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a href="/">Home</a>
+                <a href="/explore">Explore</a>
+                <a href="#" onclick="alert('This feature is coming soon!'); return false;">Ask AI</a>
+                <a href="/submit">Submit Product</a>
+                <a href="/about">About</a>
+                <a href="/contact">Contact</a>
+            </div>
+            <div class="footer-col">
+                <h4>Community</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/term">Terms &amp; Conditions</a>
+            </div>
+        </div>
+    </footer>
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js?v=category-grid-20261008-1"></script>
+    <script src="/static/js/spotlight-detail.js?v=spotlight-detail-20261014-1"></script>
+    <script src="/static/js/nav-auth.js"></script>
+</body>
+</html>

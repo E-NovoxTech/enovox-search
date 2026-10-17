@@ -84,6 +84,10 @@ def submit_page(request: Request):
 def nigeria_66_page(request: Request):
     return render_page(request, "nigeria-66.html")
 
+@router.get("/spotlight/apply")
+def nigeria_66_page(request: Request):
+    return render_page(request, "spotlight_apply.html")
+
 
 # Nigeria Alternatives listing. /alternative is the canonical URL used by the site;
 # /nigeria-alternative is retained as a backward-compatible alias.
@@ -288,4 +292,33 @@ def collection_detail_page(slug: str, request: Request, db: Session = Depends(ge
         request=request,
         name="collection_detail.html",
         context={"collection": c, "products": products}
+    )
+    
+@router.get("/spotlight/{slug}")
+def spotlight_detail_page(slug: str, request: Request, db: Session = Depends(get_db)):
+    s = db.query(models.Spotlight).filter(
+        models.Spotlight.slug == slug, models.Spotlight.status == "published"
+    ).first()
+    if not s:
+        raise HTTPException(status_code=404, detail="Spotlight not found")
+
+    a = s.application
+    likes = db.query(models.SpotlightReaction).filter(
+        models.SpotlightReaction.spotlight_id == s.id, models.SpotlightReaction.value == "like"
+    ).count()
+    dislikes = db.query(models.SpotlightReaction).filter(
+        models.SpotlightReaction.spotlight_id == s.id, models.SpotlightReaction.value == "dislike"
+    ).count()
+    products = (
+        db.query(models.Product)
+        .join(models.SpotlightApplicationProduct, models.SpotlightApplicationProduct.product_id == models.Product.id)
+        .filter(models.SpotlightApplicationProduct.application_id == a.id, models.Product.status == True)
+        .limit(2)
+        .all()
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="spotlight_detail.html",
+        context={"spotlight": s, "application": a, "products": products, "likes": likes, "dislikes": dislikes}
     )
