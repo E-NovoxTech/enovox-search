@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ spotlight.headline }} - Enovox Search</title>
-    <meta name="description" content="{{ spotlight.summary | truncate(160) }}">
-    <meta property="og:title" content="{{ spotlight.headline }} - Enovox Search">
+    <title>{{ spotlight.headline }} - Enovox Search Spotlight</title>
+    <meta name="description" content="{{ spotlight.summary | truncate(150) }}">
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="{{ spotlight.headline }}">
     <meta property="og:description" content="{{ spotlight.summary | truncate(150) }}">
+    <meta property="og:url" content="https://search.enovoxtech.com/spotlight/{{ spotlight.slug }}">
     {% if application.photo_url %}
     <meta property="og:image" content="{{ application.photo_url }}">
+    {% else %}
+    <meta property="og:image" content="https://search.enovoxtech.com/static/assets/fallback.png">
     {% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ spotlight.headline }}">
+    <meta name="twitter:description" content="{{ spotlight.summary | truncate(150) }}">
     <meta name="robots" content="index,follow">
     <link rel="canonical" href="https://search.enovoxtech.com/spotlight/{{ spotlight.slug }}" />
     <link rel="stylesheet" href="/static/css/style.css?v=spotlight-detail-20261014-1">

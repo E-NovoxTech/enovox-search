@@ -7,13 +7,20 @@
     <!-- SEO Meta Tags -->
     <title>{{ product.name }} - Enovox Search</title>
     <meta name="description" content="{{ product.description | truncate(150) }}">
+    <meta property="og:type" content="website">
     <meta property="og:title" content="{{ product.name }} - Enovox Search">
     <meta property="og:description" content="{{ product.description | truncate(150) }}">
+    <meta property="og:url" content="https://search.enovoxtech.com/product/{{ product.slug }}">
     {% if product.logo_url %}
     <meta property="og:image" content="{{ product.logo_url }}">
+    {% else %}
+    <meta property="og:image" content="https://search.enovoxtech.com/static/assets/fallback.png">
     {% endif %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ product.name }} - Enovox Search">
+    <meta name="twitter:description" content="{{ product.description | truncate(150) }}">
 
-    <link rel="canonical" href="https://search.enovoxtech.com/product/{slug}" />
+    <link rel="canonical" href="https://search.enovoxtech.com/product/{{ product.slug }}" />
     <link rel="stylesheet" href="/static/css/style.css?v=header-nav-20261007-1">
     <link rel="stylesheet" href="/static/css/explore.css">
     <link rel="stylesheet" href="/static/css/product.css?v=product-redesign-20261015-1">

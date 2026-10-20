@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% set page_desc = (collection.description or ('Nigerian products in ' ~ collection.title))|striptags|trim %}
-    <title>{{ collection.title }} | Enovox Search</title>
-    <meta name="description" content="{{ page_desc }}">
+    <title>{{ collection.title }} - Enovox Search</title>
+    <meta name="description" content="{{ collection.description or 'A curated list of Nigerian products on Enovox Search.' }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Enovox Search">
-    <meta property="og:title" content="{{ collection.title }} | Enovox Search">
-    <meta property="og:description" content="{{ page_desc }}">
+    <meta property="og:title" content="{{ collection.title }}">
+    <meta property="og:description" content="{{ collection.description or 'A curated list of Nigerian products on Enovox Search.' }}">
     <meta property="og:url" content="https://search.enovoxtech.com/collection/{{ collection.slug }}">
+    <meta property="og:image" content="https://search.enovoxtech.com/static/assets/fallback.png">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="canonical" href="https://search.enovoxtech.com/collection/{{ collection.slug }}" />
     <link rel="stylesheet" href="/static/css/style.css?v=collections-20261014-2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">

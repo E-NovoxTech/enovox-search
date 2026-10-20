@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if foreign_tool is defined and foreign_tool %}Nigerian Alternatives to {{ foreign_tool.name }} | Enovox Search{% else %}Nigerian Alternatives | Enovox Search{% endif %}</title>
-    <meta name="description" content="{% if foreign_tool is defined and foreign_tool %}Discover Nigerian-built alternatives to {{ foreign_tool.name }}. Compare locally developed products made for the Nigerian market.{% else %}Discover Nigerian-built alternatives to popular foreign products. Compare locally developed tools made for the Nigerian market.{% endif %}">
-    <link rel="canonical" href="https://search.enovoxtech.com/alternative/{% if foreign_tool is defined and foreign_tool %}{{ foreign_tool.slug }}{% endif %}">
-    <meta property="og:title" content="{% if foreign_tool is defined and foreign_tool %}Nigerian Alternatives to {{ foreign_tool.name }} | Enovox Search{% else %}Nigerian Alternatives | Enovox Search{% endif %}">
-    <meta property="og:description" content="{% if foreign_tool is defined and foreign_tool %}Discover Nigerian-built alternatives to {{ foreign_tool.name }}. Compare locally developed products made for the Nigerian market.{% else %}Discover Nigerian-built alternatives to popular foreign products. Compare locally developed tools made for the Nigerian market.{% endif %}">
-    <meta property="og:url" content="https://search.enovoxtech.com/alternative/{% if foreign_tool is defined and foreign_tool %}{{ foreign_tool.slug }}{% endif %}">
+    <title>Nigerian Alternatives to {{ foreign_tool.name }} - Enovox Search</title>
+    <meta name="description" content="Looking for a Nigerian alternative to {{ foreign_tool.name }}? Discover locally built tools that solve the same problem.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Nigerian Alternatives to {{ foreign_tool.name }}">
+    <meta property="og:description" content="Looking for a Nigerian alternative to {{ foreign_tool.name }}? Discover locally built tools that solve the same problem.">
+    <meta property="og:url" content="https://search.enovoxtech.com/alternative/{{ foreign_tool.slug }}">
+    {% if foreign_tool.logo_url %}
+    <meta property="og:image" content="{{ foreign_tool.logo_url }}">
+    {% else %}
+    <meta property="og:image" content="https://search.enovoxtech.com/static/assets/fallback.png">
+    {% endif %}
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="robots" content="index,follow">
     <link rel="stylesheet" href="/static/css/style.css?v=category-grid-20261008-1">
     <link rel="stylesheet" href="/static/css/explore.css">
