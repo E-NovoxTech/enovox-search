@@ -414,3 +414,42 @@ class SponsoredCreate(BaseModel):
 class SponsoredReorder(BaseModel):
     ids: List[int] 
                                              
+class ArticleCategoryCreate(BaseModel):
+    name: str
+
+class ArticleCreate(BaseModel):
+    type: str
+    title: str
+    summary: str
+    content_html: str
+    cover_image_url: str
+    category_id: Optional[int] = None
+    author_name: str
+    author_avatar_url: Optional[str] = None
+    seo_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    is_featured: bool = False
+    product_ids: List[int] = []
+    foreign_tool_ids: List[int] = []
+    spotlight_ids: List[int] = []
+
+class ArticleUpdate(BaseModel):
+    type: Optional[str] = None
+    title: Optional[str] = None
+    slug: Optional[str] = None
+    summary: Optional[str] = None
+    content_html: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    category_id: Optional[int] = None
+    author_name: Optional[str] = None
+    author_avatar_url: Optional[str] = None
+    seo_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    is_featured: Optional[bool] = None
+    product_ids: Optional[List[int]] = None
+    foreign_tool_ids: Optional[List[int]] = None
+    spotlight_ids: Optional[List[int]] = None
+    status: Optional[str] = None
+    scheduled_at: Optional[datetime] = None                                             
+
+

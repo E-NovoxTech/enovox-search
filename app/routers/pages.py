@@ -13,6 +13,10 @@ from .. import models
 from ..database import get_db
 from fastapi.responses import RedirectResponse 
 from .site_collections import get_status, get_live_products
+from .articles import get_article
+from datetime import datetime
+
+SITE_URL = "https://search.enovoxtech.com"
 
 router = APIRouter(tags=["Pages"])
 templates = Jinja2Templates(directory="static")
@@ -80,14 +84,14 @@ def submit_page(request: Request):
     return render_page(request, "submit.html")
 
 
-@router.get("/nigeria-66")
-def nigeria_66_page(request: Request):
-    return render_page(request, "nigeria-66.html")
 
 @router.get("/spotlight/apply")
-def nigeria_66_page(request: Request):
+def spotlight_apply(request: Request):
     return render_page(request, "spotlight_apply.html")
 
+@router.get("/articles")
+def article_page(request: Request):
+    return render_page(request, "articles.html")
 
 # Nigeria Alternatives listing. /alternative is the canonical URL used by the site;
 # /nigeria-alternative is retained as a backward-compatible alias.
@@ -179,6 +183,33 @@ def product_page(slug: str, request: Request, db: Session = Depends(get_db)):
 
     return render_page(request, "product.html", {"product": product})
 
+
+
+def _to_dt(value):
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return value
+
+@router.get("/articles/{slug}")
+def article_detail_page(slug: str, request: Request, db: Session = Depends(get_db)):
+    from .articles import get_article
+    article = get_article(slug, db)
+
+    # make sure dates are real datetime objects for the template
+    article["published_at"] = _to_dt(article.get("published_at"))
+    for r in article.get("related_articles") or []:
+        r["published_at"] = _to_dt(r.get("published_at"))
+
+    return templates.TemplateResponse(
+        request=request,
+        name="article.html",
+        context={"article": article, "site_url": SITE_URL},
+    )
+
+
 @router.get("/alternative/{slug}")
 def alternative_detail_page(slug: str, request: Request, db: Session = Depends(get_db)):
     foreign_tool = db.query(models.ForeignTool).filter(models.ForeignTool.slug == slug).first()
@@ -213,7 +244,7 @@ def sitemap(db: Session = Depends(get_db)):
         ("/category", "category.html"),
         ("/about", "about.html"),
         ("/submit", "submit.html"),
-        ("/nigeria-66", "nigeria-66.html"),
+        ("/articles", "articles.html"),
         ("/alternative", "alternative.html"),
         ("/ai", "ai.html"),
         ("/contact", "contact.html"),
@@ -322,3 +353,8 @@ def spotlight_detail_page(slug: str, request: Request, db: Session = Depends(get
         name="spotlight_detail.html",
         context={"spotlight": s, "application": a, "products": products, "likes": likes, "dislikes": dislikes}
     )
+    
+    
+
+    
+    

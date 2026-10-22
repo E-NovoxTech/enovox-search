@@ -270,6 +270,207 @@
                     </div>
                 </section>
 
+                <!-- ARTICLES TAB -->
+                <section id="articles-tab" class="tab-content hidden" aria-labelledby="articles-heading">
+                    <div id="articles-list-view">
+                        <div class="section-header collections-page-header">
+                            <div>
+                                <p class="dashboard-eyebrow">CONTENT</p>
+                                <h2 id="articles-heading">Articles</h2>
+                                <p class="text-muted">Write, schedule and publish the articles shown on the public Articles page.</p>
+                            </div>
+                            <div class="art-header-actions">
+                                <button type="button" id="art-categories-btn" class="btn-secondary"><i class="fa-solid fa-tags" aria-hidden="true"></i> Categories</button>
+                                <button type="button" id="art-new-btn" class="btn-primary"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create New Article</button>
+                            </div>
+                        </div>
+                        <div id="art-success" class="alert success hidden" role="status" aria-live="polite"></div>
+                        <div id="art-error" class="alert error hidden" role="alert"></div>
+
+                        <div class="collection-status-tabs" id="art-status-tabs" role="tablist" aria-label="Filter articles by status">
+                            <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-art-status="all">All <span data-art-count="all">0</span></button>
+                            <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-art-status="draft">Draft <span data-art-count="draft">0</span></button>
+                            <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-art-status="published">Published <span data-art-count="published">0</span></button>
+                            <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-art-status="scheduled">Scheduled <span data-art-count="scheduled">0</span></button>
+                            <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-art-status="unpublished">Unpublished <span data-art-count="unpublished">0</span></button>
+                            <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-art-status="archived">Archived <span data-art-count="archived">0</span></button>
+                        </div>
+
+                        <div class="art-filters">
+                            <div class="art-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="art-search" placeholder="Search articles by title" aria-label="Search articles"></div>
+                            <select id="art-filter-type" aria-label="Filter by type">
+                                <option value="">All types</option>
+                                <option value="product_discovery">Discover</option>
+                                <option value="news">News</option>
+                                <option value="updates">Updates</option>
+                                <option value="guides">Guides</option>
+                                <option value="industry_trends">Industry Trends</option>
+                            </select>
+                            <select id="art-filter-category" aria-label="Filter by category"><option value="">All categories</option></select>
+                        </div>
+
+                        <div id="art-loading" class="collection-loading hidden" role="status" aria-live="polite"><span class="dashboard-spinner" aria-hidden="true"></span> Loading articles…</div>
+                        <div id="art-empty" class="collection-empty hidden" role="status"></div>
+                        <div class="table-container hidden" id="art-table-container">
+                            <table class="admin-table art-table">
+                                <thead><tr><th>Article</th><th>Type</th><th>Status</th><th>Category</th><th>Last updated</th><th>Actions</th></tr></thead>
+                                <tbody id="art-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Editor (new + edit). Full-screen on mobile. -->
+                    <div id="article-editor-view" class="art-editor hidden">
+                        <div class="art-editor-bar">
+                            <button type="button" id="art-back-btn" class="btn-secondary"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Articles</button>
+                            <h2 id="art-editor-title">New Article</h2>
+                            <span id="art-editor-status" class="collection-status-badge collection-status-draft">Draft</span>
+                        </div>
+                        <div id="art-editor-error" class="alert error hidden" role="alert"></div>
+                        <div id="art-editor-success" class="alert success hidden" role="status" aria-live="polite"></div>
+
+                        <div class="art-editor-grid">
+                            <div class="art-editor-main">
+                                <!-- Step 1 -->
+                                <section class="art-card" aria-labelledby="art-step1">
+                                    <h3 id="art-step1"><span class="art-step">1</span> Article type</h3>
+                                    <p class="art-hint">Choose what kind of article this is. It decides the public tab it appears under.</p>
+                                    <div class="art-type-grid" id="art-type-grid" role="radiogroup" aria-label="Article type">
+                                        <label class="art-type-option"><input type="radio" name="art-type" value="product_discovery"><span><strong>Discover</strong><small>Spotlight Nigerian products. Needs a category and at least one product.</small></span></label>
+                                        <label class="art-type-option"><input type="radio" name="art-type" value="news"><span><strong>News</strong><small>Announcements and ecosystem news.</small></span></label>
+                                        <label class="art-type-option"><input type="radio" name="art-type" value="updates"><span><strong>Updates</strong><small>Product and platform updates.</small></span></label>
+                                        <label class="art-type-option"><input type="radio" name="art-type" value="guides"><span><strong>Guides</strong><small>How-tos and walkthroughs.</small></span></label>
+                                        <label class="art-type-option"><input type="radio" name="art-type" value="industry_trends"><span><strong>Industry Trends</strong><small>Analysis and market trends.</small></span></label>
+                                    </div>
+                                </section>
+
+                                <!-- Section A -->
+                                <section class="art-card" aria-labelledby="art-secA">
+                                    <h3 id="art-secA"><span class="art-step">A</span> Details</h3>
+                                    <div class="form-group">
+                                        <label for="art-title">Title *</label>
+                                        <input type="text" id="art-title" maxlength="200" autocomplete="off">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="art-slug">URL slug</label>
+                                        <input type="text" id="art-slug" autocomplete="off" spellcheck="false">
+                                        <p class="art-hint" id="art-slug-hint">Public URL: /articles/<span id="art-slug-preview">your-title</span></p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="art-summary">Summary *</label>
+                                        <textarea id="art-summary" rows="3" maxlength="400"></textarea>
+                                        <p class="art-hint"><span id="art-summary-count">0</span>/400 &middot; shown on cards and in link previews.</p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="art-cover">Cover image URL</label>
+                                        <input type="url" id="art-cover" placeholder="https://…">
+                                        <div class="art-cover-preview hidden" id="art-cover-preview"><img alt="" id="art-cover-img"></div>
+                                    </div>
+                                    <div class="art-two-col">
+                                        <div class="form-group">
+                                            <label for="art-author">Author name</label>
+                                            <input type="text" id="art-author" placeholder="Enovox Search">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="art-author-avatar">Author avatar URL</label>
+                                            <input type="url" id="art-author-avatar" placeholder="https://…">
+                                        </div>
+                                    </div>
+                                    <div class="form-group" id="art-category-group">
+                                        <label for="art-category">Category *</label>
+                                        <select id="art-category"><option value="">Select a category</option></select>
+                                        <p class="art-hint">Only used for Discover articles. <button type="button" class="art-link-btn" id="art-manage-categories">Manage categories</button></p>
+                                    </div>
+                                    <div class="form-group">
+                                        <label id="art-body-label">Article body *</label>
+                                        <div class="art-rte" id="art-rte">
+                                            <div class="art-rte-toolbar" role="toolbar" aria-label="Formatting">
+                                                <button type="button" data-cmd="bold" title="Bold" aria-label="Bold"><i class="fa-solid fa-bold"></i></button>
+                                                <button type="button" data-cmd="italic" title="Italic" aria-label="Italic"><i class="fa-solid fa-italic"></i></button>
+                                                <button type="button" data-cmd="h2" title="Heading" aria-label="Heading">H2</button>
+                                                <button type="button" data-cmd="h3" title="Sub-heading" aria-label="Sub-heading">H3</button>
+                                                <button type="button" data-cmd="ul" title="Bulleted list" aria-label="Bulleted list"><i class="fa-solid fa-list-ul"></i></button>
+                                                <button type="button" data-cmd="ol" title="Numbered list" aria-label="Numbered list"><i class="fa-solid fa-list-ol"></i></button>
+                                                <button type="button" data-cmd="quote" title="Quote" aria-label="Quote"><i class="fa-solid fa-quote-left"></i></button>
+                                                <button type="button" data-cmd="link" title="Link" aria-label="Link"><i class="fa-solid fa-link"></i></button>
+                                                <button type="button" data-cmd="image" title="Image from URL" aria-label="Insert image"><i class="fa-solid fa-image"></i></button>
+                                                <button type="button" data-cmd="clear" title="Clear formatting" aria-label="Clear formatting"><i class="fa-solid fa-eraser"></i></button>
+                                                <button type="button" data-cmd="source" class="art-rte-source" title="Edit HTML" aria-label="Edit HTML" aria-pressed="false"><i class="fa-solid fa-code"></i> HTML</button>
+                                            </div>
+                                            <div class="art-rte-area" id="art-body" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="art-body-label" data-placeholder="Write the article here…"></div>
+                                            <textarea class="art-rte-source-area hidden" id="art-body-source" spellcheck="false" aria-label="Article HTML"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="art-two-col">
+                                        <div class="form-group">
+                                            <label for="art-seo-title">SEO title <span class="art-opt">(optional)</span></label>
+                                            <input type="text" id="art-seo-title" maxlength="70">
+                                            <p class="art-hint">Used for the browser tab and link previews. Falls back to the title.</p>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="art-meta">Meta description <span class="art-opt">(optional)</span></label>
+                                            <textarea id="art-meta" rows="2" maxlength="170"></textarea>
+                                            <p class="art-hint">Falls back to the summary.</p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <!-- Section B -->
+                                <section class="art-card" aria-labelledby="art-secB">
+                                    <h3 id="art-secB"><span class="art-step">B</span> Featured content</h3>
+                                    <p class="art-hint">Link products, alternatives and founders. They appear under the article.</p>
+                                    <p class="art-require hidden" id="art-require-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> At least 1 Nigerian product required before publishing.</p>
+
+                                    <div class="art-picker" data-picker="products">
+                                        <div class="art-picker-head"><h4>Nigerian Products</h4><span class="art-picker-count" data-picker-count>0 selected</span></div>
+                                        <div class="art-picker-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="Search products by name" autocomplete="off" aria-label="Search Nigerian products"></div>
+                                        <div class="art-picker-results hidden" role="listbox"></div>
+                                        <div class="art-chips" data-picker-chips></div>
+                                    </div>
+                                    <div class="art-picker" data-picker="tools">
+                                        <div class="art-picker-head"><h4>Alternative Products</h4><span class="art-picker-count" data-picker-count>0 selected</span></div>
+                                        <div class="art-picker-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="Search by foreign tool name (e.g. Zoom)" autocomplete="off" aria-label="Search foreign tools"></div>
+                                        <div class="art-picker-results hidden" role="listbox"></div>
+                                        <div class="art-chips" data-picker-chips></div>
+                                    </div>
+                                    <div class="art-picker" data-picker="spots">
+                                        <div class="art-picker-head"><h4>Founder Spotlights</h4><span class="art-picker-count" data-picker-count>0 selected</span></div>
+                                        <div class="art-picker-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" placeholder="Search published spotlights" autocomplete="off" aria-label="Search founder spotlights"></div>
+                                        <div class="art-picker-results hidden" role="listbox"></div>
+                                        <div class="art-chips" data-picker-chips></div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <!-- Section C -->
+                            <aside class="art-editor-side">
+                                <section class="art-card art-publish" aria-labelledby="art-secC">
+                                    <h3 id="art-secC"><span class="art-step">C</span> Publishing</h3>
+                                    <label class="art-toggle">
+                                        <input type="checkbox" id="art-featured">
+                                        <span class="art-toggle-track" aria-hidden="true"></span>
+                                        <span class="art-toggle-text"><strong>Featured on homepage banner</strong><small>Shows this article in the large banner on the Articles page. This has nothing to do with the article type.</small></span>
+                                    </label>
+                                    <div id="art-validation" class="alert error hidden" role="alert"></div>
+                                    <div class="art-publish-actions">
+                                        <button type="button" id="art-save-draft" class="btn-secondary">Save as Draft</button>
+                                        <button type="button" id="art-preview" class="btn-secondary"><i class="fa-solid fa-eye" aria-hidden="true"></i> Preview</button>
+                                        <button type="button" id="art-publish" class="btn-success">Publish</button>
+                                        <button type="button" id="art-schedule-toggle" class="btn-secondary"><i class="fa-regular fa-clock" aria-hidden="true"></i> Schedule</button>
+                                    </div>
+                                    <div class="art-schedule hidden" id="art-schedule-panel">
+                                        <label for="art-schedule-at">Publish on</label>
+                                        <input type="datetime-local" id="art-schedule-at">
+                                        <p class="art-hint">Your local time (Africa/Lagos if that is your device). It publishes automatically.</p>
+                                        <button type="button" id="art-schedule-confirm" class="btn-primary">Schedule article</button>
+                                    </div>
+                                    <p class="art-hint art-publish-note" id="art-publish-note"></p>
+                                </section>
+                            </aside>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- SPONSORED TAB -->
                 <section id="sponsored-tab" class="tab-content hidden" aria-labelledby="sponsored-heading">
                     <div class="section-header collections-page-header">
@@ -1273,6 +1474,35 @@
                     <button type="submit" id="save-foreign-tool-btn" class="btn-primary">Save Foreign Tool</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Articles: categories modal -->
+    <div id="art-categories-modal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="art-categories-title">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="art-categories-title">Article categories</h2>
+                <button type="button" id="art-categories-close" class="close-btn" aria-label="Close categories">&times;</button>
+            </div>
+            <form id="art-category-form" class="art-category-form" novalidate>
+                <input type="text" id="art-category-name" placeholder="New category name" maxlength="80" aria-label="New category name">
+                <button type="submit" class="btn-primary" id="art-category-add">Add</button>
+            </form>
+            <div id="art-categories-error" class="alert error hidden" role="alert"></div>
+            <ul class="art-category-list" id="art-category-list"></ul>
+            <p class="art-hint">A category can only be deleted when no article uses it.</p>
+        </div>
+    </div>
+
+    <!-- Articles: confirm modal -->
+    <div id="art-confirm-modal" class="overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="art-confirm-title" aria-describedby="art-confirm-text">
+        <div class="modal-box">
+            <div class="modal-header"><h2 id="art-confirm-title">Confirm</h2></div>
+            <p id="art-confirm-text" class="art-confirm-text"></p>
+            <div class="modal-actions">
+                <button type="button" id="art-confirm-cancel" class="btn-secondary">Cancel</button>
+                <button type="button" id="art-confirm-ok" class="btn-primary">Confirm</button>
+            </div>
         </div>
     </div>
 

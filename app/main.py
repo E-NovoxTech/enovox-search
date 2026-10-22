@@ -13,6 +13,7 @@ from starlette.responses import RedirectResponse
 from app.routers import site_collections
 from app.routers import spotlight
 from app.routers import sponsored
+from app.routers import articles
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -45,6 +46,8 @@ app.include_router(submissions.router)
 # catch-all HTML route GET /spotlight/{slug} that would otherwise swallow
 # /spotlight/public and /spotlight/my.
 app.include_router(spotlight.router)
+app.include_router(articles.router)
+app.include_router(sponsored.router)
 app.include_router(pages.router)
 app.include_router(developers.router)
 app.include_router(ai.router)

@@ -5,6 +5,7 @@
  *   2) Sponsored         GET /sponsored/public
  *   3) Founder Spotlight GET /spotlight/public
  *   4) Collections       GET /collections/public
+ *   5) Articles          GET /articles/public?page=1&page_size=4
  * plus the Newsletter card (POST /products/newsletter/subscribe, same as the footer).
  *
  * Load this AFTER home.js (it reuses home.js's API_BASE_URL). All three
@@ -301,7 +302,7 @@
         var next = document.getElementById('home-sp-next');
         if (!section || !track) return;
 
-           getJson('/products/sponsored/public').then(function (data) {
+        getJson('/sponsored/public').then(function (data) {
             var list = (Array.isArray(data) ? data : [])
                 .filter(function (item) { return item && text(item.slug) && text(item.name); })
                 .slice(0, 10);
@@ -530,12 +531,132 @@
         });
     }
 
+    /* ======================================================================
+       5) ARTICLES  (latest 4: one featured + three smaller cards)
+       ====================================================================== */
+    var ART_LABELS = {
+        product_discovery: 'Discover', news: 'News', updates: 'Updates',
+        guides: 'Guides', industry_trends: 'Industry Trends'
+    };
+
+    function artDate(value) {
+        var d = value ? new Date(value) : null;
+        if (!d || isNaN(d.getTime())) return '';
+        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function artCover(item) {
+        var wrap = el('span', 'home-art-cover');
+        function fallback() {
+            var f = el('span', 'home-art-cover-fallback');
+            f.appendChild(el('span', '', ART_LABELS[item.type] || 'Enovox'));
+            return f;
+        }
+        var src = safeImageUrl(item.cover_image_url);
+        if (!src) { wrap.appendChild(fallback()); return wrap; }
+        var image = document.createElement('img');
+        image.src = src;
+        image.alt = '';
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        image.addEventListener('error', function () { image.replaceWith(fallback()); }, { once: true });
+        wrap.appendChild(image);
+        return wrap;
+    }
+
+    function artChip(type) {
+        var chip = el('span', 'home-art-chip', ART_LABELS[type] || 'Article');
+        chip.setAttribute('data-type', type || '');
+        return chip;
+    }
+
+    function artTitle(item, tag, className) {
+        var heading = el(tag, className);
+        var link = el('a', 'home-art-link', text(item.title));
+        link.href = '/articles/' + encodeURIComponent(text(item.slug));
+        heading.appendChild(link);
+        return heading;
+    }
+
+    function artMeta(item) {
+        var bits = [];
+        var date = artDate(item.published_at);
+        if (date) bits.push(date);
+        var mins = Number(item.read_minutes);
+        if (isFinite(mins) && mins > 0) bits.push(mins + ' min read');
+        return el('p', 'home-art-meta', bits.join(' \u00b7 '));
+    }
+
+    function buildArtFeatured(item) {
+        var card = el('article', 'home-art-card home-art-featured');
+        card.appendChild(artCover(item));
+        var body = el('div', 'home-art-body');
+        var top = el('div', 'home-art-chips');
+        top.appendChild(artChip(item.type));
+        if (item.is_featured) top.appendChild(el('span', 'home-art-chip home-art-chip--featured', 'Featured'));
+        body.appendChild(top);
+        body.appendChild(artTitle(item, 'h3', 'home-art-title home-art-title--lg'));
+        var summary = text(item.summary);
+        if (summary) body.appendChild(el('p', 'home-art-summary', summary));
+        var author = text(item.author_name);
+        if (author) {
+            var by = el('p', 'home-art-by');
+            by.appendChild(el('span', 'home-art-avatar', author.charAt(0).toUpperCase()));
+            by.appendChild(el('span', '', 'By '));
+            by.lastChild.appendChild(el('strong', '', author));
+            body.appendChild(by);
+        }
+        body.appendChild(artMeta(item));
+        card.appendChild(body);
+        return card;
+    }
+
+    function buildArtCard(item) {
+        var card = el('article', 'home-art-card home-art-small');
+        card.appendChild(artCover(item));
+        var body = el('div', 'home-art-body');
+        body.appendChild(artChip(item.type));
+        body.appendChild(artTitle(item, 'h3', 'home-art-title'));
+        body.appendChild(artMeta(item));
+        card.appendChild(body);
+        return card;
+    }
+
+    function initArticles() {
+        var section = document.getElementById('home-art-section');
+        var layout = document.getElementById('home-art-layout');
+        if (!section || !layout) return;
+
+        getJson('/articles/public?page=1&page_size=4').then(function (data) {
+            var items = (data && Array.isArray(data.items) ? data.items : [])
+                .filter(function (a) { return a && text(a.slug) && text(a.title); });
+            // featured comes from the API only (the article flagged "Featured on homepage banner").
+            var featured = (data && data.featured && text(data.featured.slug) && text(data.featured.title)) ? data.featured : items[0];
+            if (!featured) { hide(section, 'no articles'); return; }
+
+            var rest = items.filter(function (a) { return a.id !== featured.id; }).slice(0, 3);
+            layout.replaceChildren();
+            layout.appendChild(buildArtFeatured(featured));
+            if (rest.length) {
+                var side = el('div', 'home-art-side');
+                rest.forEach(function (a) { side.appendChild(buildArtCard(a)); });
+                layout.appendChild(side);
+            } else {
+                layout.classList.add('is-single');
+            }
+            clearSkeleton(layout);
+        }).catch(function (error) {
+            hide(section, error);
+        });
+    }
+
     /* ---------- start all three together, once ---------- */
     function init() {
         initAlternatives();
         initSponsored();
         initSpotlight();
         initCollections();
+        initArticles();
         initNewsletter();
     }
 

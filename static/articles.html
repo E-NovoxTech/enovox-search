@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles - Enovox Search</title>
+    <meta name="description" content="News, guides, founder stories and insights on Nigeria's tech and product ecosystem, from Enovox Search.">
+    <link rel="canonical" href="https://search.enovoxtech.com/articles" />
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Enovox Search">
+    <meta property="og:title" content="Articles - Enovox Search">
+    <meta property="og:description" content="News, guides, founder stories and insights on Nigeria's tech and product ecosystem.">
+    <meta property="og:url" content="https://search.enovoxtech.com/articles">
+    <meta property="og:image" content="https://search.enovoxtech.com/static/assets/fallback.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="/static/css/style.css?v=header-nav-20261007-1">
+    <link rel="stylesheet" href="/static/css/articles.css?v=articles-20261021-1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/static/assets/logo.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/static/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/static/assets/site.webmanifest">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KWLYDKBTN2"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-KWLYDKBTN2');
+    </script>
+</head>
+<body>
+<!-- Site-wide Announcement Banner (hidden until home.js confirms an active, undismissed banner) -->
+    <div id="site-banner" class="site-banner hidden" role="region" aria-label="Site announcement">
+        <div class="site-banner-inner">
+            <div class="site-banner-content" id="site-banner-content">
+                <span class="site-banner-track" id="site-banner-track">
+                    <span class="site-banner-text" id="site-banner-text"></span>
+                    <a class="site-banner-link hidden" id="site-banner-link" href="#" target="_blank" rel="noopener"></a>
+                </span>
+            </div>
+            <button type="button" class="site-banner-close" id="site-banner-close" aria-label="Dismiss announcement">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+    </div>
+    <!-- Navigation Bar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                <span class="brand-name">Enovox <span>Search</span></span>
+            </a>
+
+            <nav class="nav-links" id="primary-navigation" aria-label="Primary navigation">
+                <div class="mobile-nav-header">
+                    <a href="/" class="brand-logo" aria-label="Enovox Search home">
+                        <img src="/static/assets/logo.png" alt="" class="logo-icon logo-light">
+                        <img src="/static/assets/logo-white.png" alt="" class="logo-icon logo-dark">
+                        <span class="brand-name">Enovox <span>Search</span></span>
+                    </a>
+                    <button type="button" class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+
+                <div class="nav-menu-list">
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-explore-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m16.2 7.8-2.8 6.4-5.6 2.8 2.8-6.4 5.6-2.8Z"></path></svg><span>Explore</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu" id="header-explore-menu">
+                            <a class="nav-dropdown-item nav-dropdown-featured" href="/explore">
+                                <span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">All Products</span><span class="nav-dropdown-description">Explore products built by Nigerians.</span></span>
+                                <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+                            </a>
+                            <a class="nav-dropdown-item" href="/collection"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Collection</span><span class="nav-dropdown-description">Curated product lists by category.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/spotlight"><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Spotlight <span class="nav-badge-new">NEW</span></span><span class="nav-dropdown-description">Founder stories and how they built it.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            <a class="nav-dropdown-item" href="/alternative" data-alternative-nav><span class="nav-dropdown-item-copy"><span class="nav-dropdown-title">Nigeria Alternatives</span><span class="nav-dropdown-description">Local alternatives to popular global tools.</span></span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-categories-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg><span>Categories</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-categories-menu" id="header-categories-menu">
+                            <div class="header-category-links" id="header-category-links" aria-label="Product categories"></div>
+                            <a class="nav-dropdown-footer" href="/category">View All Categories <svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                        </div>
+                    </div>
+
+
+                    <div class="nav-dropdown" data-nav-dropdown>
+                        <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-developers-menu">
+                            <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Developers</span></span>
+                            <svg class="nav-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="nav-dropdown-menu nav-developers-menu" id="header-developers-menu">
+                            <div class="developer-menu-links" data-developer-links hidden>
+                                <a class="nav-dropdown-item" href="/dashboard"><span class="nav-dropdown-title">Developer Dashboard</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/submit"><span class="nav-dropdown-title">Submit Product</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/guidelines"><span class="nav-dropdown-title">Developer Guidelines</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                            <div class="developer-menu-guest" data-developer-guest>
+                                <a class="nav-dropdown-item" href="/signup?type=developer"><span class="nav-dropdown-title">Join as a Developer</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                                <a class="nav-dropdown-item" href="/login?type=developer"><span class="nav-dropdown-title">Developer Login</span><svg class="nav-item-arrow" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/articles" class="nav-plain-link" data-nav-articles aria-current="page">
+                        <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg><span>Articles</span><span class="nav-link-badge">NEW</span></span>
+                        <svg class="mobile-row-chevron nav-plain-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
+                    <a href="/submit" class="header-submit-product">Submit Product</a>
+                </div>
+
+                <a class="mobile-submit-product" href="/submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7 9 5-5 5 5"></path><path d="M20 16.5v2A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5v-2"></path></svg>
+                    <span>Submit Product</span>
+                </a>
+                <div class="mobile-nav-divider" aria-hidden="true"></div>
+                <a href="/ai" class="mobile-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
+                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                    <span class="mobile-ask-ai-copy"><strong>Ask AI</strong><small>Need help finding a product?</small></span>
+                    <svg class="mobile-row-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+                <button type="button" id="mobile-theme-toggle" class="mobile-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <span class="mobile-theme-label"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>Dark Mode</span>
+                    <span class="mobile-theme-switch" aria-hidden="true"><span></span></span>
+                </button>
+                <div class="nav-auth-mobile">
+                    <a href="/login" class="mobile-auth-link auth-login-slot">Log in</a>
+                    <a href="/signup" class="mobile-auth-link mobile-auth-signup auth-signup-slot"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg><span>Sign up</span></a>
+                </div>
+            </nav>
+
+            <div class="nav-actions">
+                <button id="theme-toggle" class="icon-btn header-theme-toggle" aria-label="Toggle dark mode" aria-pressed="false">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <a href="/explore" class="icon-btn header-search-icon" aria-label="Search">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </a>
+                <div class="header-auth-desktop">
+                    <a href="/login" class="header-auth-login auth-login-slot">Log in</a>
+                    <a href="/signup" class="header-auth-signup auth-signup-slot">Sign up</a>
+                </div>
+                <button id="hamburger-menu" class="icon-btn hamburger-btn" aria-label="Open navigation" aria-controls="primary-navigation" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                </button>
+            </div>
+        </div>
+        <button type="button" class="nav-overlay" id="nav-overlay" aria-label="Close navigation"></button>
+    </header>
+
+    <main class="ar-page" id="ar-list-root">
+        <div class="ar-wrap">
+            <header class="ar-head">
+                <p class="ar-eyebrow">Articles</p>
+                <h1>Stories and insights from Nigeria's product ecosystem</h1>
+                <p>News, guides, founder spotlights and trends, written for people who build and use Nigerian products.</p>
+            </header>
+
+            <div class="ar-toolbar">
+                <div class="ar-tabs" id="ar-tabs" role="tablist" aria-label="Article type"></div>
+                <div class="ar-search">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <label class="ar-visually-hidden" for="ar-search">Search articles</label>
+                    <input type="search" id="ar-search" placeholder="Search articles" autocomplete="off">
+                    <button type="button" class="ar-search-clear" id="ar-search-clear" aria-label="Clear search" hidden><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <div class="ar-filterbar">
+                <div class="ar-cat" hidden>
+                    <label for="ar-category">Category</label>
+                    <select id="ar-category"><option value="">All categories</option></select>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px">
+                    <p class="ar-count" id="ar-count" aria-live="polite"></p>
+                    <button type="button" class="ar-clear" id="ar-reset" hidden>Clear filters</button>
+                </div>
+            </div>
+
+            <div id="ar-featured-slot"></div>
+            <div class="ar-grid" id="ar-grid"></div>
+            <div class="ar-state" id="ar-state" hidden></div>
+            <div class="ar-more" id="ar-more" hidden><button type="button" class="ar-btn" id="ar-more-btn">Load more articles</button></div>
+
+        <section class="ar-newsletter" aria-labelledby="ar-nl-title">
+            <div>
+                <p class="ar-eyebrow">Newsletter</p>
+                <h2 id="ar-nl-title">New tools, fresh insights, all the latest updates.</h2>
+                <p>Get product recommendations, the latest tech news, founder stories and useful guides straight to your inbox.</p>
+            </div>
+            <form id="ar-nl-form" novalidate>
+                <div class="ar-nl-row">
+                    <label class="ar-visually-hidden" for="ar-nl-email">Email address</label>
+                    <input type="email" id="ar-nl-email" placeholder="you@example.com" autocomplete="email" required>
+                    <button type="submit" class="ar-btn ar-btn--primary">Subscribe</button>
+                </div>
+                <p class="footer-subscribe-msg" id="ar-nl-msg" role="status" aria-live="polite"></p>
+            </form>
+        </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-top">
+            <div class="footer-col brand-col">
+                <a href="/" class="logo" style="text-decoration: none;">Enovox <span class="logo-accent">Search</span></a>
+                <p>Discover what Nigeria is building.</p>
+                <div class="footer-social">
+                    <a href="https://x.com/enovoxsearch" target="_blank" aria-label="X (Twitter)"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.instagram.com/enovoxsearch" target="_blank" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div class="footer-subscribe">
+                    <h4 class="footer-subscribe-title">Discover more. Stay updated.</h4>
+                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, articles, and updates from Enovox Search.</p>
+                    <form id="footer-subscribe-form" class="footer-subscribe-form" novalidate>
+                        <div class="footer-subscribe-row">
+                            <input type="email" id="footer-subscribe-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
+                            <button type="submit" class="footer-subscribe-btn">Subscribe</button>
+                        </div>
+                        <p class="footer-subscribe-msg" id="footer-subscribe-msg" role="status" aria-live="polite"></p>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Explore</h4>
+                <a href="/explore">Explore Products</a>
+                <a href="/collection">Collections</a>
+                <a href="/category">Categories</a>
+                <a href="/alternative">Nigeria Alternatives</a>
+                <a href="/spotlight">Founder Spotlight</a>
+                <a href="#">Ask AI</a>
+            </div>
+            <div class="footer-col">
+                <h4>Articles</h4>
+                <a href="/articles" class="footer-link-strong">All Articles</a>
+                <a href="/articles?type=news">News</a>
+                <a href="/articles?type=updates">Updates</a>
+                <a href="/articles?type=guides">Guides</a>
+                <a href="/articles?type=industry_trends">Industry Trends</a>
+                <a href="/articles?type=product_discovery">Discover Products</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
+                <a href="/about">About</a>
+                <a href="/contact">Contact</a>
+                <a href="/submit">Submit Product</a>
+            
+            </div>
+            <div class="footer-col">
+                <h4>Resources</h4>
+                <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">WhatsApp Channel</a>
+
+                <h4 style="margin-top:10px;">Legal</h4> 
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/term">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/home.js?v=header-nav-20261007-1"></script>
+    <script src="/static/js/articles.js?v=articles-20261021-1"></script>
+    <script src="/static/js/nav-auth.js"></script>
+</body>
+</html>

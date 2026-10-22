@@ -292,4 +292,52 @@ class SponsoredProduct(Base):
     end_date = Column(DateTime, nullable=True)
     created_at = Column(Date, default=date.today)
     
-    
+class ArticleCategory(Base):
+    __tablename__ = "article_categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    created_at = Column(Date, default=date.today)
+
+
+class Article(Base):
+    __tablename__ = "articles"
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String, nullable=False)  # product_discovery, news, updates, guides, industry_trends
+    title = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    summary = Column(String, nullable=False)
+    content_html = Column(String, nullable=False)
+    cover_image_url = Column(String, nullable=False)
+    category_id = Column(Integer, ForeignKey("article_categories.id"), nullable=True)
+    author_name = Column(String, nullable=False)
+    author_avatar_url = Column(String, nullable=True)
+    seo_title = Column(String, nullable=True)
+    meta_description = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="draft")  # draft, published, scheduled, unpublished, archived
+    is_featured = Column(Boolean, default=False)
+    published_at = Column(DateTime, nullable=True)
+    scheduled_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ArticleProduct(Base):
+    __tablename__ = "article_products"
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+
+
+class ArticleForeignTool(Base):
+    __tablename__ = "article_foreign_tools"
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"), nullable=False)
+    foreign_tool_id = Column(Integer, ForeignKey("foreign_tools.id"), nullable=False)
+
+
+class ArticleSpotlight(Base):
+    __tablename__ = "article_spotlights"
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(Integer, ForeignKey("articles.id", ondelete="CASCADE"), nullable=False)
+    spotlight_id = Column(Integer, ForeignKey("spotlights.id"), nullable=False)

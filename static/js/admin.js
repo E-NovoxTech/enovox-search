@@ -15,6 +15,7 @@
         { group: 'PRODUCT MANAGEMENT', label: 'Alternatives', icon: 'fa-solid fa-shuffle', sectionId: 'alternatives-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Submissions', icon: 'fa-solid fa-inbox', sectionId: 'submissions-tab' },
         { group: 'PRODUCT MANAGEMENT', label: 'Claims', icon: 'fa-solid fa-circle-check', sectionId: 'claims-tab' },
+        { group: 'CONTENT', label: 'Articles', icon: 'fa-solid fa-newspaper', sectionId: 'articles-tab' },
         { group: 'COMMUNITY', label: 'Developers', icon: 'fa-solid fa-users', sectionId: 'developers-tab' },
         { group: 'COMMUNITY', label: 'Newsletter', icon: 'fa-solid fa-envelope', sectionId: 'newsletter-tab' },
         { group: 'SPOTLIGHT', label: 'Applications', icon: 'fa-solid fa-star', sectionId: 'spotlight-applications-tab' },
@@ -1819,10 +1820,836 @@ const countValue = Number.isFinite(serverCount) ? serverCount : computed[key];
         }
     }
 
+    /* ==========================================================================
+       Articles administration
+       Backend: /articles/admin/*  (all calls carry ?admin_key=...)
+       Reuses: state.products (Products tab cache), GET /products/admin/alternatives/foreign-tools
+       (Alternatives tab list) and GET /spotlight/admin/spotlights (Spotlight list).
+       ========================================================================== */
+    const ART_TYPES = Object.freeze({
+        product_discovery: 'Discover', news: 'News', updates: 'Updates', guides: 'Guides', industry_trends: 'Industry Trends'
+    });
+    const ART_STATUS_LABEL = Object.freeze({ draft: 'Draft', published: 'Published', scheduled: 'Scheduled', unpublished: 'Unpublished', archived: 'Archived' });
+    const ART_STATUS_CLASS = Object.freeze({ draft: 'draft', published: 'live', scheduled: 'scheduled', unpublished: 'expired', archived: 'archived' });
+    const artState = { rows: [], counts: {}, status: 'all', type: '', categoryId: '', q: '', categories: [], tools: [], spots: [], listReq: 0, busy: false, linkDataReady: false };
+    const art = { id: null, status: 'draft', slug: '', slugTouched: false, ids: { products: [], tools: [], spots: [] }, scheduledAt: null, dirty: false, saving: false, open: false };
+    const artToolAltCache = new Map();
+    let artSuccessTimer = null;
+    let artConfirmResolve = null;
+
+    function artEl(id) { return document.getElementById(id); }
+    function artSetHidden(el, hidden) { if (el) el.classList.toggle('hidden', !!hidden); }
+
+    function artUrl(path, extra) {
+        const base = `${API_URL}/articles/admin${path}`;
+        const q = new URLSearchParams(extra || {});
+        q.set('admin_key', adminKey || '');
+        return `${base}?${q.toString()}`;
+    }
+    async function artRequest(path, options = {}) {
+        const init = { method: options.method || 'GET', headers: { Accept: 'application/json' }, cache: 'no-store' };
+        if (options.body !== undefined) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(options.body); }
+        const res = await fetch(artUrl(path, options.query), init);
+        await requireAdminResponse(res, options.fallback || 'The request failed');
+        const text = await res.text();
+        if (!text) return null;
+        try { return JSON.parse(text); } catch (e) { return null; }
+    }
+    function artParseDate(value) {
+        if (!value) return null;
+        let s = String(value);
+        if (/^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(s)) s += 'Z'; // naive server time is UTC
+        const d = new Date(s);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+    function artFmtDate(value) {
+        const d = artParseDate(value);
+        return d ? d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+    }
+    function artToLocalInput(value) {
+        const d = artParseDate(value);
+        if (!d) return '';
+        const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+    function artSlugify(text) {
+        return String(text || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+            .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+    }
+    function artSafeUrl(url) { return /^https?:\/\//i.test(String(url || '')) ? String(url) : ''; }
+
+    function artCleanHtml(html) {
+        const doc = new DOMParser().parseFromString(`<body>${html || ''}</body>`, 'text/html');
+        doc.body.querySelectorAll('script,style,iframe,object,embed,link,meta,form,base').forEach(n => n.remove());
+        doc.body.querySelectorAll('*').forEach(node => {
+            Array.from(node.attributes).forEach(attr => {
+                const name = attr.name.toLowerCase();
+                const value = String(attr.value || '').trim().toLowerCase();
+                if (name.startsWith('on') || name === 'style' || ((name === 'href' || name === 'src') && /^(javascript|data):/.test(value) && !(name === 'src' && /^data:image\//.test(value)))) node.removeAttribute(attr.name);
+            });
+            if (node.tagName === 'A') { node.setAttribute('rel', 'noopener'); }
+        });
+        return doc.body.innerHTML.trim();
+    }
+
+    /* ---------- feedback ---------- */
+    function artShowError(message) {
+        const el = artEl('art-error');
+        if (!el) return;
+        el.textContent = message || '';
+        artSetHidden(el, !message);
+    }
+    function artShowSuccess(message) {
+        const el = artEl('art-success');
+        if (!el) return;
+        window.clearTimeout(artSuccessTimer);
+        el.textContent = message;
+        artSetHidden(el, false);
+        artSuccessTimer = window.setTimeout(() => artSetHidden(el, true), 5000);
+    }
+    function artEditorMessage(kind, message) {
+        const validation = artEl('art-validation');
+        const success = artEl('art-editor-success');
+        if (kind === 'error') {
+            validation.textContent = message;
+            artSetHidden(validation, false);
+            artSetHidden(success, true);
+            validation.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else if (kind === 'success') {
+            success.textContent = message;
+            artSetHidden(success, false);
+            artSetHidden(validation, true);
+            window.clearTimeout(artSuccessTimer);
+            artSuccessTimer = window.setTimeout(() => artSetHidden(success, true), 5000);
+        } else {
+            artSetHidden(validation, true);
+            artSetHidden(success, true);
+        }
+    }
+
+    /* ---------- confirm dialog ---------- */
+    function artConfirm({ title, text, okLabel = 'Confirm', danger = false }) {
+        return new Promise(resolve => {
+            artConfirmResolve = resolve;
+            artEl('art-confirm-title').textContent = title;
+            artEl('art-confirm-text').textContent = text;
+            const ok = artEl('art-confirm-ok');
+            ok.textContent = okLabel;
+            ok.className = danger ? 'btn-danger' : 'btn-primary';
+            artSetHidden(artEl('art-confirm-modal'), false);
+            ok.focus();
+        });
+    }
+    function artConfirmClose(result) {
+        artSetHidden(artEl('art-confirm-modal'), true);
+        if (artConfirmResolve) { const r = artConfirmResolve; artConfirmResolve = null; r(result); }
+    }
+
+    /* ---------- categories ---------- */
+    async function loadArtCategories() {
+        try {
+            const list = await artRequest('/categories', { fallback: 'Could not load categories' });
+            artState.categories = Array.isArray(list) ? list : [];
+        } catch (error) {
+            artState.categories = [];
+            artShowError(error.message);
+        }
+        renderArtCategoryControls();
+    }
+    function renderArtCategoryControls() {
+        const opts = artState.categories.map(c => `<option value="${escapeHTML(String(c.id))}">${escapeHTML(c.name)}</option>`).join('');
+        const filter = artEl('art-filter-category');
+        const editor = artEl('art-category');
+        if (filter) { const v = artState.categoryId; filter.innerHTML = `<option value="">All categories</option>${opts}`; filter.value = v; }
+        if (editor) { const v = editor.value; editor.innerHTML = `<option value="">Select a category</option>${opts}`; editor.value = v; }
+        renderArtCategoryList();
+    }
+    function renderArtCategoryList() {
+        const list = artEl('art-category-list');
+        if (!list) return;
+        if (!artState.categories.length) { list.innerHTML = '<li class="art-category-empty">No categories yet. Add one above.</li>'; return; }
+        list.innerHTML = artState.categories.map(c => `
+            <li data-cat-id="${escapeHTML(String(c.id))}">
+                <span><strong>${escapeHTML(c.name)}</strong><small>/${escapeHTML(c.slug || '')}</small></span>
+                <button type="button" class="btn-danger btn-small" data-cat-delete="${escapeHTML(String(c.id))}">Delete</button>
+            </li>`).join('');
+    }
+    async function addArtCategory(event) {
+        event.preventDefault();
+        const input = artEl('art-category-name');
+        const errorEl = artEl('art-categories-error');
+        const name = input.value.trim();
+        artSetHidden(errorEl, true);
+        if (!name) { errorEl.textContent = 'Enter a category name.'; artSetHidden(errorEl, false); return; }
+        const btn = artEl('art-category-add');
+        btn.disabled = true;
+        try {
+            await artRequest('/categories', { method: 'POST', body: { name }, fallback: 'Could not add the category' });
+            input.value = '';
+            await loadArtCategories();
+        } catch (error) {
+            errorEl.textContent = error.message; artSetHidden(errorEl, false);
+        } finally { btn.disabled = false; }
+    }
+    async function deleteArtCategory(id) {
+        const cat = artState.categories.find(c => String(c.id) === String(id));
+        const errorEl = artEl('art-categories-error');
+        artSetHidden(errorEl, true);
+        artSetHidden(artEl('art-categories-modal'), true);
+        const ok = await artConfirm({ title: 'Delete category', text: `Delete “${cat ? cat.name : 'this category'}”? This cannot be undone.`, okLabel: 'Delete', danger: true });
+        artSetHidden(artEl('art-categories-modal'), false);
+        if (!ok) return;
+        try {
+            await artRequest(`/categories/${encodeURIComponent(id)}`, { method: 'DELETE', fallback: 'Could not delete the category' });
+            await loadArtCategories();
+        } catch (error) {
+            errorEl.textContent = error.message; // e.g. "in use" error from the backend
+            artSetHidden(errorEl, false);
+        }
+    }
+    function openArtCategories() {
+        artSetHidden(artEl('art-categories-error'), true);
+        artSetHidden(artEl('art-categories-modal'), false);
+        renderArtCategoryList();
+        artEl('art-category-name').focus();
+    }
+
+    /* ---------- list ---------- */
+    async function loadArticlesTab() {
+        if (art.open) return;
+        showArtListView();
+        if (!artState.categories.length) await loadArtCategories();
+        await loadArticles();
+    }
+    function showArtListView() {
+        art.open = false;
+        document.body.classList.remove('art-editor-open');
+        artSetHidden(artEl('article-editor-view'), true);
+        artSetHidden(artEl('articles-list-view'), false);
+    }
+    async function loadArticles() {
+        const req = ++artState.listReq;
+        artShowError('');
+        artSetHidden(artEl('art-loading'), false);
+        artSetHidden(artEl('art-empty'), true);
+        artSetHidden(artEl('art-table-container'), true);
+        const query = {};
+        if (artState.status !== 'all') query.status = artState.status;
+        if (artState.type) query.type = artState.type;
+        if (artState.categoryId) query.category_id = artState.categoryId;
+        if (artState.q) query.q = artState.q;
+        try {
+            const data = await artRequest('', { query, fallback: 'Could not load articles' });
+            if (req !== artState.listReq) return;
+            artState.rows = Array.isArray(data && data.articles) ? data.articles : [];
+            artState.counts = (data && data.counts) || {};
+        } catch (error) {
+            if (req !== artState.listReq) return;
+            artState.rows = [];
+            artShowError(error.message);
+        }
+        artSetHidden(artEl('art-loading'), true);
+        renderArtCounts();
+        renderArtRows();
+    }
+    function renderArtCounts() {
+        document.querySelectorAll('[data-art-count]').forEach(el => {
+            const n = Number(artState.counts[el.dataset.artCount]);
+            el.textContent = Number.isFinite(n) ? n : 0;
+        });
+        document.querySelectorAll('[data-art-status]').forEach(btn => {
+            const active = btn.dataset.artStatus === artState.status;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-selected', String(active));
+        });
+    }
+    function artCategoryName(id) {
+        const c = artState.categories.find(item => String(item.id) === String(id));
+        return c ? c.name : '';
+    }
+    function artRowActions(row) {
+        const id = escapeHTML(String(row.id));
+        const btn = (action, label, cls = 'btn-secondary') => `<button type="button" class="${cls} btn-small" data-art-action="${action}" data-art-id="${id}">${label}</button>`;
+        const parts = [];
+        if (row.status !== 'archived') parts.push(btn('edit', 'Edit'));
+        if (row.status === 'draft' || row.status === 'unpublished') parts.push(btn('publish', 'Publish', 'btn-success'));
+        if (row.status === 'scheduled') parts.push(btn('publish', 'Publish now', 'btn-success'));
+        if (row.status === 'published' || row.status === 'scheduled') parts.push(btn('unpublish', 'Unpublish'));
+        if (row.status === 'archived') parts.push(btn('restore', 'Restore'));
+        if (row.status !== 'archived') parts.push(btn('archive', 'Archive'));
+        if (row.status === 'draft' || row.status === 'unpublished' || row.status === 'archived') parts.push(btn('delete', 'Delete', 'btn-danger'));
+        return `<div class="art-actions">${parts.join('')}</div>`;
+    }
+    function renderArtRows() {
+        const body = artEl('art-list');
+        const empty = artEl('art-empty');
+        if (!body) return;
+        if (!artState.rows.length) {
+            artSetHidden(artEl('art-table-container'), true);
+            const filtered = artState.status !== 'all' || artState.type || artState.categoryId || artState.q;
+            empty.textContent = filtered ? 'No articles match these filters.' : 'No articles yet. Create your first one.';
+            artSetHidden(empty, false);
+            return;
+        }
+        artSetHidden(empty, true);
+        body.innerHTML = artState.rows.map(row => {
+            const cover = artSafeUrl(row.cover_image_url);
+            const status = ART_STATUS_LABEL[row.status] ? row.status : 'draft';
+            const when = status === 'scheduled' && row.scheduled_at ? `<small class="art-sub">${escapeHTML(artFmtDate(row.scheduled_at))}</small>` : '';
+            const catName = row.type === 'product_discovery' ? (artCategoryName(row.category_id) || '—') : '—';
+            return `<tr data-art-row="${escapeHTML(String(row.id))}">
+                <td data-label="Article"><div class="art-title-cell">
+                    <span class="art-thumb">${cover ? `<img src="${escapeHTML(cover)}" alt="" loading="lazy">` : '<i class="fa-regular fa-image" aria-hidden="true"></i>'}</span>
+                    <div><strong>${escapeHTML(row.title || '(untitled)')}</strong>${row.is_featured ? ' <span class="badge feature">Banner</span>' : ''}<small class="art-sub">/articles/${escapeHTML(row.slug || '')}</small></div>
+                </div></td>
+                <td data-label="Type">${escapeHTML(ART_TYPES[row.type] || row.type || '—')}</td>
+                <td data-label="Status"><span class="collection-status-badge collection-status-${ART_STATUS_CLASS[status]}">${ART_STATUS_LABEL[status]}</span>${when}</td>
+                <td data-label="Category">${escapeHTML(catName)}</td>
+                <td data-label="Updated">${escapeHTML(artFmtDate(row.updated_at))}</td>
+                <td data-label="Actions">${artRowActions(row)}</td>
+            </tr>`;
+        }).join('');
+        artSetHidden(artEl('art-table-container'), false);
+    }
+
+    async function artRowAction(action, id) {
+        const row = artState.rows.find(r => String(r.id) === String(id));
+        if (!row) return;
+        if (action === 'edit') { openArticleEditor(id); return; }
+        if (artState.busy) return;
+        const name = `“${row.title || 'this article'}”`;
+        const spec = {
+            publish: { status: 'published', title: 'Publish article', text: `Publish ${name}? It goes live immediately.`, ok: 'Publish', done: 'Article published.' },
+            unpublish: { status: 'unpublished', title: 'Unpublish article', text: `Unpublish ${name}? It will disappear from the public site.`, ok: 'Unpublish', done: 'Article unpublished.' },
+            archive: { status: 'archived', title: 'Archive article', text: `Archive ${name}? You can restore it later.`, ok: 'Archive', done: 'Article archived.' },
+            restore: { status: 'draft', done: 'Article restored as a draft.' }
+        }[action];
+        try {
+            if (action === 'delete') {
+                const ok = await artConfirm({ title: 'Delete article', text: `Permanently delete ${name}? This cannot be undone. Use Archive if you only want to hide it.`, okLabel: 'Delete permanently', danger: true });
+                if (!ok) return;
+                artState.busy = true;
+                await artRequest(`/${encodeURIComponent(id)}`, { method: 'DELETE', fallback: 'Could not delete the article' });
+                artShowSuccess('Article deleted.');
+            } else if (spec) {
+                if (spec.title) {
+                    const ok = await artConfirm({ title: spec.title, text: spec.text, okLabel: spec.ok, danger: action === 'unpublish' || action === 'archive' });
+                    if (!ok) return;
+                }
+                artState.busy = true;
+                await artRequest(`/${encodeURIComponent(id)}`, { method: 'PUT', body: { status: spec.status }, fallback: 'Could not update the article' });
+                artShowSuccess(spec.done);
+            }
+        } catch (error) {
+            artShowError(error.message); // real backend message, e.g. "Discover articles need at least 1 product"
+        } finally { artState.busy = false; }
+        await loadArticles();
+    }
+
+    /* ---------- editor: open / reset / fill ---------- */
+    function artSelectedType() {
+        const r = document.querySelector('input[name="art-type"]:checked');
+        return r ? r.value : '';
+    }
+    function artSetType(value) {
+        document.querySelectorAll('input[name="art-type"]').forEach(r => { r.checked = r.value === value; });
+        artApplyType();
+    }
+    function artApplyType() {
+        const discover = artSelectedType() === 'product_discovery';
+        artSetHidden(artEl('art-category-group'), !discover);
+        artSetHidden(artEl('art-require-note'), !discover);
+        document.querySelectorAll('.art-type-option').forEach(l => l.classList.toggle('selected', l.querySelector('input').checked));
+    }
+    function artUpdatePublishUi() {
+        const status = art.status;
+        const isNew = !art.id;
+        artEl('art-editor-title').textContent = isNew ? 'New Article' : 'Edit Article';
+        const badge = artEl('art-editor-status');
+        badge.textContent = isNew ? 'Draft' : (ART_STATUS_LABEL[status] || 'Draft');
+        badge.className = `collection-status-badge collection-status-${ART_STATUS_CLASS[isNew ? 'draft' : status] || 'draft'}`;
+        const save = artEl('art-save-draft');
+        save.textContent = (isNew || status === 'draft') ? 'Save as Draft' : 'Save changes';
+        const publish = artEl('art-publish');
+        publish.textContent = status === 'scheduled' ? 'Publish now' : 'Publish';
+        artSetHidden(publish, !isNew && status === 'published');
+        const note = artEl('art-publish-note');
+        if (!isNew && status === 'scheduled' && art.scheduledAt) note.textContent = `Scheduled for ${artFmtDate(art.scheduledAt)}. It publishes automatically.`;
+        else if (!isNew && status === 'published') note.textContent = 'This article is live. Saving updates the public page.';
+        else note.textContent = 'Draft articles are not visible to the public.';
+    }
+    function artResetEditor() {
+        Object.assign(art, { id: null, status: 'draft', slug: '', slugTouched: false, ids: { products: [], tools: [], spots: [] }, scheduledAt: null, dirty: false, saving: false });
+        ['art-title', 'art-slug', 'art-summary', 'art-cover', 'art-author', 'art-author-avatar', 'art-seo-title', 'art-meta'].forEach(id => { artEl(id).value = ''; });
+        artEl('art-category').value = '';
+        artEl('art-featured').checked = false;
+        artEl('art-body').innerHTML = '';
+        artEl('art-body-source').value = '';
+        artSetSourceMode(false);
+        artEl('art-schedule-at').value = '';
+        artSetHidden(artEl('art-schedule-panel'), true);
+        artSetType('');
+        artUpdateSlugPreview();
+        artUpdateSummaryCount();
+        artUpdateCoverPreview();
+        artEditorMessage('clear');
+        ['products', 'tools', 'spots'].forEach(artRenderPicker);
+    }
+    async function artEnsureLinkData() {
+        if (!state.products.length && coreProductsLoadPromise) { try { await coreProductsLoadPromise; } catch (e) { /* products tab reports its own error */ } }
+        const jobs = [
+            fetch(`${API_URL}/products/admin/alternatives/foreign-tools?admin_key=${encodeURIComponent(adminKey)}`, { cache: 'no-store' })
+                .then(async res => { await requireAdminResponse(res, 'Could not load foreign tools'); const d = await res.json(); artState.tools = Array.isArray(d) ? d : []; }),
+            fetch(spotUrl('/spotlight/admin/spotlights'), { cache: 'no-store', headers: { Accept: 'application/json' } })
+                .then(async res => { await requireAdminResponse(res, 'Could not load spotlights'); const d = await res.json(); artState.spots = Array.isArray(d) ? d : []; })
+        ];
+        const results = await Promise.allSettled(jobs);
+        const names = ['tools', 'spots'];
+        results.forEach((r, i) => {
+            const picker = document.querySelector(`.art-picker[data-picker="${names[i]}"] .art-picker-search input`);
+            if (picker) picker.placeholder = r.status === 'rejected' ? 'Could not load this list. Re-open the editor to retry.' : picker.dataset.placeholder || picker.placeholder;
+        });
+        ['products', 'tools', 'spots'].forEach(artRenderPicker);
+    }
+    async function openArticleEditor(id) {
+        if (!artEl('article-editor-view')) return;
+        artShowError('');
+        artResetEditor();
+        art.open = true;
+        artSetHidden(artEl('articles-list-view'), true);
+        artSetHidden(artEl('article-editor-view'), false);
+        document.body.classList.add('art-editor-open');
+        window.scrollTo({ top: 0 });
+        artUpdatePublishUi();
+        if (!artState.categories.length) loadArtCategories();
+        const linkData = artEnsureLinkData();
+        if (id) {
+            artEl('art-editor-title').textContent = 'Loading…';
+            try {
+                const data = await artRequest(`/${encodeURIComponent(id)}`, { fallback: 'Could not load this article' });
+                await linkData;
+                artFillEditor(data || {});
+            } catch (error) {
+                artEditorMessage('error', error.message);
+                artEl('art-editor-title').textContent = 'Edit Article';
+            }
+        } else {
+            artSetType('product_discovery');
+            art.dirty = false;
+        }
+    }
+    function artFillEditor(d) {
+        art.id = d.id;
+        art.status = d.status || 'draft';
+        art.slug = d.slug || '';
+        art.scheduledAt = d.scheduled_at || null;
+        artSetType(d.type || '');
+        artEl('art-title').value = d.title || '';
+        artEl('art-slug').value = d.slug || '';
+        artEl('art-summary').value = d.summary || '';
+        artEl('art-cover').value = d.cover_image_url || '';
+        artEl('art-author').value = d.author_name || '';
+        artEl('art-author-avatar').value = d.author_avatar_url || '';
+        artEl('art-seo-title').value = d.seo_title || '';
+        artEl('art-meta').value = d.meta_description || '';
+        artEl('art-featured').checked = !!d.is_featured;
+        artEl('art-category').value = d.category_id ? String(d.category_id) : '';
+        artEl('art-body').innerHTML = artCleanHtml(d.content_html || '');
+        if (art.scheduledAt) artEl('art-schedule-at').value = artToLocalInput(art.scheduledAt);
+        art.ids = {
+            products: (d.product_ids || []).map(Number),
+            tools: (d.foreign_tool_ids || []).map(Number),
+            spots: (d.spotlight_ids || []).map(Number)
+        };
+        ['products', 'tools', 'spots'].forEach(artRenderPicker);
+        artUpdateSlugPreview();
+        artUpdateSummaryCount();
+        artUpdateCoverPreview();
+        artUpdatePublishUi();
+        art.dirty = false;
+    }
+    async function closeArticleEditor(force) {
+        if (!force && art.dirty) {
+            const ok = await artConfirm({ title: 'Discard changes?', text: 'You have unsaved changes in this article.', okLabel: 'Discard', danger: true });
+            if (!ok) return;
+        }
+        showArtListView();
+        loadArticles();
+    }
+
+    /* ---------- editor: small field helpers ---------- */
+    function artUpdateSlugPreview() {
+        const slug = artEl('art-slug').value.trim() || artSlugify(artEl('art-title').value) || 'your-title';
+        artEl('art-slug-preview').textContent = slug;
+        artEl('art-slug-hint').firstChild.textContent = art.id ? 'Public URL: /articles/' : 'Public URL (final slug is confirmed on save): /articles/';
+    }
+    function artUpdateSummaryCount() { artEl('art-summary-count').textContent = artEl('art-summary').value.length; }
+    function artUpdateCoverPreview() {
+        const url = artSafeUrl(artEl('art-cover').value.trim());
+        const wrap = artEl('art-cover-preview');
+        artSetHidden(wrap, !url);
+        if (url) artEl('art-cover-img').src = url;
+    }
+
+    /* ---------- editor: rich text ---------- */
+    let artSourceMode = false;
+    function artSetSourceMode(on) {
+        const area = artEl('art-body');
+        const source = artEl('art-body-source');
+        const btn = document.querySelector('.art-rte-source');
+        if (on && !artSourceMode) source.value = artCleanHtml(area.innerHTML);
+        if (!on && artSourceMode) area.innerHTML = artCleanHtml(source.value);
+        artSourceMode = on;
+        artSetHidden(area, on);
+        artSetHidden(source, !on);
+        if (btn) btn.setAttribute('aria-pressed', String(on));
+        document.querySelectorAll('.art-rte-toolbar button:not(.art-rte-source)').forEach(b => { b.disabled = on; });
+    }
+    function artBodyHtml() { return artCleanHtml(artSourceMode ? artEl('art-body-source').value : artEl('art-body').innerHTML); }
+    function artBodyIsEmpty() {
+        const doc = new DOMParser().parseFromString(`<body>${artBodyHtml()}</body>`, 'text/html');
+        return !doc.body.textContent.trim() && !doc.body.querySelector('img');
+    }
+    function artRunCommand(cmd) {
+        const area = artEl('art-body');
+        if (cmd === 'source') { artSetSourceMode(!artSourceMode); return; }
+        area.focus();
+        const exec = (c, v) => document.execCommand(c, false, v);
+        if (cmd === 'bold') exec('bold');
+        else if (cmd === 'italic') exec('italic');
+        else if (cmd === 'h2') exec('formatBlock', 'H2');
+        else if (cmd === 'h3') exec('formatBlock', 'H3');
+        else if (cmd === 'ul') exec('insertUnorderedList');
+        else if (cmd === 'ol') exec('insertOrderedList');
+        else if (cmd === 'quote') exec('formatBlock', 'BLOCKQUOTE');
+        else if (cmd === 'clear') { exec('removeFormat'); exec('formatBlock', 'P'); }
+        else if (cmd === 'link') {
+            const url = window.prompt('Link URL (https://…)');
+            if (url && artSafeUrl(url)) exec('createLink', url.trim());
+        } else if (cmd === 'image') {
+            const url = window.prompt('Image URL (https://…)');
+            if (url && artSafeUrl(url)) exec('insertImage', url.trim());
+        }
+        art.dirty = true;
+    }
+
+    /* ---------- editor: pickers ---------- */
+    const ART_PICKERS = {
+        products: {
+            list: () => state.products.filter(collectionProductIsLive),
+            lookup: () => state.products,
+            name: p => p.name, img: p => p.logo_url, sub: p => p.category || ''
+        },
+        tools: {
+            list: () => artState.tools, lookup: () => artState.tools,
+            name: t => t.name, img: t => t.logo_url,
+            sub: t => Number.isFinite(Number(t.alternative_count)) ? `${Number(t.alternative_count)} Nigerian alternative${Number(t.alternative_count) === 1 ? '' : 's'}` : (t.category || '')
+        },
+        spots: {
+            list: () => artState.spots.filter(s => (s.status || '') === 'published'), lookup: () => artState.spots,
+            name: s => s.headline || s.startup_name || 'Spotlight', img: s => s.logo_url || s.photo_url || '', sub: s => s.startup_name || s.founder_name || ''
+        }
+    };
+    function artPickerEl(kind) { return document.querySelector(`.art-picker[data-picker="${kind}"]`); }
+    function artThumb(url, name) {
+        const safe = artSafeUrl(url);
+        return `<span class="art-mini">${safe ? `<img src="${escapeHTML(safe)}" alt="" loading="lazy">` : escapeHTML(String(name || '?').charAt(0).toUpperCase())}</span>`;
+    }
+    function artRenderPicker(kind) {
+        const root = artPickerEl(kind);
+        if (!root) return;
+        const cfg = ART_PICKERS[kind];
+        const ids = art.ids[kind];
+        const lookup = cfg.lookup();
+        root.querySelector('[data-picker-count]').textContent = `${ids.length} selected`;
+        root.querySelector('[data-picker-chips]').innerHTML = ids.map(id => {
+            const item = lookup.find(x => Number(x.id) === Number(id));
+            const name = item ? cfg.name(item) : `${kind === 'products' ? 'Product' : kind === 'tools' ? 'Tool' : 'Spotlight'} #${id}`;
+            return `<span class="art-chip" data-chip-id="${id}">
+                ${artThumb(item && cfg.img(item), name)}
+                <span class="art-chip-text"><strong>${escapeHTML(name)}</strong><small data-chip-sub>${escapeHTML(item ? cfg.sub(item) : '')}</small></span>
+                <button type="button" class="art-chip-remove" data-remove="${id}" aria-label="Remove ${escapeHTML(name)}">&times;</button>
+            </span>`;
+        }).join('');
+        if (kind === 'tools') ids.forEach(id => artLoadToolAlternatives(id));
+        artUpdateRequireNote();
+    }
+    function artLoadToolAlternatives(id) {
+        const tool = artState.tools.find(t => Number(t.id) === Number(id));
+        if (!tool || !tool.slug) return;
+        if (!artToolAltCache.has(tool.slug)) {
+            artToolAltCache.set(tool.slug, fetch(`${API_URL}/products/alternatives/foreign-tools/${encodeURIComponent(tool.slug)}`, { headers: { Accept: 'application/json' } })
+                .then(r => r.ok ? r.json() : null)
+                .then(p => (p && Array.isArray(p.alternatives)) ? p.alternatives.map(a => a.name).filter(Boolean) : [])
+                .catch(() => []));
+        }
+        artToolAltCache.get(tool.slug).then(names => {
+            const chip = document.querySelector(`.art-picker[data-picker="tools"] [data-chip-id="${id}"] [data-chip-sub]`);
+            if (chip) chip.textContent = names.length ? `Nigerian alternative: ${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''}` : 'No Nigerian alternative linked yet';
+        });
+    }
+    function artUpdateRequireNote() {
+        const note = artEl('art-require-note');
+        if (!note) return;
+        const missing = artSelectedType() === 'product_discovery' && !art.ids.products.length;
+        note.classList.toggle('is-missing', missing);
+    }
+    function artPickerSearch(kind) {
+        const root = artPickerEl(kind);
+        const cfg = ART_PICKERS[kind];
+        const q = root.querySelector('input').value.trim().toLowerCase();
+        const box = root.querySelector('.art-picker-results');
+        const chosen = new Set(art.ids[kind].map(Number));
+        const matches = cfg.list().filter(item => !chosen.has(Number(item.id)) && (!q || String(cfg.name(item) || '').toLowerCase().includes(q))).slice(0, 8);
+        if (!matches.length) {
+            box.innerHTML = `<p class="art-picker-none">${q ? 'No matches.' : 'Nothing available to add.'}</p>`;
+        } else {
+            box.innerHTML = matches.map(item => `<button type="button" role="option" class="art-result" data-add="${Number(item.id)}">
+                ${artThumb(cfg.img(item), cfg.name(item))}
+                <span class="art-chip-text"><strong>${escapeHTML(cfg.name(item))}</strong><small>${escapeHTML(cfg.sub(item))}</small></span>
+                <i class="fa-solid fa-plus" aria-hidden="true"></i></button>`).join('');
+        }
+        artSetHidden(box, false);
+    }
+    function artPickerAdd(kind, id) {
+        id = Number(id);
+        if (!art.ids[kind].includes(id)) art.ids[kind].push(id);
+        art.dirty = true;
+        const input = artPickerEl(kind).querySelector('input');
+        input.value = '';
+        artSetHidden(artPickerEl(kind).querySelector('.art-picker-results'), true);
+        artRenderPicker(kind);
+    }
+
+    /* ---------- editor: payload / validation / save ---------- */
+    function artPayload() {
+        const type = artSelectedType();
+        const discover = type === 'product_discovery';
+        const catVal = artEl('art-category').value;
+        return {
+            type,
+            title: artEl('art-title').value.trim(),
+            summary: artEl('art-summary').value.trim(),
+            content_html: artBodyHtml(),
+            cover_image_url: artEl('art-cover').value.trim() || null,
+            category_id: discover && catVal ? Number(catVal) : null,
+            author_name: artEl('art-author').value.trim() || null,
+            author_avatar_url: artEl('art-author-avatar').value.trim() || null,
+            seo_title: artEl('art-seo-title').value.trim() || null,
+            meta_description: artEl('art-meta').value.trim() || null,
+            is_featured: artEl('art-featured').checked,
+            product_ids: art.ids.products.slice(),
+            foreign_tool_ids: art.ids.tools.slice(),
+            spotlight_ids: art.ids.spots.slice()
+        };
+    }
+    function artValidate(forPublish) {
+        const p = artPayload();
+        const problems = [];
+        if (!p.type) problems.push('choose an article type');
+        if (!p.title) problems.push('add a title');
+        if (forPublish) {
+            if (!p.summary) problems.push('add a summary');
+            if (artBodyIsEmpty()) problems.push('write the article body');
+            if (p.type === 'product_discovery') {
+                if (!p.category_id) problems.push('choose a category');
+                if (!p.product_ids.length) problems.push('add at least 1 Nigerian product');
+            }
+        }
+        return problems;
+    }
+    function artProblemText(problems, verb) {
+        return `Before you ${verb}, please ${problems.join(', ').replace(/, ([^,]*)$/, problems.length > 1 ? ' and $1' : ', $1')}.`;
+    }
+    function artSetSaving(on) {
+        art.saving = on;
+        ['art-save-draft', 'art-preview', 'art-publish', 'art-schedule-toggle', 'art-schedule-confirm', 'art-back-btn'].forEach(id => { const el = artEl(id); if (el) el.disabled = on; });
+    }
+    async function artPersist(extra) {
+        const payload = artPayload();
+        let slugWanted = artEl('art-slug').value.trim();
+        slugWanted = slugWanted ? artSlugify(slugWanted) : '';
+        if (!art.id) {
+            const created = await artRequest('', { method: 'POST', body: payload, fallback: 'Could not save the article' });
+            const newId = created && (created.id ?? (created.article && created.article.id));
+            if (!newId) throw new Error('Saved, but the server did not return the article id. Check the Articles list.');
+            art.id = newId;
+            art.status = (created && created.status) || 'draft';
+            art.slug = (created && created.slug) || '';
+            const follow = Object.assign({}, extra || {});
+            if (art.slugTouched && slugWanted && slugWanted !== art.slug) follow.slug = slugWanted;
+            if (Object.keys(follow).length) await artRequest(`/${encodeURIComponent(newId)}`, { method: 'PUT', body: follow, fallback: 'The draft was saved, but the next step failed' });
+        } else {
+            const body = Object.assign({}, payload, extra || {});
+            if (slugWanted && slugWanted !== art.slug) body.slug = slugWanted;
+            await artRequest(`/${encodeURIComponent(art.id)}`, { method: 'PUT', body, fallback: 'Could not save the article' });
+        }
+        const fresh = await artRequest(`/${encodeURIComponent(art.id)}`, { fallback: 'Saved, but could not refresh the article' }).catch(() => null);
+        if (fresh) {
+            art.status = fresh.status || art.status;
+            art.slug = fresh.slug || art.slug;
+            art.scheduledAt = fresh.scheduled_at || null;
+            artEl('art-slug').value = art.slug;
+            artUpdateSlugPreview();
+        }
+        art.dirty = false;
+        artUpdatePublishUi();
+    }
+    async function artSave(mode) {
+        if (art.saving) return;
+        artEditorMessage('clear');
+        const publishing = mode === 'publish' || mode === 'schedule';
+        const problems = artValidate(publishing);
+        let extra = null;
+        let scheduleIso = null;
+        if (mode === 'schedule') {
+            const val = artEl('art-schedule-at').value;
+            const when = val ? new Date(val) : null;
+            if (!when || Number.isNaN(when.getTime())) problems.push('pick a date and time');
+            else if (when.getTime() <= Date.now() + 30000) problems.push('pick a time in the future');
+            else scheduleIso = when.toISOString();
+        }
+        if (problems.length) { artEditorMessage('error', artProblemText(problems, mode === 'schedule' ? 'schedule' : (mode === 'publish' ? 'publish' : 'save'))); return; }
+        if (mode === 'publish') {
+            const ok = await artConfirm({ title: 'Publish article', text: `Publish “${artEl('art-title').value.trim()}”? It goes live immediately.`, okLabel: 'Publish' });
+            if (!ok) return;
+            extra = { status: 'published' };
+        } else if (mode === 'schedule') {
+            extra = { status: 'scheduled', scheduled_at: scheduleIso };
+        }
+        artSetSaving(true);
+        try {
+            await artPersist(extra);
+            artEditorMessage('success', mode === 'publish' ? 'Article published.' : mode === 'schedule' ? `Scheduled for ${artFmtDate(scheduleIso)}. It will publish automatically.` : 'Saved.');
+            if (mode === 'schedule') artSetHidden(artEl('art-schedule-panel'), true);
+        } catch (error) {
+            artEditorMessage('error', error.message); // the backend's own message (duplicate slug, missing product, ...)
+            if (art.id) artUpdatePublishUi();
+        } finally { artSetSaving(false); }
+    }
+    function artPreview() {
+        const w = window.open('', '_blank');
+        if (!w) { artEditorMessage('error', 'Your browser blocked the preview window. Allow pop-ups for this page and try again.'); return; }
+        const p = artPayload();
+        const cover = artSafeUrl(p.cover_image_url);
+        const cat = p.type === 'product_discovery' ? artCategoryName(p.category_id) : '';
+        const linked = (kind, label) => art.ids[kind].length ? `<p class="meta"><strong>${label}:</strong> ${art.ids[kind].map(id => { const it = ART_PICKERS[kind].lookup().find(x => Number(x.id) === id); return escapeHTML(it ? ART_PICKERS[kind].name(it) : '#' + id); }).join(', ')}</p>` : '';
+        w.document.open();
+        w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview: ${escapeHTML(p.title || 'Untitled')}</title><style>
+body{margin:0;background:#f1f5f9;color:#0f172a;font:17px/1.8 'Plus Jakarta Sans',system-ui,sans-serif}.bar{background:#0b1f3a;color:#fff;padding:10px 20px;font:600 13px system-ui}main{max-width:780px;margin:0 auto;padding:32px 20px 80px}.chip{display:inline-block;padding:4px 11px;border-radius:99px;background:#eaf1ff;color:#1d4ed8;font:800 11px system-ui;text-transform:uppercase;letter-spacing:.04em}h1{font-size:2.3rem;line-height:1.15;letter-spacing:-.03em;margin:14px 0}.lede{color:#64748b;font-size:1.15rem}img{max-width:100%;border-radius:16px}.cover{margin:20px 0}blockquote{border-left:4px solid #2563eb;margin-left:0;padding-left:18px;color:#64748b}a{color:#2563eb}.meta{color:#64748b;font:14px system-ui}
+</style></head><body><div class="bar">Preview of unsaved form data. The live page uses your site's real design.</div><main>
+<span class="chip">${escapeHTML(ART_TYPES[p.type] || 'Article')}</span>${cat ? ` <span class="meta">${escapeHTML(cat)}</span>` : ''}
+<h1>${escapeHTML(p.title || 'Untitled article')}</h1>${p.summary ? `<p class="lede">${escapeHTML(p.summary)}</p>` : ''}${p.author_name ? `<p class="meta">By ${escapeHTML(p.author_name)}</p>` : ''}
+${cover ? `<div class="cover"><img src="${escapeHTML(cover)}" alt=""></div>` : ''}${p.content_html}
+${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spots', 'Founders')}</main></body></html>`);
+        w.document.close();
+    }
+
+    /* ---------- wiring ---------- */
+    function initArticlesAdmin() {
+        const tab = artEl('articles-tab');
+        if (!tab || tab.dataset.artReady) return;
+        tab.dataset.artReady = '1';
+        document.querySelectorAll('.art-picker-search input').forEach(i => { i.dataset.placeholder = i.placeholder; });
+
+        artEl('art-new-btn').addEventListener('click', () => openArticleEditor(null));
+        artEl('art-categories-btn').addEventListener('click', openArtCategories);
+        artEl('art-manage-categories').addEventListener('click', openArtCategories);
+        artEl('art-categories-close').addEventListener('click', () => artSetHidden(artEl('art-categories-modal'), true));
+        artEl('art-categories-modal').addEventListener('click', e => { if (e.target.id === 'art-categories-modal') artSetHidden(e.currentTarget, true); });
+        artEl('art-category-form').addEventListener('submit', addArtCategory);
+        artEl('art-category-list').addEventListener('click', e => { const b = e.target.closest('[data-cat-delete]'); if (b) deleteArtCategory(b.dataset.catDelete); });
+        artEl('art-confirm-ok').addEventListener('click', () => artConfirmClose(true));
+        artEl('art-confirm-cancel').addEventListener('click', () => artConfirmClose(false));
+
+        artEl('art-status-tabs').addEventListener('click', e => {
+            const b = e.target.closest('[data-art-status]');
+            if (!b) return;
+            artState.status = b.dataset.artStatus;
+            loadArticles();
+        });
+        let searchTimer = null;
+        artEl('art-search').addEventListener('input', e => { window.clearTimeout(searchTimer); searchTimer = window.setTimeout(() => { artState.q = e.target.value.trim(); loadArticles(); }, 300); });
+        artEl('art-filter-type').addEventListener('change', e => { artState.type = e.target.value; loadArticles(); });
+        artEl('art-filter-category').addEventListener('change', e => { artState.categoryId = e.target.value; loadArticles(); });
+        artEl('art-list').addEventListener('click', e => { const b = e.target.closest('[data-art-action]'); if (b) artRowAction(b.dataset.artAction, b.dataset.artId); });
+
+        artEl('art-back-btn').addEventListener('click', () => closeArticleEditor(false));
+        artEl('art-type-grid').addEventListener('change', () => { artApplyType(); artUpdateRequireNote(); art.dirty = true; });
+        artEl('art-title').addEventListener('input', () => {
+            if (!art.id && !art.slugTouched) artEl('art-slug').value = artSlugify(artEl('art-title').value);
+            artUpdateSlugPreview();
+        });
+        artEl('art-slug').addEventListener('input', () => { art.slugTouched = true; artUpdateSlugPreview(); });
+        artEl('art-slug').addEventListener('blur', e => { e.target.value = artSlugify(e.target.value); artUpdateSlugPreview(); });
+        artEl('art-summary').addEventListener('input', artUpdateSummaryCount);
+        artEl('art-cover').addEventListener('change', artUpdateCoverPreview);
+        artEl('art-cover-img').addEventListener('error', () => artSetHidden(artEl('art-cover-preview'), true));
+        artEl('article-editor-view').addEventListener('input', () => { art.dirty = true; });
+        artEl('article-editor-view').addEventListener('change', () => { art.dirty = true; });
+
+        const rte = artEl('art-rte');
+        rte.querySelector('.art-rte-toolbar').addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
+        rte.querySelector('.art-rte-toolbar').addEventListener('click', e => { const b = e.target.closest('[data-cmd]'); if (b && !b.disabled) artRunCommand(b.dataset.cmd); });
+        artEl('art-body').addEventListener('paste', e => {
+            e.preventDefault();
+            const cd = e.clipboardData || window.clipboardData;
+            const html = cd.getData('text/html');
+            const text = cd.getData('text/plain');
+            document.execCommand('insertHTML', false, html ? artCleanHtml(html) : escapeHTML(text).replace(/\n/g, '<br>'));
+        });
+
+        document.querySelectorAll('.art-picker').forEach(root => {
+            const kind = root.dataset.picker;
+            const input = root.querySelector('input');
+            input.addEventListener('focus', () => artPickerSearch(kind));
+            input.addEventListener('input', () => artPickerSearch(kind));
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Escape') artSetHidden(root.querySelector('.art-picker-results'), true);
+                if (e.key === 'Enter') { e.preventDefault(); const first = root.querySelector('[data-add]'); if (first) artPickerAdd(kind, first.dataset.add); }
+            });
+            root.addEventListener('click', e => {
+                const add = e.target.closest('[data-add]');
+                const rem = e.target.closest('[data-remove]');
+                if (add) artPickerAdd(kind, add.dataset.add);
+                if (rem) { art.ids[kind] = art.ids[kind].filter(id => Number(id) !== Number(rem.dataset.remove)); art.dirty = true; artRenderPicker(kind); }
+            });
+        });
+        document.addEventListener('click', e => {
+            document.querySelectorAll('.art-picker-results').forEach(box => { if (!box.closest('.art-picker').contains(e.target)) artSetHidden(box, true); });
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            if (!artEl('art-confirm-modal').classList.contains('hidden')) artConfirmClose(false);
+            else if (!artEl('art-categories-modal').classList.contains('hidden')) artSetHidden(artEl('art-categories-modal'), true);
+        });
+
+        artEl('art-save-draft').addEventListener('click', () => artSave('draft'));
+        artEl('art-publish').addEventListener('click', () => artSave('publish'));
+        artEl('art-preview').addEventListener('click', artPreview);
+        artEl('art-schedule-toggle').addEventListener('click', () => {
+            const panel = artEl('art-schedule-panel');
+            const show = panel.classList.contains('hidden');
+            artSetHidden(panel, !show);
+            if (show) {
+                const input = artEl('art-schedule-at');
+                const now = new Date(Date.now() + 3600000);
+                const p = n => String(n).padStart(2, '0');
+                input.min = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}T${p(now.getHours())}:${p(now.getMinutes())}`;
+                input.focus();
+            }
+        });
+        artEl('art-schedule-confirm').addEventListener('click', () => artSave('schedule'));
+        window.addEventListener('beforeunload', e => { if (art.open && art.dirty) { e.preventDefault(); e.returnValue = ''; } });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initArticlesAdmin, { once: true });
+    else initArticlesAdmin();
+
     function renderActiveTab(tabId) {
         hideAlert();
         if (tabId === 'dashboard-tab') loadDashboardSummary();
         if (tabId === 'collections-tab') loadCollections();
+        if (tabId === 'articles-tab') loadArticlesTab();
         if (tabId === 'sponsored-tab') loadSponsored();
         if (tabId === 'products-tab') renderProducts();
         if (tabId === 'alternatives-tab') fetchForeignTools();

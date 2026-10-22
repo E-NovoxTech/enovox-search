@@ -1,0 +1,14 @@
+name: Auto-publish scheduled articles
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call auto-publish endpoint
+        run: |
+          curl -X POST "https://search.enovoxtech.com/articles/admin/auto-publish-due?admin_key=${{ secrets.ADMIN_KEY }}"

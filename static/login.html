@@ -101,6 +101,7 @@
                         </div>
                     </div>
 
+
                     <div class="nav-dropdown" data-nav-dropdown>
                         <button type="button" class="nav-dropdown-trigger" aria-expanded="false" aria-controls="header-developers-menu">
                             <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M20 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>Developers</span></span>
@@ -118,6 +119,10 @@
                             </div>
                         </div>
                     </div>
+                    <a href="/articles" class="nav-plain-link" data-nav-articles>
+                        <span class="nav-trigger-label"><svg class="nav-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg><span>Articles</span><span class="nav-link-badge">NEW</span></span>
+                        <svg class="mobile-row-chevron nav-plain-chevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
                     <a href="/submit" class="header-submit-product">Submit Product</a>
                 </div>
 
@@ -148,10 +153,6 @@
                 </button>
                 <a href="/explore" class="icon-btn header-search-icon" aria-label="Search">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                </a>
-                <a href="/ai" class="header-ask-ai" onclick="alert('This feature is coming soon!'); return false;">
-                    <svg class="ask-ai-sparkle" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
-                    <span class="header-ask-ai-copy"><strong>Ask AI <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></strong><small>Need help finding a product?</small></span>
                 </a>
                 <div class="header-auth-desktop">
                     <a href="/login" class="header-auth-login auth-login-slot">Log in</a>
@@ -355,7 +356,7 @@
                 </div>
                 <div class="footer-subscribe">
                     <h4 class="footer-subscribe-title">Discover more. Stay updated.</h4>
-                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, updates, and news from Enovox Search.</p>
+                    <p class="footer-subscribe-copy">Subscribe for new product discoveries, articles, and updates from Enovox Search.</p>
                     <form id="footer-subscribe-form" class="footer-subscribe-form" novalidate>
                         <div class="footer-subscribe-row">
                             <input type="email" id="footer-subscribe-email" name="email" placeholder="you@example.com" autocomplete="email" aria-label="Email address" required>
@@ -366,23 +367,38 @@
                 </div>
             </div>
             <div class="footer-col">
-                <h4>Quick Links</h4>
-                <a href="/">Home</a>
-                <a href="/explore">Explore</a>
+                <h4>Explore</h4>
+                <a href="/explore">Explore Products</a>
+                <a href="/collection">Collections</a>
+                <a href="/category">Categories</a>
+                <a href="/alternative">Nigeria Alternatives</a>
+                <a href="/spotlight">Founder Spotlight</a>
                 <a href="#">Ask AI</a>
-                <a href="/submit">Submit Product</a>
+            </div>
+            <div class="footer-col">
+                <h4>Articles</h4>
+                <a href="/articles" class="footer-link-strong">All Articles</a>
+                <a href="/articles?type=news">News</a>
+                <a href="/articles?type=updates">Updates</a>
+                <a href="/articles?type=guides">Guides</a>
+                <a href="/articles?type=industry_trends">Industry Trends</a>
+                <a href="/articles?type=product_discovery">Discover Products</a>
+            </div>
+            <div class="footer-col">
+                <h4>Company</h4>
                 <a href="/about">About</a>
                 <a href="/contact">Contact</a>
+                <a href="/submit">Submit Product</a>
+            
             </div>
             <div class="footer-col">
-                <h4>Community</h4>
+                <h4>Resources</h4>
                 <a href="https://chat.whatsapp.com/CDAeutcMHKkDHFYQOc0pyn?s=cl&p=a&mlu=4&ilr=4">Community Forum</a>
-                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">whatsapp Channel</a>
-            </div>
-            <div class="footer-col">
-                <h4>Legal</h4>
+                <a href="https://whatsapp.com/channel/0029VbDeO2IJuyA553UjYp0r">WhatsApp Channel</a>
+
+                <h4 style="margin-top:10px;">Legal</h4> 
                 <a href="/privacy">Privacy Policy</a>
-                <a href="/term">Terms &amp; Conditions</a>
+                <a href="/term">Terms of Service</a>
             </div>
         </div>
     </footer>
