@@ -325,6 +325,7 @@
                 productForm.reset();
                 document.getElementById('edit_product_id').value = '';
                 document.getElementById('modal-title').textContent = 'Create New Product';
+                aiFillReset(true);
                 resetProductAlternatives();
                 document.getElementById('product-alternatives-section').classList.remove('hidden');
                 hideProductModalError();
@@ -341,6 +342,7 @@
                 productModal.classList.add('hidden');
                 resetProductAlternatives();
                 hideProductModalError();
+                aiFillReset(false);
             });
         }
 
@@ -2645,6 +2647,193 @@ ${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spo
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initArticlesAdmin, { once: true });
     else initArticlesAdmin();
 
+    /* ==========================================================================
+       "Find with AI" in Add Product
+       POST /products/admin/fetch-from-url?admin_key=...   body { url }
+       -> { draft: { name, keywords, pricing_details, website, logo_url, appstore_url,
+                     playstore_url, platform, twitter_url, instagram_url, facebook_url,
+                     linkedin_url, github_url, description, contact_email }, source_url }
+       Only the text fields below are ever touched. category, pricing, product_type,
+       user_count_range and "Alternative To" are never changed by the AI.
+       ========================================================================== */
+    const AI_FILL_TEXT_FIELDS = ['name', 'pricing_details', 'website', 'logo_url', 'appstore_url', 'playstore_url',
+        'platform', 'twitter_url', 'instagram_url', 'facebook_url', 'linkedin_url', 'github_url', 'description', 'contact_email'];
+    const AI_FILL_FIELD_ERRORS = { contact_email: 'contact-email-error', github_url: 'github-url-error', pricing_details: 'pricing-details-error' };
+    const aiFill = { busy: false, total: 0, last: null };
+
+    function aiEl(id) { return document.getElementById(id); }
+
+    function aiFillReset(showPanel) {
+        aiFill.busy = false; aiFill.total = 0; aiFill.last = null;
+        const panel = aiEl('ai-fill-panel');
+        if (!panel) return;
+        panel.classList.toggle('hidden', !showPanel);
+        aiEl('ai-fill-body').classList.add('hidden');
+        aiEl('ai-fill-more').classList.add('hidden');
+        aiEl('ai-fill-second').classList.add('hidden');
+        aiEl('ai-fill-toggle').setAttribute('aria-expanded', 'false');
+        aiEl('ai-fill-another-toggle').setAttribute('aria-expanded', 'false');
+        aiEl('ai-fill-url').value = '';
+        aiEl('ai-fill-url2').value = '';
+        aiFillSetStatus('', '');
+        aiFillSetBusy(false);
+    }
+
+    function aiFillSetBusy(on) {
+        aiFill.busy = on;
+        ['ai-fill-search', 'ai-fill-search2', 'ai-fill-url', 'ai-fill-url2'].forEach(id => { const el = aiEl(id); if (el) el.disabled = on; });
+    }
+
+    // kind: '' (hidden) | 'loading' | 'success' | 'info' | 'error'
+    function aiFillSetStatus(kind, message, withRetry) {
+        const box = aiEl('ai-fill-status');
+        if (!box) return;
+        box.className = 'ai-fill-status' + (kind ? ' is-' + kind : ' hidden');
+        box.replaceChildren();
+        if (!kind) return;
+        if (kind === 'loading') {
+            const spin = document.createElement('span');
+            spin.className = 'dashboard-spinner ai-fill-spinner';
+            spin.setAttribute('aria-hidden', 'true');
+            box.appendChild(spin);
+        }
+        const text = document.createElement('span');
+        text.className = 'ai-fill-status-text';
+        text.textContent = message;
+        box.appendChild(text);
+        if (withRetry) {
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'btn-secondary btn-small ai-fill-retry';
+            retry.textContent = 'Try again';
+            retry.addEventListener('click', () => { if (aiFill.last) aiFillRun(aiFill.last.url, aiFill.last.merge); });
+            box.appendChild(retry);
+        }
+    }
+
+    function aiFillApplyDraft(draft, merge) {
+        let filled = 0;
+        AI_FILL_TEXT_FIELDS.forEach(name => {
+            const value = draft && typeof draft[name] === 'string' ? draft[name].trim() : '';
+            if (!value) return;                                    // never write blanks
+            const field = productForm.elements[name];
+            if (!field || field.tagName === 'SELECT') return;     // text fields only
+            if (merge && field.value.trim() !== '') return;       // merge: only still-empty fields
+            field.value = value;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+            if (AI_FILL_FIELD_ERRORS[name]) clearFieldError(AI_FILL_FIELD_ERRORS[name]);
+            filled += 1;
+        });
+
+        // Keywords live in the tag input, not a plain field.
+        const raw = draft && typeof draft.keywords === 'string' ? draft.keywords : '';
+        const tags = raw.split(/[,;\n]+/).map(t => t.trim()).filter(Boolean);
+        if (tags.length && !(merge && productKeywordTags.length)) {
+            const next = [];
+            tags.forEach(tag => {
+                if (next.length < MAX_KEYWORD_TAGS && !next.some(t => t.toLowerCase() === tag.toLowerCase())) next.push(tag);
+            });
+            if (next.length) {
+                productKeywordTags = next;
+                renderKeywordTags();
+                clearFieldError('keywords-error');
+                filled += 1;
+            }
+        }
+        updatePricingDetailsRequirement();
+        return filled;
+    }
+
+    async function aiFillRun(rawUrl, merge) {
+        if (aiFill.busy) return;
+        const url = String(rawUrl || '').trim();
+        let parsed = null;
+        try { parsed = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(url) ? url : 'https://' + url); } catch (e) { parsed = null; }
+        if (!url || !parsed || !/^https?:$/.test(parsed.protocol) || !parsed.hostname.includes('.')) {
+            aiFillSetStatus('error', 'Enter a full website link, for example https://example.com');
+            return;
+        }
+        const target = parsed.href;
+        aiFill.last = { url: target, merge };
+        aiFillSetBusy(true);
+        aiFillSetStatus('loading', 'Reading the site… this can take a few seconds.');
+
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), 90000);
+        try {
+            const res = await fetch(`${API_URL}/products/admin/fetch-from-url?admin_key=${encodeURIComponent(adminKey || '')}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ url: target }),
+                signal: controller.signal
+            });
+            if (!res.ok) {
+                const err = new Error('http ' + res.status);
+                err.status = res.status;
+                throw err;
+            }
+            const data = await res.json();
+            if (!data || typeof data.draft !== 'object' || data.draft === null) throw new Error('bad response');
+
+            const filled = aiFillApplyDraft(data.draft, merge);
+            aiFill.total += filled;
+            aiEl('ai-fill-more').classList.remove('hidden');
+            const s = n => n + (n === 1 ? ' field' : ' fields');
+            if (filled > 0) {
+                aiFillSetStatus('success', merge
+                    ? `Filled ${s(filled)} more from this page (${aiFill.total} from AI in total). Review before saving.`
+                    : `Filled ${s(filled)} from this page. Review before saving.`);
+            } else {
+                aiFillSetStatus('info', merge
+                    ? 'Nothing new found on that page, so nothing changed.'
+                    : 'Read the page, but found nothing to fill in. Try another page, such as About or Contact.');
+            }
+        } catch (error) {
+            // Nothing already typed or filled is touched on failure.
+            const bad = error && (error.status === 400 || error.status === 422);
+            const denied = error && (error.status === 401 || error.status === 403);
+            aiFillSetStatus('error',
+                denied ? 'Your admin key was rejected. Sign in again, then retry.'
+                : bad ? "That link doesn't look right. Check it and try again."
+                : "Couldn't read that page — check the link or try a different one.",
+                !bad && !denied);
+        } finally {
+            window.clearTimeout(timer);
+            aiFillSetBusy(false);
+        }
+    }
+
+    function setupAiFill() {
+        const panel = aiEl('ai-fill-panel');
+        if (!panel || panel.dataset.ready) return;
+        panel.dataset.ready = '1';
+        aiEl('ai-fill-toggle').addEventListener('click', () => {
+            const body = aiEl('ai-fill-body');
+            const open = body.classList.contains('hidden');
+            body.classList.toggle('hidden', !open);
+            aiEl('ai-fill-toggle').setAttribute('aria-expanded', String(open));
+            if (open) aiEl('ai-fill-url').focus();
+        });
+        aiEl('ai-fill-search').addEventListener('click', () => aiFillRun(aiEl('ai-fill-url').value, false));
+        aiEl('ai-fill-another-toggle').addEventListener('click', () => {
+            const second = aiEl('ai-fill-second');
+            const open = second.classList.contains('hidden');
+            second.classList.toggle('hidden', !open);
+            aiEl('ai-fill-another-toggle').setAttribute('aria-expanded', String(open));
+            if (open) aiEl('ai-fill-url2').focus();
+        });
+        aiEl('ai-fill-search2').addEventListener('click', () => aiFillRun(aiEl('ai-fill-url2').value, true));
+        [['ai-fill-url', false], ['ai-fill-url2', true]].forEach(([id, merge]) => {
+            aiEl(id).addEventListener('keydown', event => {
+                if (event.key !== 'Enter') return;
+                event.preventDefault();              // never submit the product form from here
+                aiFillRun(aiEl(id).value, merge);
+            });
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupAiFill, { once: true });
+    else setupAiFill();
+
     function renderActiveTab(tabId) {
         hideAlert();
         if (tabId === 'dashboard-tab') loadDashboardSummary();
@@ -2970,6 +3159,7 @@ ${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spo
 
             document.getElementById('edit_product_id').value = p.id;
             document.getElementById('modal-title').textContent = 'Edit Product';
+            aiFillReset(false);
 
             ['name', 'contact_email', 'category', 'product_type', 'pricing', 'pricing_details', 'user_count_range',
              'website', 'logo_url', 'appstore_url', 'playstore_url', 'founder', 'platform',

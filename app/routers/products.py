@@ -28,6 +28,9 @@ from ..utils import generate_slug
 from ..indexnow_utils import submit_to_indexnow
 from ..routers.users import get_current_user
 from sqlalchemy import func
+from ..product_fetch_utils import fetch_page_text
+from ..ai_router import ask_ai
+import json as _json
 
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -1217,3 +1220,67 @@ def reorder_sponsored(admin_key: str, data: schemas.SponsoredReorder, db: Sessio
         db.query(models.Product).filter(models.Product.id == pid).update({"sponsored_position": index})
     db.commit()
     return {"message": "Order saved."}
+
+FILLABLE_FIELDS = [
+    "name", "keywords", "pricing_details", "website", "logo_url",
+    "appstore_url", "playstore_url", "platform", "twitter_url",
+    "instagram_url", "facebook_url", "linkedin_url", "github_url",
+    "description", "contact_email",
+]
+
+
+@router.post("/admin/fetch-from-url")
+def fetch_product_from_url(admin_key: str, data: schemas.ProductFetchRequest, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    page = fetch_page_text(data.url)
+    if "error" in page:
+        raise HTTPException(status_code=502, detail=page["error"])
+
+    prompt = f"""You are extracting product information from a company website's text, for a Nigerian tech directory.
+Use ONLY what is actually present on the page. If a field isn't mentioned, leave it as an empty string, never guess or invent anything.
+
+Page text:
+{page['text']}
+
+Links found on the page: {', '.join(page['found_links']) or 'none'}
+
+Reply with ONLY one JSON object and nothing else. Keys:
+name, keywords (comma-separated, max 5, based on what the product actually does), pricing_details, website, logo_url, appstore_url, playstore_url, platform (e.g. "Web", "iOS", "Android", "Web, iOS, Android" — only what's evidenced), twitter_url, instagram_url, facebook_url, linkedin_url, github_url, description (2-3 sentences, factual, no marketing fluff), contact_email."""
+
+    try:
+        raw = ask_ai(prompt)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI provider failed: {e}")
+
+    draft = _extract_json_safe(raw)
+    if not draft:
+        raise HTTPException(status_code=502, detail="AI replied in an unexpected format. Try again.")
+
+    result = {field: str(draft.get(field, "") or "") for field in FILLABLE_FIELDS}
+
+    if not result["logo_url"] and page.get("og_image"):
+        result["logo_url"] = page["og_image"]
+    if not result["website"]:
+        result["website"] = data.url
+
+    return {"draft": result, "source_url": data.url}
+
+
+def _extract_json_safe(text: str):
+    import re
+    if not text:
+        return None
+    text = text.strip()
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if fenced:
+        text = fenced.group(1)
+    start, end = text.find("{"), text.rfind("}")
+    if start == -1 or end == -1:
+        return None
+    try:
+        return _json.loads(text[start:end + 1])
+    except _json.JSONDecodeError:
+        return None
+

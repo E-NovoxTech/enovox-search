@@ -1304,6 +1304,31 @@
             <form id="admin-product-form" class="admin-form">
                 <input type="hidden" id="edit_product_id" name="id">
 
+                <!-- Find with AI: prefills the text fields from a product's website (create mode only) -->
+                <div id="ai-fill-panel" class="ai-fill hidden">
+                    <div class="ai-fill-head">
+                        <button type="button" id="ai-fill-toggle" class="btn-secondary ai-fill-toggle" aria-expanded="false" aria-controls="ai-fill-body">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 2.2 6.1L20 10l-5.8 2.1L12 18l-2.2-5.9L4 10l5.8-1.9L12 2Z"></path><path d="m19 16 .9 2.1L22 19l-2.1.9L19 22l-.9-2.1L16 19l2.1-.9L19 16Z"></path></svg>
+                            Find with AI
+                        </button>
+                        <span class="ai-fill-hint">Paste a product's website and the text fields fill in for you. Dropdowns stay yours to set.</span>
+                    </div>
+                    <div id="ai-fill-body" class="ai-fill-body hidden">
+                        <div class="ai-fill-row">
+                            <input type="text" inputmode="url" id="ai-fill-url" placeholder="Paste the product's website link" autocomplete="off" spellcheck="false" aria-label="Product website link">
+                            <button type="button" id="ai-fill-search" class="btn-primary">Search</button>
+                        </div>
+                        <div id="ai-fill-more" class="ai-fill-more hidden">
+                            <button type="button" id="ai-fill-another-toggle" class="ai-fill-link" aria-expanded="false" aria-controls="ai-fill-second">+ Search another page</button>
+                            <div id="ai-fill-second" class="ai-fill-row hidden">
+                                <input type="text" inputmode="url" id="ai-fill-url2" placeholder="e.g. the About page or a pricing page" autocomplete="off" spellcheck="false" aria-label="Another page link">
+                                <button type="button" id="ai-fill-search2" class="btn-secondary">Add details</button>
+                            </div>
+                        </div>
+                        <div id="ai-fill-status" class="ai-fill-status hidden" role="status" aria-live="polite"></div>
+                    </div>
+                </div>
+
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Product Name *</label>

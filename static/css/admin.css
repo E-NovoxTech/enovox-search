@@ -3020,3 +3020,45 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     .art-picker-results { position: static; box-shadow: none; }
     .art-publish-actions { position: sticky; bottom: 0; }
 }
+
+/* ==========================================================================
+   Find with AI (Add Product): one compact bordered block above the fields
+   ========================================================================== */
+.ai-fill {
+    margin: 0 0 1.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    background: #f5f9ff;
+}
+.ai-fill-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 0.9rem; }
+.ai-fill-toggle { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; color: #1d4ed8; font-weight: 700; }
+.ai-fill-toggle svg { color: #2563eb; }
+.ai-fill-hint { flex: 1 1 240px; color: var(--text-muted); font-size: 0.8rem; line-height: 1.45; }
+.ai-fill-body { margin-top: 0.8rem; display: grid; gap: 0.7rem; }
+.ai-fill-row { display: flex; gap: 0.5rem; }
+.ai-fill-row input {
+    flex: 1 1 auto; min-width: 0; min-height: 42px; padding: 0 0.75rem;
+    border: 1px solid var(--border-color); border-radius: 8px; background: #ffffff; font-family: inherit; font-size: 0.9rem;
+}
+.ai-fill-row input:focus { outline: 2px solid #bfdbfe; border-color: #60a5fa; }
+.ai-fill-row .btn-primary, .ai-fill-row .btn-secondary { flex: 0 0 auto; min-height: 42px; white-space: nowrap; }
+.ai-fill-more { display: grid; gap: 0.6rem; }
+.ai-fill-link { justify-self: start; padding: 0; border: 0; background: none; color: #2563eb; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.ai-fill-link:hover { text-decoration: underline; }
+.ai-fill-status { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.45; }
+.ai-fill-status.is-loading { background: #eff6ff; color: #1e40af; }
+.ai-fill-status.is-success { background: #dcfce7; color: #166534; font-weight: 600; }
+.ai-fill-status.is-info { background: #fef3c7; color: #92400e; }
+.ai-fill-status.is-error { background: #fee2e2; color: #991b1b; }
+.ai-fill-status-text { flex: 1 1 200px; }
+.ai-fill-spinner { width: 17px; height: 17px; flex: 0 0 17px; }
+.ai-fill-retry { flex: 0 0 auto; }
+.dark-mode .ai-fill { background: rgba(37, 99, 235, 0.08); border-color: rgba(96, 165, 250, 0.35); }
+.dark-mode .ai-fill-row input { background: var(--bg-card); color: var(--text-main); }
+.dark-mode .ai-fill-toggle { color: #93c5fd; }
+@media (max-width: 520px) {
+    .ai-fill-row { flex-direction: column; }
+    .ai-fill-row .btn-primary, .ai-fill-row .btn-secondary { width: 100%; }
+    .ai-fill-toggle { width: 100%; justify-content: center; }
+}

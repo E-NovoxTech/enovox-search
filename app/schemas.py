@@ -452,4 +452,7 @@ class ArticleUpdate(BaseModel):
     status: Optional[str] = None
     scheduled_at: Optional[datetime] = None                                             
 
+class ProductFetchRequest(BaseModel):
+    url: str
+
 
