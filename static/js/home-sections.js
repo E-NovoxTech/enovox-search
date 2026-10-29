@@ -2,7 +2,7 @@
  * js/home-sections.js
  * Homepage sections added after the Newly launched / Popular / Featured row:
  *   1) Alternatives      GET /products/alternatives/daily-comparisons
- *   2) Sponsored         GET /sponsored/public
+ *   2) Sponsored         GET /products/sponsored/public
  *   3) Founder Spotlight GET /spotlight/public
  *   4) Collections       GET /collections/public
  *   5) Articles          GET /articles/public?page=1&page_size=4
@@ -263,7 +263,7 @@
     }
 
     /* ======================================================================
-       SPONSORED PRODUCTS  (GET /sponsored/public -> array, max 10, already live-only)
+       SPONSORED PRODUCTS  (GET /products/sponsored/public -> array, max 10, already live-only)
        Carousel: arrows on desktop and mobile, swipe on touch, smooth scrolling.
        ====================================================================== */
     function buildSponsoredCard(item, index) {
@@ -302,7 +302,7 @@
         var next = document.getElementById('home-sp-next');
         if (!section || !track) return;
 
-        getJson('/sponsored/public').then(function (data) {
+        getJson('/products/sponsored/public').then(function (data) {
             var list = (Array.isArray(data) ? data : [])
                 .filter(function (item) { return item && text(item.slug) && text(item.name); })
                 .slice(0, 10);
