@@ -56,8 +56,10 @@ def signup(data: schemas.UserSignup, db: Session = Depends(get_db)):
 @router.post("/login", response_model=schemas.TokenResponse)
 def login(data: schemas.UserLogin, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.email == data.email).first()
-
     if not user:
+        developer = db.query(models.Developer).filter(models.Developer.email == data.email).first()
+        if developer:
+            raise HTTPException(status_code=400, detail="This email is registered as a Developer account. Please use the Developer login instead.")
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     if user.auth_provider == "google" or not user.hashed_password:
@@ -71,3 +73,23 @@ def login(data: schemas.UserLogin, db: Session = Depends(get_db)):
 
     token = create_token(user.id, "user")
     return {"access_token": token}
+
+
+@router.delete("/me")
+def delete_my_account(db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if not current_user or isinstance(current_user, models.Developer):
+        raise HTTPException(status_code=403, detail="Not a user account")
+
+    db.query(models.SavedProduct).filter(
+        models.SavedProduct.account_type == "user", models.SavedProduct.account_id == current_user.id
+    ).delete()
+    db.query(models.NewsletterSubscriber).filter(models.NewsletterSubscriber.email == current_user.email).delete()
+    db.query(models.SpotlightReaction).filter(
+        models.SpotlightReaction.account_type == "user", models.SpotlightReaction.account_id == current_user.id
+    ).delete()
+
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Account and associated data deleted."}
+
+

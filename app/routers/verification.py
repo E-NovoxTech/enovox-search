@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
 from .. import models, schemas
 from ..database import get_db
 from ..auth import create_token
-from ..email_utils import generate_verification_code, send_verification_email
-from ..email_utils import send_password_reset_email
+from ..email_utils import generate_verification_code, send_verification_email, send_new_signup_alert
+from ..email_utils import send_password_reset_email, send_welcome_email
 from ..auth import hash_password
 
 router = APIRouter(tags=["Verification"])
@@ -22,7 +22,7 @@ def get_account_model(account_type: str):
 
 
 @router.post("/verify-email")
-def verify_email(data: schemas.VerifyEmail, db: Session = Depends(get_db)):
+def verify_email(data: schemas.VerifyEmail, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     Model = get_account_model(data.account_type)
     account = db.query(Model).filter(Model.email == data.email).first()
 
@@ -43,9 +43,11 @@ def verify_email(data: schemas.VerifyEmail, db: Session = Depends(get_db)):
     account.verification_code_expires = None
     db.commit()
 
+    first_name = account.email.split("@")[0].split(".")[0].capitalize()
+    background_tasks.add_task(send_welcome_email, account.email, first_name, data.account_type == "developer")
+    background_tasks.add_task(send_new_signup_alert, data.account_type, account.email)
     token = create_token(account.id, data.account_type)
     return {"access_token": token, "message": "Email verified successfully"}
-
 
 @router.post("/resend-code")
 def resend_code(data: schemas.ResendCode, db: Session = Depends(get_db)):

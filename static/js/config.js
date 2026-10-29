@@ -25,6 +25,7 @@ const ENOVOX_CONFIG = {
         "Energy & Utilities",
         "Travel & Tourism",
         "Gaming & Esports",
+        "Security",
         "Other"
     ]
 };

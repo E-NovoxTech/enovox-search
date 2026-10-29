@@ -54,8 +54,10 @@ def signup(data: schemas.DeveloperSignup, db: Session = Depends(get_db)):
 @router.post("/login", response_model=schemas.TokenResponse)
 def login(data: schemas.DeveloperLogin, db: Session = Depends(get_db)):
     developer = db.query(models.Developer).filter(models.Developer.email == data.email).first()
-
     if not developer:
+        user = db.query(models.User).filter(models.User.email == data.email).first()
+        if user:
+            raise HTTPException(status_code=400, detail="This email is registered as a User account. Please use the User login instead.")
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     if developer.auth_provider == "google" or not developer.hashed_password:
@@ -69,7 +71,6 @@ def login(data: schemas.DeveloperLogin, db: Session = Depends(get_db)):
 
     token = create_token(developer.id, "developer")
     return {"access_token": token}
-
 
 @router.get("/me/products")
 def my_products(current_dev: models.Developer = Depends(get_current_developer), db: Session = Depends(get_db)):
@@ -87,3 +88,23 @@ def list_all_developers(admin_key: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Invalid admin key")
 
     return db.query(models.Developer).all()
+
+@router.delete("/me")
+def delete_my_account(db: Session = Depends(get_db), current_dev: models.Developer = Depends(get_current_developer)):
+    db.query(models.Product).filter(models.Product.developer_id == current_dev.id).update(
+        {"developer_id": None}
+    )
+
+    db.query(models.Submission).filter(models.Submission.developer_id == current_dev.id).delete()
+    db.query(models.ClaimRequest).filter(models.ClaimRequest.developer_id == current_dev.id).delete()
+    db.query(models.SavedProduct).filter(
+        models.SavedProduct.account_type == "developer", models.SavedProduct.account_id == current_dev.id
+    ).delete()
+    db.query(models.NewsletterSubscriber).filter(models.NewsletterSubscriber.email == current_dev.email).delete()
+    db.query(models.SpotlightReaction).filter(
+        models.SpotlightReaction.account_type == "developer", models.SpotlightReaction.account_id == current_dev.id
+    ).delete()
+
+    db.delete(current_dev)
+    db.commit()
+    return {"message": "Account deleted. Your products remain live and are now unclaimed."}

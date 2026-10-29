@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 import os
 from fastapi import BackgroundTasks
@@ -10,7 +10,7 @@ from ..database import get_db
 from ..utils import generate_slug, send_submission_alert
 from .developers import get_current_developer
 from ..indexnow_utils import submit_to_indexnow
-
+from ..email_utils import send_product_approved_email
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
 
 
@@ -77,6 +77,7 @@ def get_submission_detail(submission_id: int, admin_key: str, db: Session = Depe
 def approve_submission(
     submission_id: int,
     admin_key: str,
+    background_tasks: BackgroundTasks,
     edits: Optional[schemas.SubmissionApproveEdits] = None,
     db: Session = Depends(get_db)
 ):
@@ -166,10 +167,22 @@ def approve_submission(
                 db.add(models.ProductAlternative(product_id=new_product.id, foreign_tool_id=tool_id))
             db.commit()
 
+        # Send approval email (after the product exists and is committed)
+        if new_product.developer_id:
+            developer = db.query(models.Developer).filter(
+                models.Developer.id == new_product.developer_id
+            ).first()
+            if developer and developer.email:
+                background_tasks.add_task(
+                    send_product_approved_email,
+                    developer.email,
+                    new_product.name,
+                    new_product.slug,
+                )
+
         submit_to_indexnow(f"/product/{new_product.slug}")
 
         return {"message": f"{new_product.name} approved and now live.", "product_id": new_product.id, "slug": new_product.slug}
-
 @router.post("/{submission_id}/reject")
 def reject_submission(submission_id: int, admin_key: str, payload: schemas.RejectSubmission, db: Session = Depends(get_db)):
     if admin_key != os.getenv("ADMIN_KEY"):

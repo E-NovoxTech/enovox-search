@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -7,7 +7,7 @@ import os
 from .. import models, schemas
 from ..database import get_db
 from ..auth import create_token
-
+from ..email_utils import send_welcome_email
 router = APIRouter(tags=["Google Auth"])
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -15,7 +15,7 @@ import time
 
 
 @router.post("/auth/google")
-def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
+def google_auth(data: schemas.GoogleAuth, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     idinfo = None
 
     for attempt in range(3):
@@ -48,9 +48,6 @@ def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
         return {"access_token": token, "account_type": "user", "new_account": False}
 
     # No existing account — needs account_type from the choose-screen
-    if not data.account_type:
-        return {"new_account": True, "email": email}
-
     if data.account_type == "developer":
         new_developer = models.Developer(
             email=email,
@@ -62,9 +59,15 @@ def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
         db.add(new_developer)
         db.commit()
         db.refresh(new_developer)
+
+        first_name = new_developer.email.split("@")[0].split(".")[0].capitalize()
+        background_tasks.add_task(send_welcome_email, new_developer.email, first_name, True)
+
         token = create_token(new_developer.id, "developer")
         return {"access_token": token, "account_type": "developer", "new_account": True}
-
+    
+    if not data.account_type:
+        return {"new_account": True, "account_type": None}
     elif data.account_type == "user":
         new_user = models.User(
             email=email,
@@ -76,7 +79,10 @@ def google_auth(data: schemas.GoogleAuth, db: Session = Depends(get_db)):
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
+
+        first_name = new_user.email.split("@")[0].split(".")[0].capitalize()
+        background_tasks.add_task(send_welcome_email, new_user.email, first_name, False)
+
         token = create_token(new_user.id, "user")
         return {"access_token": token, "account_type": "user", "new_account": True}
 
-    raise HTTPException(status_code=400, detail="Invalid account type")
