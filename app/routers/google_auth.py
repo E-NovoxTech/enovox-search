@@ -7,7 +7,7 @@ import os
 from .. import models, schemas
 from ..database import get_db
 from ..auth import create_token
-from ..email_utils import send_welcome_email
+from ..email_utils import send_welcome_email, send_new_signup_alert
 router = APIRouter(tags=["Google Auth"])
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -62,7 +62,7 @@ def google_auth(data: schemas.GoogleAuth, background_tasks: BackgroundTasks, db:
 
         first_name = new_developer.email.split("@")[0].split(".")[0].capitalize()
         background_tasks.add_task(send_welcome_email, new_developer.email, first_name, True)
-
+        background_tasks.add_task(send_new_signup_alert, "developer", new_developer.email)
         token = create_token(new_developer.id, "developer")
         return {"access_token": token, "account_type": "developer", "new_account": True}
     
@@ -82,7 +82,7 @@ def google_auth(data: schemas.GoogleAuth, background_tasks: BackgroundTasks, db:
 
         first_name = new_user.email.split("@")[0].split(".")[0].capitalize()
         background_tasks.add_task(send_welcome_email, new_user.email, first_name, False)
-
+        background_tasks.add_task(send_new_signup_alert, "user", new_user.email)
         token = create_token(new_user.id, "user")
         return {"access_token": token, "account_type": "user", "new_account": True}
 
