@@ -1174,7 +1174,7 @@ def list_all_claims(admin_key: str, db: Session = Depends(get_db)):
 
 MAX_SPONSORED = 10
 
-@router.get("/sponsored/public")
+@router.get("products/sponsored/public")
 def public_sponsored(db: Session = Depends(get_db)):
     return (
         db.query(models.Product)
