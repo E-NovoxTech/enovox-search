@@ -263,7 +263,7 @@
     }
 
     /* ======================================================================
-       SPONSORED PRODUCTS  (GET /products/sponsored/public -> array, max 10, already live-only)
+       SPONSORED PRODUCTS  (GET /sponsored/public -> array, max 10, already live-only)
        Carousel: arrows on desktop and mobile, swipe on touch, smooth scrolling.
        ====================================================================== */
     function buildSponsoredCard(item, index) {
