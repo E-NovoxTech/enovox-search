@@ -43,6 +43,7 @@
         initSpotlightRefetchOnReturn(token);
         setupEditModal(token);
         initDevNotifications(token);
+        setupDeleteAccount(token);
     });
 
     /* ==========================================================================
@@ -1402,6 +1403,126 @@
     }
     function escapeAttr(str) {
         return escapeHTML(str);
+    }
+
+    /* ==========================================================================
+       Delete account — DELETE /developers/me (Bearer auth)
+       Backend response: { message: "Account deleted. Your products remain live
+       and are now unclaimed." }. The backend commits everything in one
+       transaction, so on any error nothing was deleted and the user can retry.
+       Success -> clear this browser's session + dashboard data -> toast -> home.
+       ========================================================================== */
+    const DELETE_PHRASE = 'DELETE';
+    const ACCOUNT_LOCAL_KEYS = [
+        TOKEN_KEY, ACCOUNT_TYPE_KEY,
+        'enovox_dev_notifications', 'enovox_dev_submission_statuses', DISMISSED_SPOTLIGHT_KEY
+    ];
+
+    function setupDeleteAccount(token) {
+        const modal = document.getElementById('delete-account-modal');
+        const openBtn = document.getElementById('db-delete-open');
+        const closeBtn = document.getElementById('delete-modal-close');
+        const cancelBtn = document.getElementById('delete-modal-cancel');
+        const confirmBtn = document.getElementById('delete-modal-confirm');
+        const input = document.getElementById('delete-confirm-input');
+        const alertEl = document.getElementById('delete-account-alert');
+        const emailEl = document.getElementById('delete-modal-email');
+        if (!modal || !openBtn || !confirmBtn || !input) return;
+
+        let busy = false;
+        let lastFocus = null;
+
+        function showError(message) {
+            alertEl.textContent = message;
+            alertEl.classList.remove('hidden');
+        }
+        function clearError() {
+            alertEl.textContent = '';
+            alertEl.classList.add('hidden');
+        }
+        function matches() { return input.value.trim() === DELETE_PHRASE; }
+        function syncConfirm() { confirmBtn.disabled = busy || !matches(); }
+
+        function openModal() {
+            const email = (document.getElementById('profile-email') || {}).textContent || '';
+            emailEl.textContent = email && email !== 'Loading...' && email !== 'Unable to load profile' ? email : 'your account';
+            input.value = '';
+            clearError();
+            busy = false;
+            input.disabled = false;
+            cancelBtn.disabled = false;
+            closeBtn.disabled = false;
+            confirmBtn.textContent = 'Delete my account';
+            syncConfirm();
+            lastFocus = document.activeElement;
+            modal.classList.remove('hidden');
+            document.body.classList.add('db-modal-open');
+            input.focus();
+        }
+        function closeModal() {
+            if (busy) return;
+            modal.classList.add('hidden');
+            document.body.classList.remove('db-modal-open');
+            if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+        }
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+        input.addEventListener('input', () => { clearError(); syncConfirm(); });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); if (!confirmBtn.disabled) confirmBtn.click(); }
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            if (busy || !matches()) return;
+            busy = true;
+            clearError();
+            input.disabled = true;
+            cancelBtn.disabled = true;
+            closeBtn.disabled = true;
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Deleting...';
+            try {
+                const res = await fetch(`${API_URL}/developers/me`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+                });
+                if (res.status === 401) {
+                    // Session already invalid: nothing to delete with this token.
+                    busy = false;
+                    handleExpiredToken();
+                    return;
+                }
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    const detail = res.status < 500 && typeof err.detail === 'string' ? err.detail : '';
+                    throw new Error(detail || (res.status === 404
+                        ? 'We could not find this account. It may already be deleted.'
+                        : 'We could not delete your account. Nothing was changed, so please try again.'));
+                }
+                const data = await res.json().catch(() => ({}));
+                ACCOUNT_LOCAL_KEYS.forEach((key) => { try { localStorage.removeItem(key); } catch (e) { /* storage blocked */ } });
+                confirmBtn.textContent = 'Account deleted';
+                showToast('success', data.message || 'Account deleted. Your products remain live and are now unclaimed.');
+                window.setTimeout(() => { window.location.href = '/'; }, 1600);
+            } catch (error) {
+                console.error('[dashboard] delete account failed:', error);
+                busy = false;
+                input.disabled = false;
+                cancelBtn.disabled = false;
+                closeBtn.disabled = false;
+                confirmBtn.textContent = 'Try again';
+                syncConfirm();
+                showError(error && error.message && error.message !== 'Failed to fetch'
+                    ? error.message
+                    : 'Network problem. Check your connection and try again.');
+            }
+        });
     }
 
     /* ==========================================================================
