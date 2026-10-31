@@ -597,69 +597,96 @@
                     <div class="pagination-bar" id="submissions-pagination"></div>
                 </section>
 
-                <!-- DEVELOPERS TAB -->
+                <!-- REGISTERED DEVELOPERS TAB -->
                 <section id="developers-tab" class="tab-content hidden">
                     <div class="section-header">
-                        <h2>Registered Developers</h2>
+                        <div>
+                            <h2>Registered Developers</h2>
+                            <p class="text-muted people-sub">Everyone with a developer account. Use "Send update" to email them.</p>
+                        </div>
+                        <div class="section-header-actions">
+                            <button type="button" id="developers-refresh-btn" class="btn-secondary"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh</button>
+                        </div>
                     </div>
-                    <div class="toolbar">
-                        <input type="text" id="developers-search" placeholder="Search by email...">
-                    </div>
-                    <div class="table-container">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Email</th>
-                                    <th>Signup Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="developers-table-body">
-                                <!-- Injected via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="pagination-bar" id="developers-pagination"></div>
 
-                    <!-- Separate developer-email composer; does not affect the table above. -->
-                    <section class="developer-update-panel" id="developer-update-section" aria-labelledby="developer-update-heading">
-                        <div class="developer-update-header">
-                            <h3 id="developer-update-heading">Send Update to Developers</h3>
-                            <p class="text-muted">Choose developer inboxes below. Selection is separate from the table search and includes all pages.</p>
+                    <!-- Two panels: the directory, and the email composer. Switching keeps any draft. -->
+                    <div class="collection-status-tabs people-tabs" role="tablist" aria-label="Registered Developers sections" data-people-tabs>
+                        <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-people-pane="directory"><i class="fa-solid fa-list" aria-hidden="true"></i> All developers <span data-people-count="developers">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-people-pane="send"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send update</button>
+                    </div>
+
+                    <div data-people-panel="directory">
+                        <div id="developers-error" class="alert error hidden" role="alert"></div>
+                        <div class="toolbar">
+                            <input type="text" id="developers-search" placeholder="Search by email...">
                         </div>
-                        <div id="developer-update-result" class="alert hidden" role="status" aria-live="polite"></div>
-                        <div id="developer-update-failed" class="developer-update-failed hidden" aria-live="polite"></div>
-                        <div class="form-group">
-                            <div class="developer-update-recipient-heading">
-                                <span id="developer-update-recipient-label">Recipients *</span>
-                                <span id="developer-update-count" class="text-muted" aria-live="polite">0 selected</span>
-                            </div>
-                            <label class="developer-update-select-all">
-                                <input type="checkbox" id="developer-update-select-all" disabled>
-                                <span>Select all developers (every page)</span>
-                            </label>
-                            <div id="developer-update-list" class="developer-update-list" role="group" aria-labelledby="developer-update-recipient-label"></div>
-                            <div id="developer-update-pager" class="developer-update-pager hidden">
-                                <button type="button" class="btn-secondary btn-small" id="developer-update-prev">&laquo; Prev</button>
-                                <span id="developer-update-page-label" class="text-muted"></span>
-                                <button type="button" class="btn-secondary btn-small" id="developer-update-next">Next &raquo;</button>
-                            </div>
+                        <div class="table-container">
+                            <table class="admin-table people-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Email</th>
+                                        <th>Signup Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="developers-table-body">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
                         </div>
-                        <form id="developer-update-form" novalidate>
-                            <div class="form-group">
-                                <label for="developer-update-subject">Subject *</label>
-                                <input type="text" id="developer-update-subject" placeholder="Email subject line" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="developer-update-html">Email Content (HTML) *</label>
-                                <textarea id="developer-update-html" rows="12" placeholder="<h2>Update for developers</h2>&#10;<p>Write your message here...</p>" required></textarea>
-                            </div>
-                            <div class="developer-update-actions">
-                                <button type="submit" id="developer-update-send" class="btn-primary" disabled>Send Update</button>
-                            </div>
-                        </form>
-                    </section>
+                        <div class="pagination-bar" id="developers-pagination"></div>
+                    </div>
+
+                    <div data-people-panel="send" class="hidden">
+                        <div id="developer-mailer-root"></div>
+                    </div>
                 </section>
+
+                <!-- REGISTERED USERS TAB -->
+                <section id="users-tab" class="tab-content hidden">
+                    <div class="section-header">
+                        <div>
+                            <h2>Registered Users</h2>
+                            <p class="text-muted people-sub">Everyone with a user account. Use "Send update" to email them.</p>
+                        </div>
+                        <div class="section-header-actions">
+                            <button type="button" id="users-refresh-btn" class="btn-secondary"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh</button>
+                        </div>
+                    </div>
+
+                    <!-- Two panels: the directory, and the email composer. Switching keeps any draft. -->
+                    <div class="collection-status-tabs people-tabs" role="tablist" aria-label="Registered Users sections" data-people-tabs>
+                        <button type="button" class="collection-status-tab active" role="tab" aria-selected="true" data-people-pane="directory"><i class="fa-solid fa-list" aria-hidden="true"></i> All users <span data-people-count="users">0</span></button>
+                        <button type="button" class="collection-status-tab" role="tab" aria-selected="false" data-people-pane="send"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send update</button>
+                    </div>
+
+                    <div data-people-panel="directory">
+                        <div id="users-error" class="alert error hidden" role="alert"></div>
+                        <div class="toolbar">
+                            <input type="text" id="users-search" placeholder="Search by email...">
+                        </div>
+                        <div class="table-container">
+                            <table class="admin-table people-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Email</th>
+                                        <th>Signup Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-bar" id="users-pagination"></div>
+                    </div>
+
+                    <div data-people-panel="send" class="hidden">
+                        <div id="user-mailer-root"></div>
+                    </div>
+                </section>
+
                 <!-- CLAIMS TAB -->
                 <section id="claims-tab" class="tab-content hidden">
                     <div class="section-header">
@@ -711,13 +738,16 @@
                         </div>
                     </div>
 
-                    <div class="nl-mode-bar">
-                        <button type="button" id="nl-mode-product-btn" class="nl-mode-btn active">Product Update</button>
-                        <button type="button" id="nl-mode-custom-btn" class="nl-mode-btn">Custom HTML</button>
+                    <div class="nl-mode-bar" role="group" aria-label="Newsletter type">
+                        <button type="button" id="nl-mode-product-btn" class="nl-mode-btn active" data-nl-mode="product" aria-pressed="true">Product Update</button>
+                        <button type="button" id="nl-mode-spotlight-btn" class="nl-mode-btn" data-nl-mode="spotlight" aria-pressed="false">Spotlight Update</button>
+                        <button type="button" id="nl-mode-alternative-btn" class="nl-mode-btn" data-nl-mode="alternative" aria-pressed="false">Alternative Update</button>
+                        <button type="button" id="nl-mode-article-btn" class="nl-mode-btn" data-nl-mode="article" aria-pressed="false">Article Update</button>
+                        <button type="button" id="nl-mode-custom-btn" class="nl-mode-btn" data-nl-mode="custom" aria-pressed="false">Custom HTML</button>
                     </div>
 
                     <!-- MODE 1: Product Update -->
-                    <div id="nl-product-panel" class="nl-panel">
+                    <div id="nl-product-panel" class="nl-panel" data-nl-panel="product">
                         <div class="form-group">
                             <label>Title *</label>
                             <input type="text" id="nl-title" placeholder="e.g. New on Enovox Search this month">
@@ -737,8 +767,89 @@
                         </div>
                     </div>
 
+                    <!-- MODE: Spotlight Update -->
+                    <div id="nl-spotlight-panel" class="nl-panel hidden" data-nl-panel="spotlight">
+                        <div class="form-group">
+                            <label for="nl-spotlight-title">Title *</label>
+                            <input type="text" id="nl-spotlight-title" placeholder="e.g. Founders to watch this month" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="nl-spotlight-intro">Intro (optional)</label>
+                            <textarea id="nl-spotlight-intro" rows="3" placeholder="A short intro shown above the spotlight cards..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="nl-spotlight-search">Spotlights to include *</label>
+                            <input type="text" id="nl-spotlight-search" placeholder="Filter spotlights by startup or founder..." autocomplete="off">
+                            <div id="nl-spotlight-picker" class="nl-product-picker" role="group" aria-label="Spotlights"></div>
+                            <div class="nl-picker-meta">
+                                <div id="nl-spotlight-hint" class="nl-picker-hint text-muted">0 selected</div>
+                                <div class="nl-picker-links">
+                                    <button type="button" id="nl-spotlight-clear" class="nl-link-btn hidden">Clear selection</button>
+                                    <button type="button" id="nl-spotlight-refresh" class="nl-link-btn">Refresh list</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="nl-send-spotlight-btn" class="btn-primary" disabled>Send Newsletter</button>
+                        </div>
+                    </div>
+
+                    <!-- MODE: Alternative Update -->
+                    <div id="nl-alternative-panel" class="nl-panel hidden" data-nl-panel="alternative">
+                        <div class="form-group">
+                            <label for="nl-alternative-title">Title *</label>
+                            <input type="text" id="nl-alternative-title" placeholder="e.g. Nigerian alternatives to tools you know" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="nl-alternative-intro">Intro (optional)</label>
+                            <textarea id="nl-alternative-intro" rows="3" placeholder="A short intro shown above the alternatives..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="nl-alternative-search">Foreign tools to include *</label>
+                            <input type="text" id="nl-alternative-search" placeholder="Filter foreign tools by name..." autocomplete="off">
+                            <div id="nl-alternative-picker" class="nl-product-picker" role="group" aria-label="Foreign tools"></div>
+                            <div class="nl-picker-meta">
+                                <div id="nl-alternative-hint" class="nl-picker-hint text-muted">0 selected</div>
+                                <div class="nl-picker-links">
+                                    <button type="button" id="nl-alternative-clear" class="nl-link-btn hidden">Clear selection</button>
+                                    <button type="button" id="nl-alternative-refresh" class="nl-link-btn">Refresh list</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="nl-send-alternative-btn" class="btn-primary" disabled>Send Newsletter</button>
+                        </div>
+                    </div>
+
+                    <!-- MODE: Article Update -->
+                    <div id="nl-article-panel" class="nl-panel hidden" data-nl-panel="article">
+                        <div class="form-group">
+                            <label for="nl-article-title">Title *</label>
+                            <input type="text" id="nl-article-title" placeholder="e.g. Fresh reads from Enovox Search" autocomplete="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="nl-article-intro">Intro (optional)</label>
+                            <textarea id="nl-article-intro" rows="3" placeholder="A short intro shown above the article cards..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="nl-article-search">Articles to include *</label>
+                            <input type="text" id="nl-article-search" placeholder="Filter articles by title..." autocomplete="off">
+                            <div id="nl-article-picker" class="nl-product-picker" role="group" aria-label="Articles"></div>
+                            <div class="nl-picker-meta">
+                                <div id="nl-article-hint" class="nl-picker-hint text-muted">0 selected</div>
+                                <div class="nl-picker-links">
+                                    <button type="button" id="nl-article-clear" class="nl-link-btn hidden">Clear selection</button>
+                                    <button type="button" id="nl-article-refresh" class="nl-link-btn">Refresh list</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" id="nl-send-article-btn" class="btn-primary" disabled>Send Newsletter</button>
+                        </div>
+                    </div>
+
                         <!-- MODE 2: Custom HTML -->
-                    <div id="nl-custom-panel" class="nl-panel hidden">
+                    <div id="nl-custom-panel" class="nl-panel hidden" data-nl-panel="custom">
                         <div class="form-group">
                             <label>Subject *</label>
                             <input type="text" id="nl-subject" placeholder="Email subject line">
@@ -1737,5 +1848,24 @@
     <script src="/static/js/config.js"></script>
     <script src="/static/js/admin.js"></script>
     <script src="/static/js/submit-tags.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a49d156298ee655d',t:'MTc5MTg4MTI4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a49d156298ee655d',t:'MTc5MTg4MTI4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+    <!-- Confirm-send modal shared by the Developers and Users composers -->
+    <div id="mail-confirm-modal" class="overlay hidden">
+        <div class="modal-box mail-confirm-box" role="dialog" aria-modal="true" aria-labelledby="mail-confirm-title">
+            <div class="modal-header">
+                <h2 id="mail-confirm-title">Send this update?</h2>
+            </div>
+            <p id="mail-confirm-message" style="margin:0 0 1rem;font-weight:600;"></p>
+            <dl class="mail-confirm-details">
+                <div><dt>Subject</dt><dd id="mail-confirm-subject"></dd></div>
+                <div><dt>To</dt><dd id="mail-confirm-recipients"></dd></div>
+            </dl>
+            <p class="text-muted" style="margin:0 0 1rem;font-size:0.82rem;">Emails can't be recalled once sent.</p>
+            <div class="modal-actions">
+                <button type="button" id="mail-confirm-cancel" class="btn-secondary">Cancel</button>
+                <button type="button" id="mail-confirm-ok" class="btn-primary">Send now</button>
+            </div>
+        </div>
+    </div>
+</body>
 </html>

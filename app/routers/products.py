@@ -31,6 +31,7 @@ from sqlalchemy import func
 from ..product_fetch_utils import fetch_page_text
 from ..ai_router import ask_ai
 import json as _json
+from ..newsletter_utils import build_spotlight_update_html, build_alternative_update_html, build_article_update_html
 
 
 router = APIRouter(prefix="/products", tags=["Products"])
@@ -683,6 +684,63 @@ def send_custom_newsletter(admin_key: str, data: schemas.NewsletterCustomSend, d
         return {"message": "No recipients to send to.", "sent": 0}
 
     results = send_newsletter(recipients, data.subject, html_body)
+    return {"message": f"Newsletter sent to {results['sent']} recipients.", **results}
+
+@router.post("/admin/newsletter/send-spotlight-update")
+def send_spotlight_update(admin_key: str, data: schemas.NewsletterSpotlightSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    spotlights = db.query(models.Spotlight).filter(
+        models.Spotlight.id.in_(data.spotlight_ids), models.Spotlight.status == "published"
+    ).all()
+    if not spotlights:
+        raise HTTPException(status_code=400, detail="No matching published spotlights found")
+
+    html_body = build_spotlight_update_html(data.title, data.intro, spotlights)
+    recipients = get_all_recipients(db)
+    if not recipients:
+        return {"message": "No recipients to send to.", "sent": 0}
+
+    results = send_newsletter(recipients, data.title, html_body)
+    return {"message": f"Newsletter sent to {results['sent']} recipients.", **results}
+
+
+@router.post("/admin/newsletter/send-alternative-update")
+def send_alternative_update(admin_key: str, data: schemas.NewsletterAlternativeSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    tools = db.query(models.ForeignTool).filter(models.ForeignTool.id.in_(data.foreign_tool_ids)).all()
+    if not tools:
+        raise HTTPException(status_code=400, detail="No matching foreign tools found")
+
+    html_body = build_alternative_update_html(data.title, data.intro, tools)
+    recipients = get_all_recipients(db)
+    if not recipients:
+        return {"message": "No recipients to send to.", "sent": 0}
+
+    results = send_newsletter(recipients, data.title, html_body)
+    return {"message": f"Newsletter sent to {results['sent']} recipients.", **results}
+
+
+@router.post("/admin/newsletter/send-article-update")
+def send_article_update(admin_key: str, data: schemas.NewsletterArticleSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    articles = db.query(models.Article).filter(
+        models.Article.id.in_(data.article_ids), models.Article.status == "published"
+    ).all()
+    if not articles:
+        raise HTTPException(status_code=400, detail="No matching published articles found")
+
+    html_body = build_article_update_html(data.title, data.intro, articles)
+    recipients = get_all_recipients(db)
+    if not recipients:
+        return {"message": "No recipients to send to.", "sent": 0}
+
+    results = send_newsletter(recipients, data.title, html_body)
     return {"message": f"Newsletter sent to {results['sent']} recipients.", **results}
 
 

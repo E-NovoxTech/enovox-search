@@ -455,4 +455,25 @@ class ArticleUpdate(BaseModel):
 class ProductFetchRequest(BaseModel):
     url: str
 
+class NewsletterSpotlightSend(BaseModel):
+    title: str
+    intro: Optional[str] = None
+    spotlight_ids: List[int]
+
+class NewsletterAlternativeSend(BaseModel):
+    title: str
+    intro: Optional[str] = None
+    foreign_tool_ids: List[int]
+
+class NewsletterArticleSend(BaseModel):
+    title: str
+    intro: Optional[str] = None
+    article_ids: List[int]
+
+class UserUpdateSend(BaseModel):
+    subject: str
+    html_body: str
+    recipient_emails: List[str]
+
+
 

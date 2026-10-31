@@ -17,6 +17,7 @@
         { group: 'PRODUCT MANAGEMENT', label: 'Claims', icon: 'fa-solid fa-circle-check', sectionId: 'claims-tab' },
         { group: 'CONTENT', label: 'Articles', icon: 'fa-solid fa-newspaper', sectionId: 'articles-tab' },
         { group: 'COMMUNITY', label: 'Developers', icon: 'fa-solid fa-users', sectionId: 'developers-tab' },
+        { group: 'COMMUNITY', label: 'Users', icon: 'fa-solid fa-user', sectionId: 'users-tab' },
         { group: 'COMMUNITY', label: 'Newsletter', icon: 'fa-solid fa-envelope', sectionId: 'newsletter-tab' },
         { group: 'SPOTLIGHT', label: 'Applications', icon: 'fa-solid fa-star', sectionId: 'spotlight-applications-tab' },
         { group: 'SPOTLIGHT', label: 'Founder Spotlights', icon: 'fa-solid fa-id-card', sectionId: 'spotlight-list-tab' },
@@ -61,15 +62,18 @@
         products: [],
         submissions: [],
         developers: [],
+        users: [],
         foreignTools: [],
         foreignToolsPage: 1,
         foreignToolsFilter: { search: '', category: '' },
         productsPage: 1,
         submissionsPage: 1,
         developersPage: 1,
+        usersPage: 1,
         productFilter: { search: '', category: '', status: '' },
         submissionFilter: { search: '', category: '', status: 'pending' },
         developerFilter: { search: '' },
+        userFilter: { search: '' },
         selectedSubmissionIds: new Set()
     };
 
@@ -103,10 +107,6 @@
     let collectionSuccessTimer = null;
 
     // Separate from the existing paginated Developers table and its search.
-    const developerUpdateSelected = new Set(); // Case-insensitive email keys.
-    const DEVELOPER_UPDATE_PAGE_SIZE = 10;
-    let developerUpdatePage = 1;
-    let developerUpdateSending = false;
 
     // Keywords/Tags entered in the manual "Add Product" modal. Reset on open.
     let productKeywordTags = [];
@@ -194,7 +194,7 @@
         setupNavigation();
         setupEventListeners();
         setupToolbars();
-        setupDeveloperUpdate();
+        setupCommunityTabs();
         setupAlternatives();
         setupProductAlternatives();
         setupSubmissionDetailModal();
@@ -2851,7 +2851,11 @@ ${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spo
         }
         if (tabId === 'developers-tab') {
             renderDevelopers();
-            renderDeveloperUpdatePicker();
+            if (mailers.developer) mailers.developer.refresh();
+        }
+        if (tabId === 'users-tab') {
+            renderUsers();
+            fetchUsersData();
         }
         if (tabId === 'newsletter-tab') {
             renderNewsletterPicker();
@@ -5341,235 +5345,602 @@ ${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spo
     };
 
     /* ==========================================================================
-       Render: Developers
+       Community: people directory + "Send update" composer.
+       ONE composer component is built twice, for Developers and for Users, so
+       both tabs look and behave identically:
+         Developers -> POST /products/admin/developers/send-update?admin_key=...
+         Users      -> POST /users/admin/send-update?admin_key=...
+       Body for both: { subject, html_body, recipient_emails: [...] }.
+       Each tab has two panels (Directory | Send update). Switching panels never
+       loses a half-written message because the composer stays in the page.
        ========================================================================== */
+    const MAILER_PAGE_SIZE = 8;
+    const MAILER_STARTER_HTML = [
+        '<div style="max-width:560px;margin:0 auto;padding:24px;font-family:Arial,Helvetica,sans-serif;color:#0f172a;line-height:1.6">',
+        '  <h2 style="margin:0 0 12px;font-size:22px">Hello from Enovox Search</h2>',
+        '  <p style="margin:0 0 16px">Write your update here. Keep it short and clear.</p>',
+        '  <p style="margin:0 0 24px"><a href="https://search.enovoxtech.com" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:bold">Visit Enovox Search</a></p>',
+        '  <p style="margin:0;font-size:13px;color:#64748b">You are receiving this because you have an Enovox Search account.</p>',
+        '</div>'
+    ].join('\n');
+
+    const mailers = {};
+    const usersState = { loaded: false, loading: false, error: '' };
+
+    function personInitial(email) {
+        return (String(email || '?').trim().charAt(0) || '?').toUpperCase();
+    }
+    function formatPersonDate(raw) {
+        const date = new Date(raw);
+        return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString();
+    }
+    function pluralize(count, singular, plural) {
+        return count === 1 ? singular : plural;
+    }
+
+    /* ---------- shared confirmation modal (replaces window.confirm) ---------- */
+    function mailConfirm({ message, subject, emails }) {
+        const modal = document.getElementById('mail-confirm-modal');
+        if (!modal) return Promise.resolve(window.confirm(message));
+        document.getElementById('mail-confirm-message').textContent = message;
+        document.getElementById('mail-confirm-subject').textContent = subject || '(No subject)';
+        const preview = emails.slice(0, 3).join(', ');
+        const more = emails.length - 3;
+        document.getElementById('mail-confirm-recipients').textContent =
+            more > 0 ? `${preview} and ${more} more` : preview;
+        const okBtn = document.getElementById('mail-confirm-ok');
+        const cancelBtn = document.getElementById('mail-confirm-cancel');
+        const returnFocus = document.activeElement;
+        modal.classList.remove('hidden');
+        cancelBtn.focus(); // Safer default: Enter cancels, it never sends.
+
+        return new Promise(resolve => {
+            function finish(result) {
+                modal.classList.add('hidden');
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+                modal.removeEventListener('click', onBackdrop);
+                document.removeEventListener('keydown', onKey);
+                if (returnFocus && typeof returnFocus.focus === 'function') returnFocus.focus();
+                resolve(result);
+            }
+            const onOk = () => finish(true);
+            const onCancel = () => finish(false);
+            const onBackdrop = event => { if (event.target === modal) finish(false); };
+            const onKey = event => { if (event.key === 'Escape') finish(false); };
+            okBtn.addEventListener('click', onOk);
+            cancelBtn.addEventListener('click', onCancel);
+            modal.addEventListener('click', onBackdrop);
+            document.addEventListener('keydown', onKey);
+        });
+    }
+
+    /* ---------- the composer ---------- */
+    function createMailer(cfg) {
+        const root = document.getElementById(cfg.root);
+        if (!root) return null;
+
+        const selected = new Set();   // lower-cased emails
+        let page = 1;
+        let sending = false;
+        let query = '';
+        let selectedOnly = false;
+        let previewTimer = null;
+
+        root.innerHTML = `
+        <form class="mailer" data-m="form" novalidate>
+            <div class="alert hidden" data-m="result" role="status" aria-live="polite"></div>
+            <div class="mailer-failed hidden" data-m="failed" aria-live="polite"></div>
+
+            <section class="mailer-card" aria-label="Choose recipients">
+                <header class="mailer-card-head">
+                    <span class="mailer-step" aria-hidden="true">1</span>
+                    <div class="mailer-card-title">
+                        <h3>Choose recipients</h3>
+                        <p class="text-muted">Pick who gets this email. Your picks are kept across pages and searches.</p>
+                    </div>
+                    <span class="mailer-pill" data-m="count" aria-live="polite">0 selected</span>
+                </header>
+                <div class="mailer-tools">
+                    <div class="mailer-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <input type="search" data-m="search" placeholder="Search ${cfg.plural} by email..." aria-label="Search ${cfg.plural} by email" autocomplete="off">
+                    </div>
+                    <div class="mailer-quick">
+                        <label class="mailer-all"><input type="checkbox" data-m="all" disabled><span data-m="all-label">Select all</span></label>
+                        <button type="button" class="mailer-link hidden" data-m="match"></button>
+                        <button type="button" class="mailer-link hidden" data-m="clear">Clear selection</button>
+                        <button type="button" class="mailer-link hidden" data-m="only" aria-pressed="false">Show selected only</button>
+                    </div>
+                </div>
+                <div class="mailer-list" data-m="list" role="group" aria-label="Recipients"></div>
+                <div class="mailer-pager hidden" data-m="pager">
+                    <button type="button" class="btn-secondary btn-small" data-m="prev">&laquo; Prev</button>
+                    <span class="text-muted" data-m="page-label"></span>
+                    <button type="button" class="btn-secondary btn-small" data-m="next">Next &raquo;</button>
+                </div>
+            </section>
+
+            <section class="mailer-card" aria-label="Write your message">
+                <header class="mailer-card-head">
+                    <span class="mailer-step" aria-hidden="true">2</span>
+                    <div class="mailer-card-title">
+                        <h3>Write your message</h3>
+                        <p class="text-muted">Paste your HTML and watch the preview update as you type.</p>
+                    </div>
+                </header>
+                <div class="form-group">
+                    <label for="${cfg.id}-mailer-subject">Subject *</label>
+                    <input type="text" id="${cfg.id}-mailer-subject" data-m="subject" placeholder="Email subject line" maxlength="200" autocomplete="off">
+                </div>
+                <div class="mailer-editor-head">
+                    <label for="${cfg.id}-mailer-html">Email content (HTML) *</label>
+                    <button type="button" class="mailer-link" data-m="starter">Use starter template</button>
+                </div>
+                <div class="mailer-view-switch" role="tablist" aria-label="Editor view">
+                    <button type="button" class="active" role="tab" aria-selected="true" data-m="view-edit">HTML</button>
+                    <button type="button" role="tab" aria-selected="false" data-m="view-preview">Preview</button>
+                </div>
+                <div class="mailer-editor" data-m="editor" data-view="edit">
+                    <div class="mailer-pane mailer-code">
+                        <textarea id="${cfg.id}-mailer-html" data-m="html" spellcheck="false" placeholder="&lt;h2&gt;Update for ${cfg.plural}&lt;/h2&gt;&#10;&lt;p&gt;Write your message here...&lt;/p&gt;"></textarea>
+                    </div>
+                    <div class="mailer-pane mailer-preview">
+                        <div class="mailer-preview-bar">
+                            <span class="mailer-preview-title"><i class="fa-regular fa-eye" aria-hidden="true"></i> Live preview</span>
+                            <div class="mailer-seg" role="group" aria-label="Preview width">
+                                <button type="button" class="active" data-m="dev-desktop" aria-pressed="true">Desktop</button>
+                                <button type="button" data-m="dev-mobile" aria-pressed="false">Mobile</button>
+                            </div>
+                        </div>
+                        <div class="mailer-stage" data-m="stage" data-device="desktop">
+                            <div class="mailer-inbox-row"><strong data-m="pv-subject">(No subject)</strong><span class="text-muted">Enovox Search</span></div>
+                            <iframe data-m="frame" class="hidden" sandbox title="Email preview"></iframe>
+                            <div class="mailer-preview-empty" data-m="pv-empty">Your email preview appears here. Paste HTML on the left to start.</div>
+                        </div>
+                        <p class="text-muted mailer-note">Approximate view. Email apps can render slightly differently. Scripts are blocked in the preview.</p>
+                    </div>
+                </div>
+            </section>
+
+            <div class="mailer-sendbar">
+                <div class="mailer-sendinfo">
+                    <strong data-m="send-count">0 recipients</strong>
+                    <span class="text-muted" data-m="send-hint"></span>
+                </div>
+                <button type="submit" class="btn-primary" data-m="send" disabled><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send update</button>
+            </div>
+        </form>`;
+
+        const $ = name => root.querySelector(`[data-m="${name}"]`);
+        const el = {
+            form: $('form'), result: $('result'), failed: $('failed'), count: $('count'),
+            search: $('search'), all: $('all'), allLabel: $('all-label'), match: $('match'),
+            clear: $('clear'), only: $('only'), list: $('list'), pager: $('pager'),
+            prev: $('prev'), next: $('next'), pageLabel: $('page-label'),
+            subject: $('subject'), html: $('html'), starter: $('starter'),
+            viewEdit: $('view-edit'), viewPreview: $('view-preview'), editor: $('editor'),
+            devDesktop: $('dev-desktop'), devMobile: $('dev-mobile'), stage: $('stage'),
+            pvSubject: $('pv-subject'), frame: $('frame'), pvEmpty: $('pv-empty'),
+            sendCount: $('send-count'), sendHint: $('send-hint'), send: $('send')
+        };
+
+        function recipients() {
+            const seen = new Set();
+            const out = [];
+            (cfg.getPeople() || []).forEach(person => {
+                const email = typeof person?.email === 'string' ? person.email.trim() : '';
+                if (!email) return;
+                const key = email.toLowerCase();
+                if (seen.has(key)) return; // never send two copies to one inbox
+                seen.add(key);
+                out.push({ key, email });
+            });
+            return out;
+        }
+        function visibleRecipients() {
+            const q = query.trim().toLowerCase();
+            return recipients().filter(r => (!q || r.key.includes(q)) && (!selectedOnly || selected.has(r.key)));
+        }
+
+        function renderList() {
+            const all = recipients();
+            const available = new Set(all.map(r => r.key));
+            selected.forEach(key => { if (!available.has(key)) selected.delete(key); });
+
+            const visible = visibleRecipients();
+            const { pageItems, totalPages, safePage } = paginate(visible, page, MAILER_PAGE_SIZE);
+            page = safePage;
+            el.list.replaceChildren();
+
+            if (!pageItems.length) {
+                const empty = document.createElement('p');
+                empty.className = 'mailer-empty text-muted';
+                empty.textContent = !all.length ? `No ${cfg.singular} email addresses yet.`
+                    : selectedOnly ? 'Nothing selected yet.' : `No ${cfg.plural} match your search.`;
+                el.list.appendChild(empty);
+            } else {
+                pageItems.forEach(r => {
+                    const row = document.createElement('label');
+                    row.className = 'mailer-row';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.dataset.key = r.key;
+                    box.checked = selected.has(r.key);
+                    box.disabled = sending;
+                    const avatar = document.createElement('span');
+                    avatar.className = 'mailer-avatar';
+                    avatar.setAttribute('aria-hidden', 'true');
+                    avatar.textContent = personInitial(r.email);
+                    const text = document.createElement('span');
+                    text.className = 'mailer-email';
+                    text.textContent = r.email;
+                    row.append(box, avatar, text);
+                    el.list.appendChild(row);
+                });
+            }
+
+            el.pager.classList.toggle('hidden', totalPages <= 1);
+            el.pageLabel.textContent = `Page ${safePage} of ${totalPages} · ${visible.length} shown`;
+            el.prev.disabled = sending || safePage <= 1;
+            el.next.disabled = sending || safePage >= totalPages;
+            syncControls();
+        }
+
+        function syncControls() {
+            const all = recipients();
+            const count = all.filter(r => selected.has(r.key)).length;
+            el.all.checked = all.length > 0 && count === all.length;
+            el.all.indeterminate = count > 0 && count < all.length;
+            el.all.disabled = sending || !all.length;
+            el.allLabel.textContent = `Select all ${all.length} ${pluralize(all.length, cfg.singular, cfg.plural)}`;
+            el.list.querySelectorAll('input[data-key]').forEach(box => {
+                box.checked = selected.has(box.dataset.key);
+                box.disabled = sending;
+            });
+
+            const q = query.trim();
+            const matching = q ? visibleRecipients().length : 0;
+            el.match.classList.toggle('hidden', !(q && matching > 0));
+            el.match.textContent = `Select ${matching} matching`;
+            el.match.disabled = sending;
+            el.clear.classList.toggle('hidden', count === 0);
+            el.clear.disabled = sending;
+            el.only.classList.toggle('hidden', count === 0 && !selectedOnly);
+            el.only.setAttribute('aria-pressed', String(selectedOnly));
+            el.only.textContent = selectedOnly ? 'Show everyone' : 'Show selected only';
+            el.only.disabled = sending;
+
+            el.count.textContent = `${count} of ${all.length} selected`;
+            el.count.classList.toggle('is-active', count > 0);
+
+            const subject = el.subject.value.trim();
+            const htmlBody = el.html.value.trim();
+            const missing = [];
+            if (!count) missing.push('pick recipients');
+            if (!subject) missing.push('add a subject');
+            if (!htmlBody) missing.push('add content');
+            el.sendCount.textContent = `${count} ${pluralize(count, 'recipient', 'recipients')}`;
+            el.sendHint.textContent = missing.length ? `To send: ${missing.join(', ')}` : 'Ready to send';
+            el.send.disabled = sending || missing.length > 0;
+            el.send.innerHTML = sending
+                ? `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Sending to ${count}...`
+                : '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send update';
+        }
+
+        /* ---- preview (sandboxed iframe: no scripts run) ---- */
+        function renderPreview() {
+            const raw = el.html.value;
+            const has = raw.trim().length > 0;
+            el.pvSubject.textContent = el.subject.value.trim() || '(No subject)';
+            el.pvEmpty.classList.toggle('hidden', has);
+            el.frame.classList.toggle('hidden', !has);
+            if (!has) { el.frame.srcdoc = ''; return; }
+            const isDocument = /<html[\s>]/i.test(raw) || /<!doctype/i.test(raw);
+            el.frame.srcdoc = isDocument ? raw
+                : '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base target="_blank">'
+                + '<style>body{margin:0;padding:16px;font-family:Arial,Helvetica,sans-serif;color:#0f172a}</style></head><body>'
+                + raw + '</body></html>';
+        }
+        function schedulePreview() {
+            window.clearTimeout(previewTimer);
+            previewTimer = window.setTimeout(renderPreview, 200);
+        }
+
+        function showResult(type, message) {
+            el.result.textContent = message;
+            el.result.className = `alert ${type}`;
+            el.result.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+        function renderFailures(failed) {
+            el.failed.replaceChildren();
+            if (!Array.isArray(failed) || !failed.length) { el.failed.classList.add('hidden'); return; }
+            const heading = document.createElement('strong');
+            heading.textContent = `${failed.length} failed send${failed.length === 1 ? '' : 's'}:`;
+            const list = document.createElement('ul');
+            failed.forEach(item => {
+                const row = document.createElement('li');
+                row.textContent = typeof item === 'string' ? item : item && typeof item === 'object'
+                    ? [item.email || item.recipient, item.error || item.reason].filter(Boolean).join(' — ') || JSON.stringify(item)
+                    : String(item);
+                list.appendChild(row);
+            });
+            el.failed.append(heading, list);
+            el.failed.classList.remove('hidden');
+        }
+
+        async function send(event) {
+            event.preventDefault();
+            if (sending) return;
+            const subject = el.subject.value.trim();
+            const htmlBody = el.html.value; // raw HTML/CSS, sent unmodified
+            const emails = recipients().filter(r => selected.has(r.key)).map(r => r.email);
+            if (!emails.length || !subject || !htmlBody.trim()) {
+                showResult('error', `Select at least one ${cfg.singular} and enter a subject and HTML content.`);
+                syncControls();
+                return;
+            }
+            const count = emails.length;
+            const ok = await mailConfirm({
+                message: `You are about to send this to ${count} ${pluralize(count, cfg.singular, cfg.plural)}. Continue?`,
+                subject, emails
+            });
+            if (!ok) return;
+
+            sending = true;
+            el.subject.disabled = true;
+            el.html.disabled = true;
+            el.search.disabled = true;
+            el.starter.disabled = true;
+            el.result.className = 'alert hidden';
+            renderFailures(null);
+            renderList();
+            try {
+                const response = await fetch(`${API_URL}${cfg.endpoint}?admin_key=${encodeURIComponent(adminKey)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject, html_body: htmlBody, recipient_emails: emails })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(typeof data.detail === 'string' ? data.detail
+                        : data.message || `Could not send ${cfg.singular} update (status ${response.status}).`);
+                }
+                const failed = Array.isArray(data.failed) ? data.failed : [];
+                const sent = Number.isSafeInteger(Number(data.sent)) ? Number(data.sent) : Math.max(0, count - failed.length);
+                selected.clear();
+                selectedOnly = false;
+                page = 1;
+                el.subject.value = '';
+                el.html.value = '';
+                renderPreview();
+                showResult(failed.length ? 'error' : 'success',
+                    `${data.message || `Sent to ${sent} ${pluralize(sent, cfg.singular, cfg.plural)}.`}${failed.length ? ` ${failed.length} failed.` : ''}`);
+                renderFailures(failed);
+            } catch (error) {
+                showResult('error', error.message || 'Could not send the update.');
+            } finally {
+                sending = false;
+                el.subject.disabled = false;
+                el.html.disabled = false;
+                el.search.disabled = false;
+                el.starter.disabled = false;
+                renderList();
+            }
+        }
+
+        /* ---- events ---- */
+        el.list.addEventListener('change', event => {
+            const box = event.target.closest('input[data-key]');
+            if (!box || sending) return;
+            if (box.checked) selected.add(box.dataset.key); else selected.delete(box.dataset.key);
+            if (selectedOnly && !selected.size) selectedOnly = false;
+            syncControls();
+        });
+        el.all.addEventListener('change', () => {
+            if (sending) return;
+            if (el.all.checked) recipients().forEach(r => selected.add(r.key)); else selected.clear();
+            if (!selected.size) selectedOnly = false;
+            renderList();
+        });
+        el.match.addEventListener('click', () => {
+            visibleRecipients().forEach(r => selected.add(r.key));
+            renderList();
+        });
+        el.clear.addEventListener('click', () => {
+            selected.clear();
+            selectedOnly = false;
+            page = 1;
+            renderList();
+        });
+        el.only.addEventListener('click', () => {
+            selectedOnly = !selectedOnly;
+            page = 1;
+            renderList();
+        });
+        el.search.addEventListener('input', () => { query = el.search.value; page = 1; renderList(); });
+        el.search.addEventListener('keydown', event => { if (event.key === 'Enter') event.preventDefault(); });
+        el.prev.addEventListener('click', () => { if (!sending) { page -= 1; renderList(); } });
+        el.next.addEventListener('click', () => { if (!sending) { page += 1; renderList(); } });
+        el.subject.addEventListener('input', () => { syncControls(); schedulePreview(); });
+        el.subject.addEventListener('keydown', event => { if (event.key === 'Enter') event.preventDefault(); });
+        el.html.addEventListener('input', () => { syncControls(); schedulePreview(); });
+        el.starter.addEventListener('click', () => {
+            if (el.html.value.trim() && !window.confirm('Replace the current content with the starter template?')) return;
+            el.html.value = MAILER_STARTER_HTML;
+            syncControls();
+            renderPreview();
+        });
+        function setView(view) {
+            el.editor.dataset.view = view;
+            el.viewEdit.classList.toggle('active', view === 'edit');
+            el.viewPreview.classList.toggle('active', view === 'preview');
+            el.viewEdit.setAttribute('aria-selected', String(view === 'edit'));
+            el.viewPreview.setAttribute('aria-selected', String(view === 'preview'));
+            if (view === 'preview') renderPreview();
+        }
+        el.viewEdit.addEventListener('click', () => setView('edit'));
+        el.viewPreview.addEventListener('click', () => setView('preview'));
+        function setDevice(device) {
+            el.stage.dataset.device = device;
+            el.devDesktop.classList.toggle('active', device === 'desktop');
+            el.devMobile.classList.toggle('active', device === 'mobile');
+            el.devDesktop.setAttribute('aria-pressed', String(device === 'desktop'));
+            el.devMobile.setAttribute('aria-pressed', String(device === 'mobile'));
+        }
+        el.devDesktop.addEventListener('click', () => setDevice('desktop'));
+        el.devMobile.addEventListener('click', () => setDevice('mobile'));
+        el.form.addEventListener('submit', send);
+
+        renderList();
+        renderPreview();
+        return { refresh: renderList };
+    }
+
+    /* ---------- directory tables (read-only) ---------- */
+    function personRowHTML(person) {
+        return `
+            <td data-label="ID">${escapeHTML(person.id)}</td>
+            <td data-label="Email"><strong>${escapeHTML(person.email)}</strong></td>
+            <td data-label="Signup date">${escapeHTML(formatPersonDate(person.created_at))}</td>`;
+    }
+
+    function setPeopleCount(key, total) {
+        document.querySelectorAll(`[data-people-count="${key}"]`).forEach(node => { node.textContent = String(total); });
+    }
+
     function renderDevelopers() {
         const tbody = document.getElementById('developers-table-body');
         if (!tbody) return;
-
         const filtered = getFilteredDevelopers();
         const { pageItems, totalPages, safePage } = paginate(filtered, state.developersPage, PAGE_SIZE);
         state.developersPage = safePage;
+        setPeopleCount('developers', state.developers.length);
 
         if (pageItems.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-muted">No developers match your search.</td></tr>`;
+            tbody.innerHTML = `<tr class="people-empty"><td colspan="3" class="text-muted">${state.developers.length ? 'No developers match your search.' : 'No developers yet.'}</td></tr>`;
         } else {
             tbody.innerHTML = '';
             pageItems.forEach(d => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${d.id}</td>
-                    <td><strong>${escapeHTML(d.email)}</strong></td>
-                    <td>${new Date(d.created_at).toLocaleString()}</td>
-                `;
+                tr.innerHTML = personRowHTML(d);
                 tbody.appendChild(tr);
             });
         }
-
-        renderPagination('developers-pagination', filtered.length, state.developersPage, totalPages, (page) => {
-            state.developersPage = page;
+        renderPagination('developers-pagination', filtered.length, state.developersPage, totalPages, (nextPage) => {
+            state.developersPage = nextPage;
             renderDevelopers();
         });
     }
 
-    /* ==========================================================================
-       Developer update composer — separate from the original Developers table.
-       Uses the full cached state.developers; its picker has its own pagination
-       and "Select all" spans every page, regardless of table search/filter.
-       ========================================================================== */
-    function developerUpdateRecipients() {
-        const seen = new Set();
-        const recipients = [];
-        state.developers.forEach(developer => {
-            const email = typeof developer?.email === 'string' ? developer.email.trim() : '';
-            if (!email) return;
-            const key = email.toLowerCase();
-            if (seen.has(key)) return; // Never send two copies to the same inbox.
-            seen.add(key);
-            recipients.push({ key, email });
-        });
-        return recipients;
+    function getFilteredUsers() {
+        const q = (state.userFilter.search || '').trim().toLowerCase();
+        return state.users.filter(u => !q || (u.email || '').toLowerCase().includes(q));
     }
 
-    function setupDeveloperUpdate() {
-        const list = document.getElementById('developer-update-list');
-        const form = document.getElementById('developer-update-form');
-        if (!list || !form) return;
-
-        list.addEventListener('change', event => {
-            const box = event.target.closest('input[data-developer-email]');
-            if (!box || developerUpdateSending) return;
-            const key = box.dataset.developerEmail;
-            if (!developerUpdateRecipients().some(recipient => recipient.key === key)) return;
-            if (box.checked) developerUpdateSelected.add(key);
-            else developerUpdateSelected.delete(key);
-            syncDeveloperUpdateControls();
-        });
-        document.getElementById('developer-update-select-all').addEventListener('change', event => {
-            if (developerUpdateSending) return;
-            if (event.target.checked) {
-                developerUpdateRecipients().forEach(recipient => developerUpdateSelected.add(recipient.key));
-            } else {
-                developerUpdateSelected.clear();
+    function renderUsers() {
+        const tbody = document.getElementById('users-table-body');
+        if (!tbody) return;
+        const errorBox = document.getElementById('users-error');
+        if (errorBox) {
+            errorBox.classList.toggle('hidden', !usersState.error);
+            errorBox.replaceChildren();
+            if (usersState.error) {
+                const text = document.createElement('span');
+                text.textContent = usersState.error;
+                const retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'btn-secondary btn-small';
+                retry.textContent = 'Try again';
+                retry.addEventListener('click', () => fetchUsersData(true));
+                errorBox.append(text, retry);
             }
-            renderDeveloperUpdatePicker();
-        });
-        document.getElementById('developer-update-prev').addEventListener('click', () => {
-            if (developerUpdateSending) return;
-            --developerUpdatePage;
-            renderDeveloperUpdatePicker();
-        });
-        document.getElementById('developer-update-next').addEventListener('click', () => {
-            if (developerUpdateSending) return;
-            ++developerUpdatePage;
-            renderDeveloperUpdatePicker();
-        });
-        document.getElementById('developer-update-subject').addEventListener('input', syncDeveloperUpdateControls);
-        document.getElementById('developer-update-html').addEventListener('input', syncDeveloperUpdateControls);
-        form.addEventListener('submit', sendDeveloperUpdate);
-        renderDeveloperUpdatePicker();
-    }
-
-    function renderDeveloperUpdatePicker() {
-        const list = document.getElementById('developer-update-list');
-        if (!list) return;
-        const recipients = developerUpdateRecipients();
-        const available = new Set(recipients.map(recipient => recipient.key));
-        for (const key of developerUpdateSelected) {
-            if (!available.has(key)) developerUpdateSelected.delete(key);
         }
-        const { pageItems, totalPages, safePage } = paginate(recipients, developerUpdatePage, DEVELOPER_UPDATE_PAGE_SIZE);
-        developerUpdatePage = safePage;
-        list.replaceChildren();
-        if (!recipients.length) {
-            const empty = document.createElement('p');
-            empty.className = 'developer-update-empty text-muted';
-            empty.textContent = 'No developer email addresses available.';
-            list.appendChild(empty);
+        const filtered = getFilteredUsers();
+        const { pageItems, totalPages, safePage } = paginate(filtered, state.usersPage, PAGE_SIZE);
+        state.usersPage = safePage;
+        setPeopleCount('users', state.users.length);
+
+        if (usersState.loading && !state.users.length) {
+            tbody.innerHTML = '<tr class="people-empty"><td colspan="3" class="text-muted">Loading users...</td></tr>';
+        } else if (pageItems.length === 0) {
+            tbody.innerHTML = `<tr class="people-empty"><td colspan="3" class="text-muted">${state.users.length ? 'No users match your search.' : 'No users yet.'}</td></tr>`;
         } else {
-            pageItems.forEach(recipient => {
-                const row = document.createElement('label');
-                row.className = 'developer-update-row';
-                const box = document.createElement('input');
-                box.type = 'checkbox';
-                box.dataset.developerEmail = recipient.key;
-                box.checked = developerUpdateSelected.has(recipient.key);
-                box.disabled = developerUpdateSending;
-                const email = document.createElement('span');
-                email.textContent = recipient.email;
-                row.append(box, email);
-                list.appendChild(row);
+            tbody.innerHTML = '';
+            pageItems.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = personRowHTML(u);
+                tbody.appendChild(tr);
             });
         }
-        const pager = document.getElementById('developer-update-pager');
-        pager.classList.toggle('hidden', totalPages <= 1);
-        document.getElementById('developer-update-page-label').textContent =
-            `Page ${safePage} of ${totalPages} · ${recipients.length} developers`;
-        document.getElementById('developer-update-prev').disabled = developerUpdateSending || safePage <= 1;
-        document.getElementById('developer-update-next').disabled = developerUpdateSending || safePage >= totalPages;
-        syncDeveloperUpdateControls();
-    }
-
-    function syncDeveloperUpdateControls() {
-        const recipients = developerUpdateRecipients();
-        const selectedCount = recipients.filter(recipient => developerUpdateSelected.has(recipient.key)).length;
-        const all = document.getElementById('developer-update-select-all');
-        const send = document.getElementById('developer-update-send');
-        if (!all || !send) return;
-        all.checked = recipients.length > 0 && selectedCount === recipients.length;
-        all.indeterminate = selectedCount > 0 && selectedCount < recipients.length;
-        all.disabled = developerUpdateSending || !recipients.length;
-        document.getElementById('developer-update-list').querySelectorAll('input[data-developer-email]').forEach(box => {
-            box.checked = developerUpdateSelected.has(box.dataset.developerEmail);
-            box.disabled = developerUpdateSending;
+        renderPagination('users-pagination', filtered.length, state.usersPage, totalPages, (nextPage) => {
+            state.usersPage = nextPage;
+            renderUsers();
         });
-        document.getElementById('developer-update-count').textContent = `${selectedCount} of ${recipients.length} selected`;
-        const subject = document.getElementById('developer-update-subject').value.trim();
-        const htmlBody = document.getElementById('developer-update-html').value.trim();
-        send.disabled = developerUpdateSending || selectedCount === 0 || !subject || !htmlBody;
-        send.textContent = developerUpdateSending ? `Sending to ${selectedCount}...` : 'Send Update';
     }
 
-    function showDeveloperUpdateResult(type, message) {
-        const result = document.getElementById('developer-update-result');
-        result.textContent = message;
-        result.className = `alert ${type}`;
-    }
-
-    function renderDeveloperUpdateFailures(failed) {
-        const wrap = document.getElementById('developer-update-failed');
-        wrap.replaceChildren();
-        if (!Array.isArray(failed) || !failed.length) {
-            wrap.classList.add('hidden');
-            return;
-        }
-        const heading = document.createElement('strong');
-        heading.textContent = `${failed.length} failed send${failed.length === 1 ? '' : 's'}:`;
-        const list = document.createElement('ul');
-        failed.forEach(item => {
-            const row = document.createElement('li');
-            row.textContent = typeof item === 'string' ? item : item && typeof item === 'object'
-                ? [item.email || item.recipient, item.error || item.reason].filter(Boolean).join(' — ') || JSON.stringify(item)
-                : String(item);
-            list.appendChild(row);
-        });
-        wrap.append(heading, list);
-        wrap.classList.remove('hidden');
-    }
-
-    async function sendDeveloperUpdate(event) {
-        event.preventDefault();
-        if (developerUpdateSending) return;
-        const form = document.getElementById('developer-update-form');
-        const subjectEl = document.getElementById('developer-update-subject');
-        const htmlEl = document.getElementById('developer-update-html');
-        const subject = subjectEl.value.trim();
-        const htmlBody = htmlEl.value; // Send the raw pasted HTML/CSS unmodified.
-        const recipientEmails = developerUpdateRecipients()
-            .filter(recipient => developerUpdateSelected.has(recipient.key))
-            .map(recipient => recipient.email);
-        if (!recipientEmails.length || !subject || !htmlBody.trim()) {
-            showDeveloperUpdateResult('error', 'Select at least one developer and enter a subject and HTML content.');
-            syncDeveloperUpdateControls();
-            return;
-        }
-        const count = recipientEmails.length;
-        if (!window.confirm(`You are about to send this to ${count} developer${count === 1 ? '' : 's'}. Continue?`)) return;
-
-        developerUpdateSending = true;
-        subjectEl.disabled = true;
-        htmlEl.disabled = true;
-        document.getElementById('developer-update-result').className = 'alert hidden';
-        renderDeveloperUpdateFailures(null);
-        renderDeveloperUpdatePicker();
+    async function fetchUsersData(force) {
+        if (usersState.loading || (usersState.loaded && !force)) return;
+        usersState.loading = true;
+        usersState.error = '';
+        renderUsers();
         try {
-            const response = await fetch(`${API_URL}/products/admin/developers/send-update?admin_key=${encodeURIComponent(adminKey)}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject, html_body: htmlBody, recipient_emails: recipientEmails })
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(typeof data.detail === 'string' ? data.detail
-                    : data.message || `Could not send developer update (status ${response.status}).`);
-            }
-            const failed = Array.isArray(data.failed) ? data.failed : [];
-            const sent = Number.isSafeInteger(Number(data.sent)) ? Number(data.sent) : Math.max(0, count - failed.length);
-            developerUpdateSelected.clear();
-            developerUpdatePage = 1;
-            form.reset();
-            renderDeveloperUpdatePicker();
-            showDeveloperUpdateResult(failed.length ? 'error' : 'success',
-                `${data.message || `Sent to ${sent} developers.`}${failed.length ? ` ${failed.length} failed.` : ''}`);
-            renderDeveloperUpdateFailures(failed);
+            const res = await fetch(`${API_URL}/users/admin/all?admin_key=${encodeURIComponent(adminKey)}`);
+            await requireAdminResponse(res, 'Could not load users');
+            const data = await res.json();
+            state.users = Array.isArray(data) ? data : [];
+            usersState.loaded = true;
         } catch (error) {
-            showDeveloperUpdateResult('error', error.message);
+            usersState.error = error.message || 'Could not load users.';
         } finally {
-            developerUpdateSending = false;
-            subjectEl.disabled = false;
-            htmlEl.disabled = false;
-            renderDeveloperUpdatePicker();
+            usersState.loading = false;
+            renderUsers();
+            if (mailers.user) mailers.user.refresh();
         }
+    }
+
+    async function refreshDevelopers() {
+        await fetchDevelopersData();
+        renderDevelopers();
+        if (mailers.developer) mailers.developer.refresh();
+    }
+
+    function setupCommunityTabs() {
+        // Directory | Send update switch inside each People tab.
+        document.querySelectorAll('[data-people-tabs]').forEach(group => {
+            const buttons = group.querySelectorAll('[data-people-pane]');
+            const scope = group.closest('.tab-content');
+            buttons.forEach(button => button.addEventListener('click', () => {
+                buttons.forEach(other => {
+                    const on = other === button;
+                    other.classList.toggle('active', on);
+                    other.setAttribute('aria-selected', String(on));
+                });
+                scope.querySelectorAll('[data-people-panel]').forEach(panel => {
+                    panel.classList.toggle('hidden', panel.dataset.peoplePanel !== button.dataset.peoplePane);
+                });
+            }));
+        });
+
+        const usersSearch = document.getElementById('users-search');
+        if (usersSearch) usersSearch.addEventListener('input', () => {
+            state.userFilter.search = usersSearch.value;
+            state.usersPage = 1;
+            renderUsers();
+        });
+        const usersRefresh = document.getElementById('users-refresh-btn');
+        if (usersRefresh) usersRefresh.addEventListener('click', () => fetchUsersData(true));
+        const devsRefresh = document.getElementById('developers-refresh-btn');
+        if (devsRefresh) devsRefresh.addEventListener('click', refreshDevelopers);
+
+        mailers.developer = createMailer({
+            id: 'developer', singular: 'developer', plural: 'developers', root: 'developer-mailer-root',
+            endpoint: '/products/admin/developers/send-update', getPeople: () => state.developers
+        });
+        mailers.user = createMailer({
+            id: 'user', singular: 'user', plural: 'users', root: 'user-mailer-root',
+            endpoint: '/users/admin/send-update', getPeople: () => state.users
+        });
     }
 
     /* ==========================================================================
@@ -5796,24 +6167,8 @@ ${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spo
     let nlPickerFilter = '';
 
     function setupNewsletter() {
-        const productModeBtn = document.getElementById('nl-mode-product-btn');
-        const customModeBtn = document.getElementById('nl-mode-custom-btn');
-        const productPanel = document.getElementById('nl-product-panel');
-        const customPanel = document.getElementById('nl-custom-panel');
-        if (productModeBtn && customModeBtn && productPanel && customPanel) {
-            productModeBtn.addEventListener('click', () => {
-                productModeBtn.classList.add('active');
-                customModeBtn.classList.remove('active');
-                productPanel.classList.remove('hidden');
-                customPanel.classList.add('hidden');
-            });
-            customModeBtn.addEventListener('click', () => {
-                customModeBtn.classList.add('active');
-                productModeBtn.classList.remove('active');
-                customPanel.classList.remove('hidden');
-                productPanel.classList.add('hidden');
-            });
-        }
+        // Five modes (Product / Spotlight / Alternative / Article / Custom) share one switcher.
+        setupNewsletterModes();
 
         const pickerSearch = document.getElementById('nl-product-search');
         if (pickerSearch) pickerSearch.addEventListener('input', () => {
@@ -5976,6 +6331,310 @@ ${linked('products', 'Products')}${linked('tools', 'Alternatives')}${linked('spo
         } finally {
             setNewsletterSending(btn, false, originalText);
         }
+    }
+
+    /* ==========================================================================
+       NEWSLETTER: Spotlight / Alternative / Article update modes.
+       Same pattern as Product Update: Title + optional Intro + pick items. The
+       backend builds the email layout. Each mode only differs in where its
+       picker data comes from and which endpoint / body field it uses:
+
+         spotlight    GET  /spotlight/admin/spotlights            (published only)
+                      POST /products/admin/newsletter/send-spotlight-update
+                           body { title, intro, spotlight_ids: [..] }
+         alternative  GET  /products/admin/alternatives/foreign-tools
+                      POST /products/admin/newsletter/send-alternative-update
+                           body { title, intro, foreign_tool_ids: [..] }
+         article      GET  /articles/admin?status=published       (published only)
+                      POST /products/admin/newsletter/send-article-update
+                           body { title, intro, article_ids: [..] }
+
+       All respond { message, sent, failed: [...] }. Product Update and Custom
+       HTML above are untouched. The subscribers summary stays visible in every mode.
+       ========================================================================== */
+    function nlSafeImg(url) {
+        const value = typeof url === 'string' ? url.trim() : '';
+        return /^https?:\/\/\S+$/i.test(value) ? value : '';
+    }
+
+    const NL_MODES = {
+        spotlight: {
+            noun: 'spotlight', nouns: 'spotlights', thumb: 'round',
+            endpoint: '/products/admin/newsletter/send-spotlight-update', field: 'spotlight_ids',
+            async load() {
+                const res = await fetch(spotUrl('/spotlight/admin/spotlights'), { cache: 'no-store', headers: { Accept: 'application/json' } });
+                await requireAdminResponse(res, 'Could not load spotlights');
+                const data = await res.json();
+                // Only published spotlights can be emailed.
+                return (Array.isArray(data) ? data : []).filter(item => (item && item.status) === 'published');
+            },
+            name: s => s.startup_name || s.headline || 'Spotlight',
+            sub: s => s.founder_name || (s.startup_name ? s.headline : '') || '',
+            img: s => s.photo_url || s.founder_photo_url || s.logo_url || ''
+        },
+        alternative: {
+            noun: 'foreign tool', nouns: 'foreign tools', thumb: 'logo',
+            endpoint: '/products/admin/newsletter/send-alternative-update', field: 'foreign_tool_ids',
+            async load() {
+                const res = await fetch(`${API_URL}/products/admin/alternatives/foreign-tools?admin_key=${encodeURIComponent(adminKey)}`, { cache: 'no-store' });
+                await requireAdminResponse(res, 'Could not load foreign tools');
+                const data = await res.json();
+                return Array.isArray(data) ? data : [];
+            },
+            name: t => t.name || 'Foreign tool',
+            sub: t => {
+                const n = Number(t.alternative_count);
+                const alts = Number.isFinite(n) ? `${n} Nigerian alternative${n === 1 ? '' : 's'}` : '';
+                return [t.category, alts].filter(Boolean).join(' · ');
+            },
+            img: t => t.logo_url || ''
+        },
+        article: {
+            noun: 'article', nouns: 'articles', thumb: 'wide',
+            endpoint: '/products/admin/newsletter/send-article-update', field: 'article_ids',
+            async load() {
+                const data = await artRequest('', { query: { status: 'published' }, fallback: 'Could not load articles' });
+                const rows = Array.isArray(data) ? data : (data && Array.isArray(data.articles) ? data.articles : []);
+                // The endpoint is already filtered; this guards against any other status slipping in.
+                return rows.filter(row => !row.status || row.status === 'published');
+            },
+            name: a => a.title || 'Untitled article',
+            sub: a => [a.type_label || ART_TYPES[a.type] || '', a.published_at ? artFmtDate(a.published_at) : ''].filter(Boolean).join(' · '),
+            img: a => a.cover_image_url || ''
+        }
+    };
+
+    const nlModeState = {};
+    Object.keys(NL_MODES).forEach(mode => {
+        nlModeState[mode] = { items: [], loaded: false, loading: false, error: '', selected: new Set(), filter: '', sending: false };
+    });
+
+    function nlEl(mode, part) { return document.getElementById(`nl-${mode}-${part}`); }
+
+    function setNewsletterMode(mode) {
+        document.querySelectorAll('.nl-mode-bar [data-nl-mode]').forEach(button => {
+            const on = button.dataset.nlMode === mode;
+            button.classList.toggle('active', on);
+            button.setAttribute('aria-pressed', String(on));
+            if (on && typeof button.scrollIntoView === 'function') button.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+        });
+        document.querySelectorAll('[data-nl-panel]').forEach(panel => {
+            panel.classList.toggle('hidden', panel.dataset.nlPanel !== mode);
+        });
+        hideNewsletterAlert(); // a result from another mode would confuse here
+        if (NL_MODES[mode]) nlLoadItems(mode, false);
+    }
+
+    async function nlLoadItems(mode, force) {
+        const cfg = NL_MODES[mode];
+        const st = nlModeState[mode];
+        if (st.loading || (st.loaded && !force)) { nlRenderPicker(mode); return; }
+        st.loading = true;
+        st.error = '';
+        nlRenderPicker(mode);
+        try {
+            st.items = await cfg.load();
+            st.loaded = true;
+            // Forget picks that are no longer in the list (e.g. unpublished meanwhile).
+            const ids = new Set(st.items.map(item => Number(item.id)));
+            st.selected.forEach(id => { if (!ids.has(id)) st.selected.delete(id); });
+        } catch (error) {
+            st.error = error.message || `Could not load ${cfg.nouns}.`;
+        } finally {
+            st.loading = false;
+            nlRenderPicker(mode);
+        }
+    }
+
+    function nlThumb(cfg, item) {
+        const span = document.createElement('span');
+        span.className = `nl-pick-thumb is-${cfg.thumb}`;
+        span.setAttribute('aria-hidden', 'true');
+        const src = nlSafeImg(cfg.img(item));
+        const name = String(cfg.name(item) || '?');
+        if (src) {
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.addEventListener('error', () => { img.remove(); span.textContent = name.charAt(0).toUpperCase(); }, { once: true });
+            span.appendChild(img);
+        } else {
+            span.textContent = name.charAt(0).toUpperCase();
+        }
+        return span;
+    }
+
+    function nlRenderPicker(mode) {
+        const cfg = NL_MODES[mode];
+        const st = nlModeState[mode];
+        const wrap = nlEl(mode, 'picker');
+        if (!wrap) return;
+        wrap.replaceChildren();
+
+        const message = (text, withRetry) => {
+            const box = document.createElement('div');
+            box.className = 'nl-pick-message text-muted';
+            const p = document.createElement('span');
+            p.textContent = text;
+            box.appendChild(p);
+            if (withRetry) {
+                const retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'btn-secondary btn-small';
+                retry.textContent = 'Try again';
+                retry.addEventListener('click', () => nlLoadItems(mode, true));
+                box.appendChild(retry);
+            }
+            wrap.appendChild(box);
+        };
+
+        if (st.loading && !st.items.length) {
+            message(`Loading ${cfg.nouns}...`);
+        } else if (st.error && !st.items.length) {
+            message(st.error, true);
+        } else {
+            const q = (st.filter || '').trim().toLowerCase();
+            const items = st.items.filter(item => !q
+                || String(cfg.name(item) || '').toLowerCase().includes(q)
+                || String(cfg.sub(item) || '').toLowerCase().includes(q));
+            if (!st.items.length) {
+                message(mode === 'article' || mode === 'spotlight'
+                    ? `No published ${cfg.nouns} yet. Publish one first and it will appear here.`
+                    : `No ${cfg.nouns} found.`);
+            } else if (!items.length) {
+                message(`No ${cfg.nouns} match your filter.`);
+            } else {
+                const frag = document.createDocumentFragment();
+                items.forEach(item => {
+                    const id = Number(item.id);
+                    const row = document.createElement('label');
+                    row.className = 'nl-product-row nl-pick-row';
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.dataset.nlId = String(id);
+                    box.checked = st.selected.has(id);
+                    box.disabled = st.sending;
+                    const text = document.createElement('span');
+                    text.className = 'nl-pick-text';
+                    const nameEl = document.createElement('span');
+                    nameEl.className = 'nl-product-name';
+                    nameEl.textContent = cfg.name(item);
+                    text.appendChild(nameEl);
+                    const sub = cfg.sub(item);
+                    if (sub) {
+                        const subEl = document.createElement('span');
+                        subEl.className = 'nl-pick-sub text-muted';
+                        subEl.textContent = sub;
+                        text.appendChild(subEl);
+                    }
+                    row.append(box, nlThumb(cfg, item), text);
+                    frag.appendChild(row);
+                });
+                wrap.appendChild(frag);
+            }
+        }
+        nlSyncControls(mode);
+    }
+
+    function nlSyncControls(mode) {
+        const cfg = NL_MODES[mode];
+        const st = nlModeState[mode];
+        const count = st.selected.size;
+        const hint = nlEl(mode, 'hint');
+        if (hint) hint.textContent = `${count} ${cfg.noun}${count === 1 ? '' : 's'} selected`;
+        const clear = nlEl(mode, 'clear');
+        if (clear) clear.classList.toggle('hidden', count === 0);
+        const title = (nlEl(mode, 'title').value || '').trim();
+        const send = document.getElementById(`nl-send-${mode}-btn`);
+        if (send) send.disabled = st.sending || !title || count === 0;
+        wrapDisabled(mode, st.sending);
+    }
+    function wrapDisabled(mode, disabled) {
+        ['title', 'intro', 'search'].forEach(part => { const field = nlEl(mode, part); if (field) field.disabled = disabled; });
+    }
+
+    function nlRecipientsText() {
+        const total = subscribersCache && Number.isFinite(Number(subscribersCache.total)) ? Number(subscribersCache.total) : null;
+        return total === null ? 'all opted-in subscribers' : `${total} recipient${total === 1 ? '' : 's'}`;
+    }
+
+    async function sendNewsletterMode(mode) {
+        const cfg = NL_MODES[mode];
+        const st = nlModeState[mode];
+        const btn = document.getElementById(`nl-send-${mode}-btn`);
+        if (!btn || st.sending) return;
+        hideNewsletterAlert();
+        const title = (nlEl(mode, 'title').value || '').trim();
+        const intro = (nlEl(mode, 'intro').value || '').trim();
+        const alertEl = document.getElementById('newsletter-alert');
+        const reveal = () => { if (alertEl && alertEl.scrollIntoView) alertEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); };
+        if (!title) { showNewsletterAlert('error', `Please enter a title for the ${cfg.noun} update.`); reveal(); return; }
+        if (!st.selected.size) { showNewsletterAlert('error', `Select at least one ${cfg.noun} to include in the newsletter.`); reveal(); return; }
+        const picked = st.selected.size;
+        if (!window.confirm(`Send this to ${nlRecipientsText()}? This cannot be undone.\n\n${picked} ${picked === 1 ? cfg.noun : cfg.nouns} included. This reaches real inboxes.`)) return;
+
+        const originalText = btn.textContent;
+        st.sending = true;
+        nlRenderPicker(mode);
+        btn.textContent = 'Sending...';
+        try {
+            const res = await fetch(`${API_URL}${cfg.endpoint}?admin_key=${encodeURIComponent(adminKey)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, intro, [cfg.field]: Array.from(st.selected) })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(typeof data.detail === 'string' ? data.detail
+                    : data.message || `Send failed (status ${res.status}).`);
+            }
+            const failed = Array.isArray(data.failed) ? data.failed : [];
+            const sent = Number.isFinite(Number(data.sent)) ? Number(data.sent) : 0;
+            showNewsletterAlert('success', data.message || `Newsletter sent to ${sent} recipients.`);
+            renderNewsletterFailed(failed);
+            if (!failed.length) {
+                // Clean send: reset so the same email can't be sent twice by accident.
+                st.selected.clear();
+                nlEl(mode, 'title').value = '';
+                nlEl(mode, 'intro').value = '';
+            }
+        } catch (error) {
+            showNewsletterAlert('error', error.message || 'Send failed.');
+        } finally {
+            st.sending = false;
+            btn.textContent = originalText;
+            nlRenderPicker(mode);
+            reveal();
+        }
+    }
+
+    function setupNewsletterModes() {
+        document.querySelectorAll('.nl-mode-bar [data-nl-mode]').forEach(button => {
+            button.addEventListener('click', () => setNewsletterMode(button.dataset.nlMode));
+        });
+        Object.keys(NL_MODES).forEach(mode => {
+            const st = nlModeState[mode];
+            const search = nlEl(mode, 'search');
+            if (search) search.addEventListener('input', () => { st.filter = search.value; nlRenderPicker(mode); });
+            const picker = nlEl(mode, 'picker');
+            if (picker) picker.addEventListener('change', event => {
+                const box = event.target && event.target.closest ? event.target.closest('input[data-nl-id]') : null;
+                if (!box || st.sending) return;
+                const id = Number(box.dataset.nlId);
+                if (box.checked) st.selected.add(id); else st.selected.delete(id);
+                nlSyncControls(mode);
+            });
+            const title = nlEl(mode, 'title');
+            if (title) title.addEventListener('input', () => nlSyncControls(mode));
+            const clear = nlEl(mode, 'clear');
+            if (clear) clear.addEventListener('click', () => { st.selected.clear(); nlRenderPicker(mode); });
+            const refresh = nlEl(mode, 'refresh');
+            if (refresh) refresh.addEventListener('click', () => nlLoadItems(mode, true));
+            const send = document.getElementById(`nl-send-${mode}-btn`);
+            if (send) send.addEventListener('click', () => sendNewsletterMode(mode));
+            nlSyncControls(mode);
+        });
     }
 
     /* ==========================================================================

@@ -61,7 +61,112 @@ def build_product_update_html(title: str, intro: str, products: list) -> str:
             {product_blocks}
         </table>
     """)
+    
+    
+def build_spotlight_update_html(title: str, intro: str, spotlights: list) -> str:
+    cards = ""
+    for s in spotlights:
+        a = s.application
+        photo = a.photo_url or ""
+        if photo:
+            photo_html = f'<img src="{photo}" width="56" height="56" style="border-radius:8px; object-fit:cover;">'
+        else:
+            initial = a.founder_name[0].upper() if a.founder_name else "?"
+            photo_html = f'<div style="width:56px; height:56px; border-radius:8px; background:#2563eb; color:#fff; font-size:24px; font-weight:bold; text-align:center; line-height:56px;">{initial}</div>'
 
+        cards += f"""
+        <tr>
+            <td style="padding:16px 0; border-bottom:1px solid #eee;">
+                <table>
+                    <tr>
+                        <td style="vertical-align:top; padding-right:16px;">{photo_html}</td>
+                        <td>
+                            <h3 style="margin:0 0 6px 0; font-size:16px;">{a.startup_name}</h3>
+                            <p style="margin:0 0 4px 0; font-size:13px; color:#888;">{a.founder_name} · {a.state}</p>
+                            <p style="margin:0 0 8px 0; font-size:14px; color:#555;">{(s.summary or "")[:120]}</p>
+                            <a href="{SITE_URL}/spotlight/{s.slug}?utm_source=newsletter&utm_medium=email" style="font-size:14px; color:#2563eb;">Read the story →</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        """
+
+    return wrap_in_template(title, f"""
+        <h2 style="margin-bottom:8px;">{title}</h2>
+        <p style="color:#555; margin-bottom:20px;">{intro or ""}</p>
+        <table width="100%" cellpadding="0" cellspacing="0">{cards}</table>
+    """)
+
+
+def build_alternative_update_html(title: str, intro: str, tools: list) -> str:
+    cards = ""
+    for t in tools:
+        logo = t.logo_url or ""
+        if logo:
+            logo_html = f'<img src="{logo}" width="56" height="56" style="border-radius:8px; object-fit:cover;">'
+        else:
+            initial = t.name[0].upper() if t.name else "?"
+            logo_html = f'<div style="width:56px; height:56px; border-radius:8px; background:#2563eb; color:#fff; font-size:24px; font-weight:bold; text-align:center; line-height:56px;">{initial}</div>'
+
+        cards += f"""
+        <tr>
+            <td style="padding:16px 0; border-bottom:1px solid #eee;">
+                <table>
+                    <tr>
+                        <td style="vertical-align:top; padding-right:16px;">{logo_html}</td>
+                        <td>
+                            <h3 style="margin:0 0 6px 0; font-size:16px;">Nigerian alternatives to {t.name}</h3>
+                            <p style="margin:0 0 8px 0; font-size:14px; color:#555;">{(t.description or "")[:120]}</p>
+                            <a href="{SITE_URL}/alternative/{t.slug}?utm_source=newsletter&utm_medium=email" style="font-size:14px; color:#2563eb;">See the alternatives →</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        """
+
+    return wrap_in_template(title, f"""
+        <h2 style="margin-bottom:8px;">{title}</h2>
+        <p style="color:#555; margin-bottom:20px;">{intro or ""}</p>
+        <table width="100%" cellpadding="0" cellspacing="0">{cards}</table>
+    """)
+
+
+def build_article_update_html(title: str, intro: str, articles: list) -> str:
+    cards = ""
+    for art in articles:
+        cover = art.cover_image_url or ""
+        if cover:
+            cover_html = f'<img src="{cover}" width="56" height="56" style="border-radius:8px; object-fit:cover;">'
+        else:
+            initial = art.title[0].upper() if art.title else "?"
+            cover_html = f'<div style="width:56px; height:56px; border-radius:8px; background:#2563eb; color:#fff; font-size:24px; font-weight:bold; text-align:center; line-height:56px;">{initial}</div>'
+
+        cards += f"""
+        <tr>
+            <td style="padding:16px 0; border-bottom:1px solid #eee;">
+                <table>
+                    <tr>
+                        <td style="vertical-align:top; padding-right:16px;">{cover_html}</td>
+                        <td>
+                            <h3 style="margin:0 0 6px 0; font-size:16px;">{art.title}</h3>
+                            <p style="margin:0 0 8px 0; font-size:14px; color:#555;">{(art.summary or "")[:120]}</p>
+                            <a href="{SITE_URL}/articles/{art.slug}?utm_source=newsletter&utm_medium=email" style="font-size:14px; color:#2563eb;">Read the article →</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        """
+
+    return wrap_in_template(title, f"""
+        <h2 style="margin-bottom:8px;">{title}</h2>
+        <p style="color:#555; margin-bottom:20px;">{intro or ""}</p>
+        <table width="100%" cellpadding="0" cellspacing="0">{cards}</table>
+    """)
+    
+    
 def wrap_in_template(subject: str, inner_html: str) -> str:
     return f"""
     <html>

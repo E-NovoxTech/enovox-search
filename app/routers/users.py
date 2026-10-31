@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime, timedelta
-
+from ..newsletter_utils import wrap_in_template, send_newsletter
 from .. import models, schemas
 from ..database import get_db
 from ..auth import hash_password, verify_password, create_token, decode_token
 from ..email_utils import generate_verification_code, send_verification_email
+import os
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -91,5 +92,26 @@ def delete_my_account(db: Session = Depends(get_db), current_user: models.User =
     db.delete(current_user)
     db.commit()
     return {"message": "Account and associated data deleted."}
+
+@router.get("/admin/all")
+def list_all_users(admin_key: str, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    users = db.query(models.User).order_by(models.User.created_at.desc()).all()
+    return [{"id": u.id, "email": u.email, "created_at": u.created_at} for u in users]
+
+
+@router.post("/admin/send-update")
+def send_user_update(admin_key: str, data: schemas.UserUpdateSend, db: Session = Depends(get_db)):
+    if admin_key != os.getenv("ADMIN_KEY"):
+        raise HTTPException(status_code=403, detail="Invalid admin key")
+
+    if not data.recipient_emails:
+        return {"message": "No users selected.", "sent": 0}
+
+    html_body = wrap_in_template(data.subject, data.html_body)
+    results = send_newsletter(data.recipient_emails, data.subject, html_body)
+    return {"message": f"Update sent to {results['sent']} users.", **results}
 
 
